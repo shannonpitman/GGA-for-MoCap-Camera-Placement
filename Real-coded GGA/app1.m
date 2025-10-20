@@ -7,7 +7,8 @@ onedrive = fullfile(getenv('USERPROFILE'), 'OneDrive - University of Cape Town')
 addpath(fullfile(onedrive, 'MSc', 'MATLAB', 'RVC3-MATLAB'));
 addpath(fullfile(onedrive, 'MSc', 'MATLAB', 'Simulation', 'Optimising Camera Placement'));
 %% Number of Cameras
-numCams = 6; 
+numCams = 4; 
+
 %% Problem Definition
 
 problem.CostFunction = @resUncertainty; % Objective function 
