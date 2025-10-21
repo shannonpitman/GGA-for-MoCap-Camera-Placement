@@ -1,20 +1,24 @@
 clc; %clear screen 
 clear; % clear workspace
 close all;
-%% Specify Path
 
-onedrive = fullfile(getenv('USERPROFILE'), 'OneDrive - University of Cape Town');
-addpath(fullfile(onedrive, 'MSc', 'MATLAB', 'RVC3-MATLAB'));
-addpath(fullfile(onedrive, 'MSc', 'MATLAB', 'Simulation', 'Optimising Camera Placement'));
-%% Number of Cameras
-numCams = 4; 
+%% Design Specifications
+specs.Cams = 4; %Number of Cameras
+% Target space is an uniformly discretised grid within the flight volume 
+% This workspace volume matches the available dimensions of the MS.G flight envelope 
+flight_envelope = [-4 4; -4 4; 0 4.5]; %m
+x_marker = flight_envelope(1,1):spacing:flight_envelope(1,2);
+y_marker = flight_envelope(2,1):spacing:flight_envelope(2,2);
+z_marker = flight_envelope(3,1):spacing:flight_envelope(3,2);
+[X,Y,Z] = meshgrid(x_marker, y_marker, z_marker);
+specs.Target = [X(:), Y(:), Z(:)];
 
 %% Problem Definition
 
 problem.CostFunction = @resUncertainty; % Objective function 
-problem.nVar = 5; % Amount of design variables (search space) 
-problem.VarMin = [-10 -10 -5 -1 -5]; %lower bounds of variables 
-problem.VarMax = [ 10  10  5  1 8];
+problem.nVar = 6; % Amount of design variables (search space) [Xc, Yc, Zc, alpha, beta, gamma]
+problem.VarMin = [-5 -4.5  0   -pi -pi -pi]; %lower bounds of variables 
+problem.VarMax = [ 5  4.5  4.8  pi  pi  pi]; % upper bounds of variables
 
 %% GA Parameters
 
