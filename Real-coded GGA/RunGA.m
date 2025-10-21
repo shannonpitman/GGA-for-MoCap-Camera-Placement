@@ -1,12 +1,12 @@
 function out = RunGA(problem, params, specs)
     % Specifications
     numCams = specs.Cams;
-    res = specs.Resolution;
-    sensorSize = specs.Sensor;
-    pixSize = specs.PixelSize;
-    focalLength = specs.Focal;
-    TargetSpace = specs.Target;
+    % res = specs.Resolution;
+    % pixSize = specs.PixelSize;
+    % focalLength = specs.Focal;
+    % PrincipalPoint = specs.PrinsipalPoint;
     SectionCentres = specs.SectionCentres;
+    % TargetSpace = specs.Target;
     
     % Problem 
     CostFunction = problem.CostFunction;

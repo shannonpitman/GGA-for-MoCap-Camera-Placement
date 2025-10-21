@@ -5,15 +5,14 @@ close all;
 %% Design Specifications
 specs.Cams = 4; %Number of Cameras
 specs.Resolution = [640 480]; %VGA resolution
-specs.Sensor = [0.00635 0.00635];%sensor size 1/4"
 specs.PixelSize = 1.4e-6; %Square Pixel Size
+specs.PrincipalPoint = [res(1)/2, res(2),2];
 specs.Focal = 0.0028; %focal length [m]
 
 % Target space is an uniformly discretised grid within the flight volume 
 % This workspace volume matches the available dimensions of the MS.G flight envelope 
 flight_envelope = [-4 4; -4 4; 0 4.5]; %m
 spacing = 1;
-
 x_marker = flight_envelope(1,1):spacing:flight_envelope(1,2);
 y_marker = flight_envelope(2,1):spacing:flight_envelope(2,2);
 z_marker = flight_envelope(3,1):spacing:flight_envelope(3,2);
@@ -40,6 +39,7 @@ for i = 1:length(x_div)-1
         end
     end
 end
+
 specs.SectionCentres = section_centres;
 
 %% Problem Definition
