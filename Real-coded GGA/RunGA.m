@@ -1,8 +1,17 @@
-function out = RunGA(problem, params)
-    % Problem (extractions)
+function out = RunGA(problem, params, specs)
+    % Specifications
+    numCams = specs.Cams;
+    res = specs.Resolution;
+    sensorSize = specs.Sensor;
+    pixSize = specs.PixelSize;
+    focalLength = specs.Focal;
+    TargetSpace = specs.Target;
+    SectionCentres = specs.SectionCentres;
+    
+    % Problem 
     CostFunction = problem.CostFunction;
     nVar = problem.nVar;
-    VarSize = [1, nVar];
+    VarSize = [1, nVar]; % 1 Gene (1 camera)
     VarMin = problem.VarMin;
     VarMax = problem.VarMax;
     
@@ -27,8 +36,8 @@ function out = RunGA(problem, params)
     pop = repmat(empty_individual, nPop, 1);
     for i = 1:nPop
 
-        % Generate Random Solution (initial pop)
-        pop(i).Chromosome = unifrnd(VarMin, VarMax, VarSize);
+        % Generate Guided Random Solution 
+        pop(i).Chromosome = initialPopulation(VarMin, VarMax, VarSize, SectionCentres, numCams);
 
         % Evaluate Solution
         pop(i).Cost = CostFunction(pop(i).Chromosome);

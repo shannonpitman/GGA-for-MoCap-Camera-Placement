@@ -1,4 +1,4 @@
-function [errorVolume] = resUncertainty(cameraChromosome, point)
+function errorVolume = resUncertainty(cameraChromosome, point)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 

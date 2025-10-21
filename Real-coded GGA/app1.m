@@ -4,14 +4,43 @@ close all;
 
 %% Design Specifications
 specs.Cams = 4; %Number of Cameras
+specs.Resolution = [640 480]; %VGA resolution
+specs.Sensor = [0.00635 0.00635];%sensor size 1/4"
+specs.PixelSize = 1.4e-6; %Square Pixel Size
+specs.Focal = 0.0028; %focal length [m]
+
 % Target space is an uniformly discretised grid within the flight volume 
 % This workspace volume matches the available dimensions of the MS.G flight envelope 
 flight_envelope = [-4 4; -4 4; 0 4.5]; %m
+spacing = 1;
+
 x_marker = flight_envelope(1,1):spacing:flight_envelope(1,2);
 y_marker = flight_envelope(2,1):spacing:flight_envelope(2,2);
 z_marker = flight_envelope(3,1):spacing:flight_envelope(3,2);
 [X,Y,Z] = meshgrid(x_marker, y_marker, z_marker);
+
 specs.Target = [X(:), Y(:), Z(:)];
+
+numSections = floor(numCams/2);
+nx = ceil(sqrt(numSections)); %number of divisions in x direction of grid 
+ny = ceil(numSections /nx); %number of divisions in y direction of grid 
+x_div = linspace(flight_envelope(1,1), flight_envelope(1,2), nx+1);
+y_div = linspace(flight_envelope(2,1), flight_envelope(2,2), ny+1);
+z_mid = mean(flight_envelope(3,:)); %mid-height
+count = 1;
+section_centres = zeros(numSections,3);
+for i = 1:length(x_div)-1
+    for j = 1:length(y_div)-1
+        if count <= numSections
+            cx = mean([x_div(i), x_div(i+1)]);
+            cy = mean([y_div(j), y_div(j+1)]);
+            cz = z_mid;
+            section_centres(count,:) = [cx, cy, cz];
+            count = count+1;
+        end
+    end
+end
+specs.SectionCentres = section_centres;
 
 %% Problem Definition
 
@@ -32,7 +61,7 @@ params.mu = 0.02; %probability of mutation
 params.sigma = 00.1;
 
 %% Run GA
-out = RunGA(problem, params);
+out = RunGA(problem, params, specs);
 
 %% Results 
 
