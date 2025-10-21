@@ -1,9 +1,10 @@
-function Chromosome = initialPopulation(VarMin, VarMax, VarSize, SectionCentres, numCams)
+function Chromosome = initialPopulation(VarMin, VarMax,  SectionCentres, numCams)
 % This function generates a guided inital population where the randomised
 % camera locations are oriented towards the (proportional to amount of
 % cameras) subdivided workspace 
+Chromosome = zeros(1, 6*numCams);
 for c = 1:numCams
-    camPositions = unifrnd(VarMin(1:3),VarMax(1:3), VarSize(1:3));
+    camPositions = unifrnd(VarMin(1:3),VarMax(1:3), [1,3]);
     distanceCam2Centre = vecnorm(SectionCentres -camPositions,2,2); %calcs 2-norm of each row 
     [~, closestIdx] = min(distanceCam2Centre); %find closest camera section
     nearest_centre = SectionCentres(closestIdx,:);
@@ -25,4 +26,5 @@ for c = 1:numCams
     chromEndIdx = c*6;
     Chromosome(chromStartIdx:chromEndIdx) = gene;    
 
+end
 end

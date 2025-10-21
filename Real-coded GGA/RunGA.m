@@ -10,8 +10,6 @@ function out = RunGA(problem, params, specs)
     
     % Problem 
     CostFunction = problem.CostFunction;
-    nVar = problem.nVar;
-    VarSize = [1, nVar]; % 1 Gene (1 camera)
     VarMin = problem.VarMin;
     VarMax = problem.VarMax;
     
@@ -37,10 +35,10 @@ function out = RunGA(problem, params, specs)
     for i = 1:nPop
 
         % Generate Guided Random Solution 
-        pop(i).Chromosome = initialPopulation(VarMin, VarMax, VarSize, SectionCentres, numCams);
+        pop(i).Chromosome = initialPopulation(VarMin, VarMax, SectionCentres, numCams);
 
         % Evaluate Solution
-        pop(i).Cost = CostFunction(pop(i).Chromosome);
+        pop(i).Cost = CostFunction(pop(i).Chromosome, specs);
 
         % Compare Solution to Best Solution Ever found 
         if pop(i).Cost < bestsol.Cost

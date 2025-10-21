@@ -6,13 +6,13 @@ close all;
 specs.Cams = 4; %Number of Cameras
 specs.Resolution = [640 480]; %VGA resolution
 specs.PixelSize = 1.4e-6; %Square Pixel Size
-specs.PrincipalPoint = [res(1)/2, res(2),2];
+specs.PrincipalPoint = [specs.Resolution(1)/2, specs.Resolution(2)/2];
 specs.Focal = 0.0028; %focal length [m]
 
 % Target space is an uniformly discretised grid within the flight volume 
 % This workspace volume matches the available dimensions of the MS.G flight envelope 
 flight_envelope = [-4 4; -4 4; 0 4.5]; %m
-spacing = 1;
+spacing = 0.5;
 x_marker = flight_envelope(1,1):spacing:flight_envelope(1,2);
 y_marker = flight_envelope(2,1):spacing:flight_envelope(2,2);
 z_marker = flight_envelope(3,1):spacing:flight_envelope(3,2);
@@ -20,7 +20,7 @@ z_marker = flight_envelope(3,1):spacing:flight_envelope(3,2);
 
 specs.Target = [X(:), Y(:), Z(:)];
 
-numSections = floor(numCams/2);
+numSections = floor(specs.Cams/2);
 nx = ceil(sqrt(numSections)); %number of divisions in x direction of grid 
 ny = ceil(numSections /nx); %number of divisions in y direction of grid 
 x_div = linspace(flight_envelope(1,1), flight_envelope(1,2), nx+1);
@@ -45,7 +45,7 @@ specs.SectionCentres = section_centres;
 %% Problem Definition
 
 problem.CostFunction = @resUncertainty; % Objective function 
-problem.nVar = 6; % Amount of design variables (search space) [Xc, Yc, Zc, alpha, beta, gamma]
+%Bounds for the 6 design variables (search space) [Xc, Yc, Zc, alpha, beta, gamma]
 problem.VarMin = [-5 -4.5  0   -pi -pi -pi]; %lower bounds of variables 
 problem.VarMax = [ 5  4.5  4.8  pi  pi  pi]; % upper bounds of variables
 

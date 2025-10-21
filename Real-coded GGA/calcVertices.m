@@ -1,12 +1,12 @@
 function vertices = calcVertices(numCams, adj, planes)
 % Summary of this function goes here
 %   Detailed explanation goes here
-vertices = zeros(16*numCams, 3);
+vertices = zeros(16*numCams, 3); %16 = 4 pairs of adj surface of one cam intersected with 4 surfaces on other pyrsamid 
 idx = 1;
 tol = -1e-9;
 for i = 1:numCams
     cam_surfaces = planes{i};
-    for j = 1:size(adj,1)
+    for j = 1:4
         n1 = cam_surfaces(adj(j,1)).n;
         d1 = cam_surfaces(adj(j,1)).d;
         n2 = cam_surfaces(adj(j,2)).n;
