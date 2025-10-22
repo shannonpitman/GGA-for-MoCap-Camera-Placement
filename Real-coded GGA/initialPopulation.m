@@ -7,7 +7,7 @@ faceID = zeros(1, numCams);
 
 for c = 1:numCams
     chosenFace = randi(5);
-    faceID(c) = f; %store which face camera is placed on
+    faceID(c) = chosenFace; %store which face camera is placed on
     
     switch chosenFace
         case 1 % +X
@@ -26,7 +26,7 @@ for c = 1:numCams
     nearest_centre = SectionCentres(closestIdx,:);
 
     % Orient optical (z-) axis toward the interest point
-    directionVec = nearest_centre-camPositions;
+    directionVec = nearest_centre-camPos;
     directionUnit = directionVec/norm(directionVec);
 
     Z_axis = [0,0,1];
