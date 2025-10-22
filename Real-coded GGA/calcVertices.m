@@ -1,20 +1,22 @@
-function vertices = calcVertices(numCams, adj, planes)
+function vertices = calcVertices(numVisible, visibleIdx, adj, planes)
 % Summary of this function goes here
 %   Detailed explanation goes here
-vertices = zeros(16*numCams, 3); %16 = 4 pairs of adj surface of one cam intersected with 4 surfaces on other pyrsamid 
+vertices = zeros(16*numVisible, 3); %16 = 4 pairs of adj surface of one cam intersected with 4 surfaces on other pyrsamid 
 idx = 1;
 tol = -1e-9;
-for i = 1:numCams
-    cam_surfaces = planes{i};
+for i = 1:numVisible
+    planeIndex_i = visibleIdx(i);
+    cam_surfaces = planes{planeIndex_i};
     for j = 1:4
         n1 = cam_surfaces(adj(j,1)).n;
         d1 = cam_surfaces(adj(j,1)).d;
         n2 = cam_surfaces(adj(j,2)).n;
         d2 = cam_surfaces(adj(j,2)).d;
-        for k = 1:numCams
+        for k = 1:numVisible
             if k == i, continue; 
             end %look at all other pyramids 
-            other_surfaces = planes{k};
+            planeIndex_k = planes{k};
+            other_surfaces = planes{planeIndex_k};
             
             %Loop over each surface from other pyramid
             for l = 1:length(other_surfaces)
