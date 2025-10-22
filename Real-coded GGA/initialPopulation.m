@@ -1,30 +1,48 @@
-function Chromosome = initialPopulation(VarMin, VarMax,  SectionCentres, numCams)
+function [Chromosome, faceID] = initialPopulation(VarMin, VarMax,  SectionCentres, numCams)
 % This function generates a guided inital population where the randomised
-% camera locations are oriented towards the (proportional to amount of
+% camera locations are placed on random boundary faces oriented towards the (proportional to amount of
 % cameras) subdivided workspace 
 Chromosome = zeros(1, 6*numCams);
+faceID = zeros(1, numCams);
+
 for c = 1:numCams
-    camPositions = unifrnd(VarMin(1:3),VarMax(1:3), [1,3]);
-    distanceCam2Centre = vecnorm(SectionCentres -camPositions,2,2); %calcs 2-norm of each row 
-    [~, closestIdx] = min(distanceCam2Centre); %find closest camera section
+    chosenFace = randi(5);
+    faceID(c) = f; %store which face camera is placed on
+    
+    switch chosenFace
+        case 1 % +X
+            camPos = [VarMax(1), unifrnd(VarMin(2), VarMax(2)), unifrnd(VarMin(3), VarMax(3))];
+        case 2 % -X
+            camPos = [VarMin(1), unifrnd(VarMin(2), VarMax(2)), unifrnd(VarMin(3), VarMax(3))];
+        case 3 % +Y
+            camPos = [unifrnd(VarMin(1), VarMax(1)),VarMax(2), unifrnd(VarMin(3), VarMax(3))];
+        case 4 % -Y
+            camPos = [unifrnd(VarMin(1), VarMax(1)), VarMin(2), unifrnd(VarMin(3), VarMax(3))];
+        case 5 % +Z
+            camPos = [unifrnd(VarMin(1), VarMax(1)), unifrnd(VarMin(2), VarMax(2)), VarMax(3)];
+    end
+    distances = vecnorm(SectionCentres - camPos, 2, 2); %calcs 2-norm of each row 
+    [~, closestIdx] = min(distances); %find closest camera section
     nearest_centre = SectionCentres(closestIdx,:);
-    %Orient optical (z-) axis towards Interest Point
-    distance = nearest_centre-camPositions;
-    unitDist = distance/norm(distance);
+
+    % Orient optical (z-) axis toward the interest point
+    directionVec = nearest_centre-camPositions;
+    directionUnit = directionVec/norm(directionVec);
+
     Z_axis = [0,0,1];
-    rotAng = acos(dot(Z_axis, unitDist));
-    rotAxis = cross(Z_axis,unitDist);
+    rotAng = acos(dot(Z_axis, directionUnit));
+    rotAxis = cross(Z_axis, directionUnit);
+    rotAxis = rotAxis/norm(rotAxis);
+
     q = quaternion([cos(rotAng/2),rotAxis*sin(rotAng/2)]);
     q = normalize(q);
     q2Eul = euler(q, 'XYZ', 'point'); %euler angles in radians
     alpha = q2Eul(1);
     beta = q2Eul(2);
     gamma = q2Eul(3);
-    gene = [camPositions, [alpha,beta, gamma]];
+    gene = [camPos, [alpha,beta, gamma]];
 
-    chromStartIdx = (c-1)*6+1;
-    chromEndIdx = c*6;
-    Chromosome(chromStartIdx:chromEndIdx) = gene;    
+    Chromosome((c-1)*6+1:c*6) = gene;    
 
 end
 end

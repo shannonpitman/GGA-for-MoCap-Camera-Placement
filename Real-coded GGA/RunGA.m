@@ -12,6 +12,7 @@ function out = RunGA(problem, params, specs)
     CostFunction = problem.CostFunction;
     VarMin = problem.VarMin;
     VarMax = problem.VarMax;
+    nVar = problem.nVar;
     
     % Params 
     MaxIt = params.MaxIt;
@@ -19,7 +20,7 @@ function out = RunGA(problem, params, specs)
     beta = params.beta; % selection pressure
     pC = params.pC; % percentage children (crossover) 
     nC = round(pC*nPop/2)*2; % number of offspring (needs to be even) -> number of elements in popc
-    gamma = params.gamma;
+    % gamma = params.gamma; %needed for uniform crossover
     mu = params.mu; % percentage mutated
     sigma = params.sigma;
 
@@ -35,7 +36,7 @@ function out = RunGA(problem, params, specs)
     for i = 1:nPop
 
         % Generate Guided Random Solution 
-        pop(i).Chromosome = initialPopulation(VarMin, VarMax, SectionCentres, numCams);
+        [pop(i).Chromosome, pop(i).FaceID] = initialPopulation(VarMin, VarMax, SectionCentres, numCams);
 
         % Evaluate Solution
         pop(i).Cost = CostFunction(pop(i).Chromosome, specs);
@@ -71,7 +72,7 @@ function out = RunGA(problem, params, specs)
             p2 = pop(RouletteWheelSelection(probs));
 
             % Perform Crossover 
-            [popc(k,1).Chromosome, popc(k,2).Chromosome] = UniformCrossover(p1.Chromosome, p2.Chromosome, gamma); %[offspring1, offspring2]
+            [popc(k,1).Chromosome, popc(k,2).Chromosome] = DoublePointCrossover(p1.Chromosome, p2.Chromosome,nVar); %[offspring1, offspring2]
 
         end 
 

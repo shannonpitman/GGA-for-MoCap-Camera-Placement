@@ -1,4 +1,4 @@
-function [y1,y2] = UniformCrossover(x1,x2, gamma)
+function [y1,y2] = UniformCrossover(x1,x2, xFace1, xFace2, gamma)
     
     % alpha = rand(size(x1));
     alpha = unifrnd(-gamma, 1+gamma, size(x1)); %improves exploration
