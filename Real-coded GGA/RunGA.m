@@ -90,7 +90,7 @@ function out = RunGA(problem, params, specs)
             popc(l).Chromosome = min(popc(l).Chromosome, VarMax);
 
             % Evaluation 
-            popc(l).Cost = CostFunction(popc(l).Chromosome);
+            popc(l).Cost = CostFunction(popc(l).Chromosome, specs);
 
             % Compare Solution to Best Solution Ever Found 
             if popc(l).Cost < bestsol.Cost

@@ -55,7 +55,7 @@ for  p =1:numPoints
     end
 
     visibleIdx = find(isVisible);
-    numVisible = numel(visibleIdx);
+    numVisible = size(visibleIdx,1);
 
 
     if numVisible ==0 %if there are less than 2 cameras then triangulation is not possible 
@@ -63,7 +63,7 @@ for  p =1:numPoints
     elseif numVisible==1 %if at least one camera sees the point
         uncertainties(p) = 0.5*penaltyUncertainty;
     else
-        vertices = calcVertices(numVisible, adjacentSurfaces, planes);
+        vertices = calcVertices(numVisible,visibleIdx(:).', adjacentSurfaces, planes);
         unique_vertices = unique(round(vertices,6),'rows', 'stable');
         % size(unique_vertices);
         V_ = unique_vertices-point; %centre the points at the mean 

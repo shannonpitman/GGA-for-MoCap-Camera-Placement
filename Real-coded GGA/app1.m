@@ -46,8 +46,11 @@ specs.SectionCentres = section_centres;
 
 problem.CostFunction = @resUncertainty; % Objective function 
 %Bounds for the 6 design variables (search space) [Xc, Yc, Zc, alpha, beta, gamma]
-problem.VarMin = [-5 -4.5  0   -pi -pi -pi]; %lower bounds of variables 
-problem.VarMax = [ 5  4.5  4.8  pi  pi  pi]; % upper bounds of variables
+cameraLowerBounds = [-5 -4.5  0   -pi -pi -pi];
+cameraUpperBounds = [ 5  4.5  4.8  pi  pi  pi];
+problem.VarMin = repmat(cameraLowerBounds,1,specs.Cams);
+problem.VarMax = repmat(cameraUpperBounds,1,specs.Cams);
+problem.nVar = 6* specs.Cams;
 
 %% GA Parameters
 

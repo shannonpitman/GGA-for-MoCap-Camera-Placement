@@ -1,4 +1,4 @@
-function surfStruct = buildPyramidSurf(cameraCentre,worldPoint, adj)
+function surfStruct = buildPyramidSurf(cameraCentre, worldPoint, adj)
 %UNTITLED4 Summary of this function goes here
 %   Detailed explanation goes here
 surfStruct = struct('n', {}, 'd', {});
