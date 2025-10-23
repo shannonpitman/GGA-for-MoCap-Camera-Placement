@@ -33,7 +33,7 @@ function vertices = calcVertices(numVisible, visibleIdx, adj, planes)
                     b = [d1; d2; d3];
                     x = A\b; %least squares solve -> finds error region around point its trying to locate
                     
-                     if isInsidePlanes(x, planes, tol)
+                     if isInsidePlanes(x, cam_surfaces, tol)
                         vertices(idx, :) = x.'; %row x,y,z
                         idx = idx +1;
                      end
@@ -42,4 +42,5 @@ function vertices = calcVertices(numVisible, visibleIdx, adj, planes)
         end
     end
     vertices = vertices(1:idx-1,:);
+    disp(vertices)
 end

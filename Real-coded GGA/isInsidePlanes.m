@@ -2,11 +2,11 @@ function tf = isInsidePlanes(x, planes, tol)
 %UNTITLED6 Summary of this function goes here
 %   Detailed explanation goes here
 
-    nVecs = planes.n; %normals stacked
-    dVals = planes.d; 
+    nVecs = cat(2, planes.n); %normals stacked
+    dVals = cat(2, planes.d); 
 
     dotProd = nVecs' *x(:); 
-    tf = all(dotProd-dVals >= -tol); %Returns false if less  than twiddle factor
+    tf = all(dotProd-dVals' >= -tol); %Returns false if less  than twiddle factor
 end
 
 

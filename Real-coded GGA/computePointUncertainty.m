@@ -3,12 +3,11 @@ function uncertainty = computePointUncertainty(point, cameras, numCams, resoluti
     cameraCentres = cell(numCams,1);
     worldPoints = cell(numCams,1);
     planes = cell(numCams, 1);
-    uv = zeros(numCams,2); %[u,v]
     
     for i = 1:numCams
-        uv(i,:) = cameras{i}.project(point); %uv projected coordinates 
-        u = uv(i,1);
-        v = uv(i,2);
+        uv = cameras{i}.project(point); %uv projected coordinates 
+        u = uv(1);
+        v = uv(2);
         if (u >= 1 && u <= resolution(1) && v >= 1 && v <= resolution(2))
             cameraCentres{i} = cameras{i}.center().'; %world location of Camera center
             worldPoints{i} = quantToWorld(cameras{i}, u,v, du, dv, cameraCentres{i});
@@ -26,7 +25,7 @@ function uncertainty = computePointUncertainty(point, cameras, numCams, resoluti
     elseif numVisible==1 %if at least one camera sees the point
         uncertainty = 0.5*penaltyUncertainty;
     else
-        vertices = calcVertices(numVisible,visibleIdx(:).', adjacentSurfaces, planes);
+        vertices = calcVertices(numVisible, visibleIdx(:).', adjacentSurfaces, planes);
         unique_vertices = unique(round(vertices,6),'rows', 'stable');
         % size(unique_vertices);
         V_ = unique_vertices-point; %centre the points at the mean 
