@@ -1,8 +1,7 @@
-function worldPoints = quantToWorld(camera,uv, du,dv, cameraCentre)
-%UNTITLED2 Summary of this function goes here
-%   Detailed explanation goes here
-    uCorners = [uv(1)-du, uv(1)-du, uv(1)+du, uv(1)+du];
-    vCorners = [uv(2)-dv, uv(2)+dv, uv(2)+dv, uv(2)-dv];
+function worldPoints = quantToWorld(camera,u,v, du,dv, cameraCentre)
+%Finds the world points for all corners of the uncertain quantisation region 
+    uCorners = [u-du, u-du, u+du, u+du];
+    vCorners = [v-dv, v+dv, v+dv, v-dv];
     
     homogPix = [uCorners; vCorners; ones(1,4)];
     camRays = camera.K \ homogPix;
