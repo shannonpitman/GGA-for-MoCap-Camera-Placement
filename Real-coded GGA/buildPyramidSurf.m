@@ -7,7 +7,7 @@ corner2 = worldPoint(:,adj(:,2));
 vector1 = corner1 - cameraCentre; 
 vector2 = corner2 - cameraCentre;
 planes.n = cross(vector2, vector1, 1);  %normal to the plane of surface 
-planes.n = surfNormal./vecnorm(surfNormal,2,1); %normalise to only extract direction
+planes.n = planes.n ./vecnorm(planes.n,2,1); %normalise to only extract direction
 planes.d = sum(planes.n .* cameraCentre,1); %constant of plane calculated by dot product of vector2 (corner 2) with a point on the surface (perspective centre)
 
 

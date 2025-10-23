@@ -27,6 +27,7 @@ function out = RunGA(problem, params, specs)
     % Template for Empty Individuals
     empty_individual.Chromosome = []; %chromosome 
     empty_individual.Cost = [];
+    % empty_individual.FaceID = [];
 
     % Best Solution Ever Found 
     bestsol.Cost = inf;
@@ -36,7 +37,7 @@ function out = RunGA(problem, params, specs)
     for i = 1:nPop
 
         % Generate Guided Random Solution 
-        [pop(i).Chromosome, pop(i).FaceID] = initialPopulation(VarMin, VarMax, SectionCentres, numCams);
+        pop(i).Chromosome = initialPopulation(VarMin, VarMax, SectionCentres, numCams);
 
         % Evaluate Solution
         pop(i).Cost = CostFunction(pop(i).Chromosome, specs);
