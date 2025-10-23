@@ -1,4 +1,4 @@
-function [Chromosome, faceID] = initialPopulation(VarMin, VarMax,  SectionCentres, numCams)
+function Chromosome = initialPopulation(VarMin, VarMax,  SectionCentres, numCams)
 % This function generates a guided inital population where the randomised
 % camera locations are placed on random boundary faces oriented towards the (proportional to amount of
 % cameras) subdivided workspace 
