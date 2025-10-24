@@ -42,5 +42,4 @@ function vertices = calcVertices(numVisible, visibleIdx, adj, planes)
         end
     end
     vertices = vertices(1:idx-1,:);
-    disp(vertices)
 end
