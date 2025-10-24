@@ -1,7 +1,5 @@
 function uncertainty = computePointUncertainty(point, cameras, numCams, resolution, adjacentSurfaces, du,dv, penaltyUncertainty, w2)
     isVisible = false(numCams,1); %logical vector to check whether a camera can see point
-    cameraCentres = cell(numCams,1);
-    worldPoints = cell(numCams,1);
     planes = cell(numCams, 1);
     
     for i = 1:numCams
@@ -9,9 +7,9 @@ function uncertainty = computePointUncertainty(point, cameras, numCams, resoluti
         u = uv(1);
         v = uv(2);
         if (u >= 1 && u <= resolution(1) && v >= 1 && v <= resolution(2))
-            cameraCentres{i} = cameras{i}.center().'; %world location of Camera center
-            worldPoints{i} = quantToWorld(cameras{i}, u,v, du, dv, cameraCentres{i});
-            planes{i} = buildPyramidSurf(cameraCentres{i}, worldPoints{i}, adjacentSurfaces);
+            cameraCentres = cameras{i}.center().'; %world location of Camera center
+            worldPoints = quantToWorld(cameras{i}, u,v, du, dv, cameraCentres);
+            planes{i} = buildPyramidSurf(cameraCentres, worldPoints, adjacentSurfaces);
             isVisible(i) = true;
         end
     end
