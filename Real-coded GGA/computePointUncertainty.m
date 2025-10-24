@@ -1,6 +1,6 @@
 function uncertainty = computePointUncertainty(point, cameras, numCams, resolution, adjacentSurfaces, du,dv, penaltyUncertainty, w2)
     isVisible = false(numCams,1); %logical vector to check whether a camera can see point
-    planes = cell(numCams, 1);
+    planes = cell(1, numCams);
     
     for i = 1:numCams
         uv = cameras{i}.project(point); %uv projected coordinates 
@@ -23,7 +23,7 @@ function uncertainty = computePointUncertainty(point, cameras, numCams, resoluti
     elseif numVisible==1 %if at least one camera sees the point
         uncertainty = 0.5*penaltyUncertainty;
     else
-        vertices = calcVertices(numVisible, visibleIdx(:).', adjacentSurfaces, planes);
+        vertices = calcVertices(numVisible, visibleIdx, adjacentSurfaces, planes);
         unique_vertices = unique(round(vertices,6),'rows', 'stable');
         % size(unique_vertices);
         V_ = unique_vertices-point; %centre the points at the mean 
