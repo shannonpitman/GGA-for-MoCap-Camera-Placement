@@ -5,25 +5,23 @@ function vertices = calcVertices(numVisible, visibleIdx, adj, planes)
     idx = 1;
     tol = -1e-9;
     for i = 1:numVisible
-        planeIndex_i = visibleIdx(i);
-        cam_surfaces = planes{planeIndex_i}; %index plane array at visible camera 
+        cam_surfaces = planes{visibleIdx(i)}; %index plane array at visible camera 
         
         for j =1:4
-            n1 = cam_surfaces.n(:,adj(j,1));
-            d1 = cam_surfaces.d(adj(j,1));
-            n2 = cam_surfaces.n(:,adj(j,2));
-            d2 = cam_surfaces.d(adj(j,2));
+            n1 = cam_surfaces(1:3,adj(j,1));
+            d1 = cam_surfaces(4, adj(j,1));
+            n2 = cam_surfaces(1:3,adj(j,2));
+            d2 = cam_surfaces(4,adj(j,2));
 
             for k = 1:numVisible
                 if k == i, continue; 
                 end %look at all other pyramids 
-                planeIndex_k = visibleIdx(k);
-                other_surfaces = planes{planeIndex_k};
+                other_surfaces = planes{visibleIdx(k)};
                 
                 %Loop over each surface from other pyramid
                 for l = 1:length(other_surfaces)
-                    n3 = other_surfaces.n(:,l);
-                    d3 = other_surfaces.d(l);
+                    n3 = other_surfaces(1:3,l);
+                    d3 = other_surfaces(4,l);
                     
                     A = [n1.'; n2.'; n3.'];
                     if abs(det(A)) < 1e-9 %check that planes aren't parraell and thus illconditioned -> no intesection 
