@@ -1,7 +1,6 @@
 function uncertainty = computePointUncertainty(point, cameras, numCams, resolution, adjacentSurfaces, du,dv, penaltyUncertainty, w2)
     isVisible = false(numCams,1); %logical vector to check whether a camera can see point
     planes = cell(1, numCams);
-    
     for i = 1:numCams
         uv = cameras{i}.project(point); %uv projected coordinates 
         u = uv(1);
@@ -39,11 +38,11 @@ function uncertainty = computePointUncertainty(point, cameras, numCams, resoluti
         options = optimset('Display', 'notify', 'TolX', 1e-6, 'TolFun', 1e-6, 'MaxIter', 1000, 'MaxFunEvals', 5000);
         [axes_opt, ~] = fminsearch(fun, x0, options);
 
-        %optimised axes [mm]
-        a = axes_opt(1)*1000;
-        b = axes_opt(2)*1000;
-        c = axes_opt(3)*1000;
+        %optimised axes [m]
+        a = axes_opt(1);
+        b = axes_opt(2);
+        c = axes_opt(3);
 
-        uncertainty = 4/3*pi*a*b*c;%mm^3
+        uncertainty = 4/3*pi*a*b*c;%m^3
     end
 end
