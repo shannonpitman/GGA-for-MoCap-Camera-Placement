@@ -39,9 +39,9 @@ function uncertainty = computePointUncertainty(point, cameras, numCams, resoluti
         [axes_opt, ~] = fminsearch(fun, x0, options);
 
         %optimised axes [m]
-        a = axes_opt(1);
-        b = axes_opt(2);
-        c = axes_opt(3);
+        a = abs(axes_opt(1));
+        b = abs(axes_opt(2));
+        c = abs(axes_opt(3));
 
         uncertainty = 4/3*pi*a*b*c;%m^3
     end

@@ -3,7 +3,7 @@ clear; % clear workspace
 close all;
 
 %% Design Specifications
-specs.Cams = 6; %Number of Cameras
+specs.Cams = 5; %Number of Cameras
 specs.Resolution = [640 480]; %VGA resolution
 specs.PixelSize = 1.4e-6; %Square Pixel Size
 specs.PrincipalPoint = [specs.Resolution(1)/2, specs.Resolution(2)/2];
