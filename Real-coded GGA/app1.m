@@ -73,4 +73,30 @@ figure;
 semilogy(out.bestcost, 'LineWidth',2); % y axis has logarithmic scale and x-axis is linear 
 xlabel('Iterations');
 ylabel('Best Cost');
+title('Guided Genetic Algorithm Best Cost of Generation')
 grid on;
+
+cameras = cell(specs.Cams,1);
+for i = 1:specs.Cams
+    chromStartIdx = (i-1)*6+1;
+    chromEndIdx = i*6;
+    camPositions = cameraChromosome(chromStartIdx: chromStartIdx+2);
+    camOrientations = cameraChromosome(chromEndIdx-2: chromEndIdx);
+    
+    T = se3(eul2rotm(camOrientations, "XYZ"), camPositions); %camera to world cTw
+    cameras{i} = CentralCamera(name="cam"+i,resolution= resolution, pixel= pixelSize, focal= focalLength, pose=T, center = PrincipalPoint);
+end
+cam1 = cameras{1};
+cam2 = cameras{2};
+cam3 = cameras{3};
+cam4 = cameras{4};
+cam5 = cameras{5};
+
+figure;
+hold on
+cam1.plot_camera
+cam2.plot_camera
+cam3.plot_camera
+cam4.plot_camera
+cam5.plot_camera
+hold off;

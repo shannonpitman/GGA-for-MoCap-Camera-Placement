@@ -44,5 +44,6 @@ function uncertainty = computePointUncertainty(point, cameras, numCams, resoluti
         c = abs(axes_opt(3));
 
         uncertainty = 4/3*pi*a*b*c;%m^3
+        
     end
 end
