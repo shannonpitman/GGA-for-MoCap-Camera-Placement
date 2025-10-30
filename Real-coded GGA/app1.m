@@ -80,11 +80,11 @@ cameras = cell(specs.Cams,1);
 for i = 1:specs.Cams
     chromStartIdx = (i-1)*6+1;
     chromEndIdx = i*6;
-    camPositions = cameraChromosome(chromStartIdx: chromStartIdx+2);
-    camOrientations = cameraChromosome(chromEndIdx-2: chromEndIdx);
+    camPositions = out.bestsol.Chromosome(chromStartIdx: chromStartIdx+2);
+    camOrientations = out.bestsol.Chromosome(chromEndIdx-2: chromEndIdx);
     
     T = se3(eul2rotm(camOrientations, "XYZ"), camPositions); %camera to world cTw
-    cameras{i} = CentralCamera(name="cam"+i,resolution= resolution, pixel= pixelSize, focal= focalLength, pose=T, center = PrincipalPoint);
+    cameras{i} = CentralCamera(name="cam"+i, pose=T );
 end
 cam1 = cameras{1};
 cam2 = cameras{2};
@@ -94,9 +94,11 @@ cam5 = cameras{5};
 
 figure;
 hold on
-cam1.plot_camera
-cam2.plot_camera
-cam3.plot_camera
-cam4.plot_camera
-cam5.plot_camera
+cam1.plot_camera('label', scale = 0.5)
+cam2.plot_camera('label', scale = 0.5)
+cam3.plot_camera('label', scale = 0.5)
+cam4.plot_camera('label', scale = 0.5)
+cam5.plot_camera('label', scale = 0.5)
+axis('equal')
+grid('on')
 hold off;
