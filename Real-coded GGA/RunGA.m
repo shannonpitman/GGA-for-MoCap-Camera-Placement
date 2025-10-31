@@ -1,12 +1,7 @@
 function out = RunGA(problem, params, specs)
     % Specifications
     numCams = specs.Cams;
-    % res = specs.Resolution;
-    % pixSize = specs.PixelSize;
-    % focalLength = specs.Focal;
-    % PrincipalPoint = specs.PrinsipalPoint;
     SectionCentres = specs.SectionCentres;
-    % TargetSpace = specs.Target;
     
     % Problem 
     CostFunction = problem.CostFunction;
@@ -20,33 +15,34 @@ function out = RunGA(problem, params, specs)
     beta = params.beta; % selection pressure
     pC = params.pC; % percentage children (crossover) 
     nC = round(pC*nPop/2)*2; % number of offspring (needs to be even) -> number of elements in popc
-    % gamma = params.gamma; %needed for uniform crossover
     mu = params.mu; % percentage mutated
     sigma = params.sigma;
 
     % Template for Empty Individuals
     empty_individual.Chromosome = []; %chromosome 
     empty_individual.Cost = [];
-    % empty_individual.FaceID = [];
 
     % Best Solution Ever Found 
     bestsol.Cost = inf;
 
     % Initialization 
     pop = repmat(empty_individual, nPop, 1);
-    for i = 1:nPop
+    costs = zeros(nPop,1);
+
+    parfor i = 1:nPop
 
         % Generate Guided Random Solution 
         pop(i).Chromosome = initialPopulation(VarMin, VarMax, SectionCentres, numCams);
 
         % Evaluate Solution
         pop(i).Cost = CostFunction(pop(i).Chromosome, specs);
-
-        % Compare Solution to Best Solution Ever found 
-        if pop(i).Cost < bestsol.Cost
-            bestsol = pop(i);
-        end 
+        costs(i) = pop(i).Cost;
     end
+    % Find initial best Solution
+    [minCost, minIdx] = min(costs);
+    if minCost < bestsol.Cost
+        bestsol = pop(minIdx);
+    end 
 
     % Best Cost of Iterations -> record of best cost after each generation 
     bestcost = nan(MaxIt,1);
@@ -67,7 +63,7 @@ function out = RunGA(problem, params, specs)
 
         %Crossover 
         for k = 1:nC/2
-
+            
             % Select Parents
             p1 = pop(RouletteWheelSelection(probs));
             p2 = pop(RouletteWheelSelection(probs));
@@ -84,7 +80,8 @@ function out = RunGA(problem, params, specs)
         for l = 1:nC 
 
             % Perform Mutation
-            popc(l).Chromosome = Mutate(popc(1).Chromosome, mu, sigma);
+            adaptive_mu = mu* exp(-it/Maxit); % Decrease mutation rate as convergence improves
+            popc(l).Chromosome = Mutate(popc(1).Chromosome, adaptive_mu, sigma);
 
             % Check for variable bounds -> all variables must be greater than varMin
             % and less than varMax
@@ -93,11 +90,12 @@ function out = RunGA(problem, params, specs)
 
             % Evaluation 
             popc(l).Cost = CostFunction(popc(l).Chromosome, specs);
-
-            % Compare Solution to Best Solution Ever Found 
-            if popc(l).Cost < bestsol.Cost
-                bestsol = pop(l);
-            end
+        end
+        
+        % Find best in offspring
+        [minOffspringCost, minOffspringIdx] = min([popc.Cost]);
+        if minOffspringCost< bestsol.Cost
+            bestsol = popc(minOffspringIdx);
         end
 
         % Merge and Sort Populations

@@ -1,13 +1,14 @@
-function tf = isInsidePlanes(x, planes, tol, visibleIdx)
+function tf = isInsidePlanes(x, planes, tol, numVisible)
 %UNTITLED6 Summary of this function goes here
 %   Detailed explanation goes here
-    for i= 1:numel(visibleIdx)
-        nVecs = planes{visibleIdx(i)}(1:3,:); %normals stacked
-        dVals = planes{visibleIdx(i)}(4, :); 
+    for i= 1:numVisible
+        nVecs = planes{i}(1:3,:); %normals stacked
+        dVals = planes{i}(4, :); 
+
         dotProd = nVecs' *x(:);
         if all(dotProd-dVals' < tol) %Returns false if less  than twiddle factor
             tf = false;
-            return
+            return;
         end
     end
     tf = true;
