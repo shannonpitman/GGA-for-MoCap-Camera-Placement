@@ -67,7 +67,6 @@ params.sigma = 00.1;
 out = RunGA(problem, params, specs);
 
 %% Results 
-
 figure;
 %plot(out.bestcost, 'LineWidth',2);
 semilogy(out.bestcost, 'LineWidth',2); % y axis has logarithmic scale and x-axis is linear 

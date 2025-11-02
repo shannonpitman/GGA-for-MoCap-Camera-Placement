@@ -80,8 +80,8 @@ function out = RunGA(problem, params, specs)
         for l = 1:nC 
 
             % Perform Mutation
-            adaptive_mu = mu* exp(-it/Maxit); % Decrease mutation rate as convergence improves
-            popc(l).Chromosome = Mutate(popc(1).Chromosome, adaptive_mu, sigma);
+            % adaptive_mu = mu* exp(-it/MaxIt); % Decrease mutation rate as convergence improves
+            popc(l).Chromosome = Mutate(popc(1).Chromosome, mu, sigma);
 
             % Check for variable bounds -> all variables must be greater than varMin
             % and less than varMax
