@@ -26,15 +26,13 @@ ny = ceil(numSections /nx); %number of divisions in y direction of grid
 x_div = linspace(flight_envelope(1,1), flight_envelope(1,2), nx+1);
 y_div = linspace(flight_envelope(2,1), flight_envelope(2,2), ny+1);
 z_mid = mean(flight_envelope(3,:)); %mid-height
+
 count = 1;
 section_centres = zeros(numSections,3);
 for i = 1:length(x_div)-1
     for j = 1:length(y_div)-1
         if count <= numSections
-            cx = mean([x_div(i), x_div(i+1)]);
-            cy = mean([y_div(j), y_div(j+1)]);
-            cz = z_mid;
-            section_centres(count,:) = [cx, cy, cz];
+            section_centres(count,:) = [(x_div(i) + x_div(i+1))/2, (y_div(j)+ y_div(j+1))/2, z_mid];
             count = count+1;
         end
     end
@@ -56,7 +54,6 @@ problem.nVar = 6* specs.Cams;
 
 params.MaxIt = 60;
 params.nPop = 300;
-
 params.beta = 1;
 params.pC = 1;
 params.gamma = 0.1;
@@ -64,40 +61,99 @@ params.mu = 0.02; %probability of mutation
 params.sigma = 00.1;
 
 %% Run GA
+tic; % start timer
 out = RunGA(problem, params, specs);
+elapsedTime = toc; % end timer
 
 %% Results 
-figure;
-%plot(out.bestcost, 'LineWidth',2);
-semilogy(out.bestcost, 'LineWidth',2); % y axis has logarithmic scale and x-axis is linear 
-xlabel('Iterations');
-ylabel('Best Cost');
-title('Guided Genetic Algorithm Best Cost of Generation')
-grid on;
+currentDateTime = datetime('now');
+dateTimeStr = string(currentDateTime, 'yyyyMMdd_HHmmSS');
+filename = sprintf('%dCams_Run_%s.mat', specs.Cams, dateTimeStr);
 
-cameras = cell(specs.Cams,1);
+% Prepare data to save
+saveData.BestSolution = out.bestsol;
+saveData.BestCost = out.bestsol.Cost;
+saveData.CameraConfiguration = reshape(out.bestsol.Chromosome, 6, specs.Cams)';
+saveData.Specifications = specs;
+saveData.GAParams = params;
+saveData.ConvergenceHistory = out.bestcost;
+saveData.ElapsedTime = elapsedTime;
+saveData.Timestamp = currentDateTime;
+
+% Save camera positions and orientations (best solution configuaratrion)
 for i = 1:specs.Cams
     chromStartIdx = (i-1)*6+1;
     chromEndIdx = i*6;
-    camPositions = out.bestsol.Chromosome(chromStartIdx: chromStartIdx+2);
-    camOrientations = out.bestsol.Chromosome(chromEndIdx-2: chromEndIdx);
-    
-    T = se3(eul2rotm(camOrientations, "XYZ"), camPositions); %camera to world cTw
-    cameras{i} = CentralCamera(name="cam"+i, pose=T );
+    saveData.Cameras(i).Position = out.bestsol.Chromosome(chromStartIdx:chromStartIdx+2);
+    saveData.Cameras(i).Orientation = out.bestsol.Chromosome(chromEndIdx-2:chromEndIdx);
+    saveData.Cameras(i).OrientationDegrees = rad2deg(saveData.Cameras(i).Orientation);
 end
-cam1 = cameras{1};
-cam2 = cameras{2};
-cam3 = cameras{3};
-cam4 = cameras{4};
-cam5 = cameras{5};
+% Save to MAT file
+save(filename, 'saveData');
+fprintf('\n Optimization Complete :>\n');
+fprintf('Results saved to: %s\n', filename);
+fprintf('Best Cost: %.6f\n', saveData.BestCost);
+fprintf('Computation Time: %.2f seconds\n', elapsedTime);
 
-figure;
+% Also save a human-readable text summary
+txtFilename = sprintf('%dCams_Run_%s.txt', specs.Cams, dateTimeStr);
+fid = fopen(txtFilename, 'w');
+fprintf(fid, 'Genetic Algorithm Camera Placement Results\n');
+fprintf(fid, '==========================================\n\n');
+fprintf(fid, 'Timestamp: %s\n', char(currentDateTime));
+fprintf(fid, 'Number of Cameras: %d\n', specs.Cams);
+fprintf(fid, 'Best Cost (Uncertainty): %.6f\n', saveData.BestCost);
+fprintf(fid, 'Computation Time: %.2f seconds\n\n', elapsedTime);
+
+fprintf(fid, 'Camera Configurations:\n');
+fprintf(fid, '---------------------\n');
+for i = 1:specs.Cams
+    fprintf(fid, '\nCamera %d:\n', i);
+    fprintf(fid, '  Position (m): [%.3f, %.3f, %.3f]\n', saveData.Cameras(i).Position);
+    fprintf(fid, '  Orientation (rad): [%.3f, %.3f, %.3f]\n', saveData.Cameras(i).Orientation);
+    fprintf(fid, '  Orientation (deg): [%.1f, %.1f, %.1f]\n', saveData.Cameras(i).OrientationDegrees);
+end
+
+fclose(fid);
+fprintf('Summary saved to: %s\n', txtFilename);
+
+
+figure('Name', 'GA Convergence', 'Position', [100, 100, 800, 600]);
+semilogy(out.bestcost, 'LineWidth', 2); % y axis has logarithmic scale and x-axis is linear 
+xlabel('Iterations');
+ylabel('Best Cost (logarithmic)');
+title(sprintf('GA Convergence - %d Cameras', specs.Cams))
+grid on;
+% convergence statistics
+text(0.6*params.MaxIt, max(out.bestcost)*0.5, sprintf('Final Cost: %.4f\nTime: %.1fs', saveData.BestCost, elapsedTime),'FontSize', 10, 'BackgroundColor', 'w', 'EdgeColor', 'k');
+
+plotFilename = sprintf('%dCams_Run_%s_convergence.png', specs.Cams, dateTimeStr);
+saveas(gcf, plotFilename);
+fprintf('Convergence plot saved to: %s\n', plotFilename);
+
+% Camera Visualisation
+cameras = cell(specs.Cams, 1);
+for i = 1:specs.Cams
+    T = se3(eul2rotm(saveData.Cameras(i).Orientation, "XYZ"), saveData.Cameras(i).Position);
+    cameras{i} = CentralCamera(name="cam"+i, pose=T);
+end
+
+figure('Name', 'Camera Configuration', 'Position', [950, 100, 800, 600]);
 hold on
-cam1.plot_camera('label', scale = 0.5)
-cam2.plot_camera('label', scale = 0.5)
-cam3.plot_camera('label', scale = 0.5)
-cam4.plot_camera('label', scale = 0.5)
-cam5.plot_camera('label', scale = 0.5)
+
+% Plot cameras
+for i = 1:specs.Cams
+    cameras{i}.plot_camera('label', scale = 0.5)
+end
+
 axis('equal')
 grid('on')
-hold off;
+xlabel('X (m)')
+ylabel('Y (m)')
+zlabel('Z (m)')
+title(sprintf('Optimal Camera Placement - Cost: %.4f', saveData.BestCost))
+view(45, 30)
+hold off
+
+cameraPlotFilename = sprintf('%dCams_Run_%s_cameras.png', specs.Cams, dateTimeStr);
+saveas(gcf, cameraPlotFilename); %saves as png
