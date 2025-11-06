@@ -1,4 +1,4 @@
-function errorVolume = resUncertainty(cameraChromosome, specs)
+function [errorVolume, colourPoint] = resUncertainty(cameraChromosome, specs)
 %Computes total uncertainty due to image quantisation over a 3D target
 %Space for a given chromosome (camera arrangement) 
     numCams = specs.Cams;
@@ -12,6 +12,7 @@ function errorVolume = resUncertainty(cameraChromosome, specs)
     TargetSpace = specs.Target;
     
     cameras = cell(numCams,1);
+    
     
     adjacentSurfaces = [1 2; 2 3; 3 4; 4 1];
     du = 0.5; %pixels
@@ -30,12 +31,13 @@ function errorVolume = resUncertainty(cameraChromosome, specs)
     end    
         
     numPoints = size(TargetSpace,1);
+    colourPoint= zeros(numPoints,3);
     uncertainties = zeros(numPoints,1);
     
     parfor p =1:numPoints
         point = TargetSpace(p,:);
-        uncertainties(p) = computePointUncertainty(point, cameras, numCams, resolution, adjacentSurfaces, du,dv, penaltyUncertainty, w2)
+        [uncertainties(p), colourPoint(p,:)] = computePointUncertainty(point, cameras, numCams, resolution, adjacentSurfaces, du,dv, penaltyUncertainty, w2)
     end
-    
+
     errorVolume = mean(uncertainties);
 end

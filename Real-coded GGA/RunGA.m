@@ -21,6 +21,7 @@ function out = RunGA(problem, params, specs)
     % Template for Empty Individuals
     empty_individual.Chromosome = []; %chromosome 
     empty_individual.Cost = [];
+    empty_individual.Colours = [];
 
     % Best Solution Ever Found 
     bestsol.Cost = inf;
@@ -28,6 +29,7 @@ function out = RunGA(problem, params, specs)
     % Initialization 
     pop = repmat(empty_individual, nPop, 1);
     costs = zeros(nPop,1);
+    colours = zeros(nPop,3);
 
     parfor i = 1:nPop
 
@@ -35,7 +37,7 @@ function out = RunGA(problem, params, specs)
         pop(i).Chromosome = initialPopulation(VarMin, VarMax, SectionCentres, numCams);
 
         % Evaluate Solution
-        pop(i).Cost = CostFunction(pop(i).Chromosome, specs);
+        [pop(i).Cost, pop(i).Colour] = CostFunction(pop(i).Chromosome, specs);
         costs(i) = pop(i).Cost;
     end
     % Find initial best Solution
@@ -89,7 +91,7 @@ function out = RunGA(problem, params, specs)
             popc(l).Chromosome = min(popc(l).Chromosome, VarMax);
 
             % Evaluation 
-            popc(l).Cost = CostFunction(popc(l).Chromosome, specs);
+            [popc(l).Cost, popc(l).Colour] = CostFunction(popc(l).Chromosome, specs);
         end
         
         % Find best in offspring
