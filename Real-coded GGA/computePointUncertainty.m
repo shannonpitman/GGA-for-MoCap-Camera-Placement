@@ -1,4 +1,4 @@
-function [uncertainty, colourPoint] = computePointUncertainty(point, cameras, numCams, resolution, adjacentSurfaces, du,dv, penaltyUncertainty, w2)
+function uncertainty = computePointUncertainty(point, cameras, numCams, resolution, adjacentSurfaces, du,dv, penaltyUncertainty, w2)
     uv = zeros(numCams,2);
     planes = cell(1, numCams);
     
@@ -13,11 +13,9 @@ function [uncertainty, colourPoint] = computePointUncertainty(point, cameras, nu
     %early exit if trinagulation is not possible
     if numVisible == 0 
         uncertainty = penaltyUncertainty; %point is not visible in any cameras FOV
-        colourPoint = [1,0,0]; %red 
         return;
     elseif numVisible== 1 %if at least one camera sees the point
         uncertainty = 0.5*penaltyUncertainty;
-        colourPoint = [0,1,1]; %cyan
         return;
     end
 
@@ -52,6 +50,5 @@ function [uncertainty, colourPoint] = computePointUncertainty(point, cameras, nu
     c = abs(axes_opt(3));
 
     uncertainty = 4/3*pi*a*b*c;%m^3
-    colourPoint = [0,1,0]; %green 
 end
 

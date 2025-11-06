@@ -157,3 +157,5 @@ hold off
 
 cameraPlotFilename = sprintf('%dCams_Run_%s_cameras.png', specs.Cams, dateTimeStr);
 saveas(gcf, cameraPlotFilename); %saves as png
+
+%Animation Plot 
