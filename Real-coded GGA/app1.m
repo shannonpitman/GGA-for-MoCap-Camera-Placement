@@ -3,7 +3,7 @@ clear; % clear workspace
 close all;
 
 %% Design Specifications
-specs.Cams = 8; %Number of Cameras
+specs.Cams = 4; %Number of Cameras
 specs.Resolution = [640 480]; %VGA resolution
 specs.PixelSize = 1.4e-6; %Square Pixel Size
 specs.PrincipalPoint = [specs.Resolution(1)/2, specs.Resolution(2)/2];
@@ -41,8 +41,28 @@ end
 specs.SectionCentres = section_centres;
 
 %% Problem Definition
+% Choose cost function:
+% 1 = Resolution Uncertainty only
+% 2 = Dynamic Occlusion only  
+% 3 = Combined (weighted)
 
-problem.CostFunction = @resUncertainty; % Objective function 
+costFunctionType = 2; % Change this to select cost function
+
+%Weights for combined cost function (only used if costFunctionType = 3)
+%Weights need to sum to 1
+specs.WeightUncertainty = 0.7; % Resolution uncertainty weight
+specs.WeightOcclusion = 0.3; % Dynamic occlusion weight
+
+% Select cost function
+switch costFunctionType
+    case 1
+        problem.CostFunction = @resUncertainty;
+    case 2
+        problem.CostFunction = @dynamicOcclusion;
+    case 3
+        problem.CostFunction = @combinedCostFunction;
+end
+
 %Bounds for the 6 design variables (search space) [Xc, Yc, Zc, alpha, beta, gamma]
 cameraLowerBounds = [-5 -4.5  0   -pi -pi -pi];
 cameraUpperBounds = [ 5  4.5  4.8  pi  pi  pi];
@@ -159,3 +179,74 @@ cameraPlotFilename = sprintf('%dCams_Run_%s_cameras.png', specs.Cams, dateTimeSt
 saveas(gcf, cameraPlotFilename); %saves as png
 
 %Animation Plot 
+% Create animation of evolving camera configurations
+animateFig = figure('Name', 'Camera Configuration Evolution');
+for frameIdx = params.MaxIt
+    hold on;
+    chromosome = out.bestChromosomes(frameIdx, :);
+    % Update camera positions for the next frame in the animation
+    for i = 1:specs.Cams
+        chromStartIdx = (i-1)*6+1;
+        chromEndIdx = i*6;
+        T = se3(eul2rotm(chromosome(chromEndIdx-2:chromEndIdx), "XYZ"), chromosome(chromStartIdx:chromStartIdx+2));
+        cameras{i} = CentralCamera(name="cam"+i, pose=T);
+        cameras{i}.plot_camera('label', scale = 0.5);
+    end
+    drawnow;
+    frame = getframe(animateFig);
+    im{frameIdx} = frame2im(frame);
+end
+%save animation as a gif
+% filenameAnimate = sprintf('%dEvolutionofCams_Run_%s.gif', specs.Cams, dateTimeStr);
+% for idx  = 1:params.MaxIt 
+%     [A,map] = rgb2ind(im{idx}, 256);
+%     if idx == 1
+%         imwrite(A,map,filenameAnimate, "gif", LoopCount= inf, DelayTime=1);
+%     else
+%         imwrite(A, map, filenameAnimate, "gif", 'WriteMode', 'append', 'DelayTime', 1);
+%     end
+% end
+% fprintf('Animation saved to: %s\n', filenameAnimate);
+
+%% Target Space Visualisation (Coverage)
+% out.bestsol.Chromosome = [-0.150, 3.951, 4.800, 2.489, -0.587,-1.333,...
+%                             5.000, 4.285, 1.453, 1.336, -0.873, 0.293, ...
+%                             -2.644, 4.500, 3.196, 1.876, 0.486, 0.393, ...
+%                             -2.578, -4.500, 3.623, -1.961, -0.048, 0.029, ...
+%                             5.000, 4.418, 1.525, 1.299, -0.721, -0.398, ...
+%                             -4.516, 4.500, 1.599, 1.436, 0.763, 0.645, ...
+%                             -2.751, -4.500, 2.214, -1.556, 0.484, -0.117];
+% currentDateTime = datetime('now');
+% dateTimeStr = string(currentDateTime, 'yyyyMMdd_HHmmSS');
+% saveData.BestCost = 73.73;
+% figTitle = sprintf('Camera Coverage - %d Cameras (Cost: %.4f)', specs.Cams, saveData.BestCost);
+visualizeCameraCoverage(out.bestsol.Chromosome, specs, figTitle);
+
+coveragePlotFilename = sprintf('%dCams_Run_%s_coverage.png', specs.Cams, dateTimeStr);
+saveas(gcf, coveragePlotFilename);
+fprintf('Coverage plot saved to: %s\n', coveragePlotFilename);
+
+%% Comparison to OpTitrack setup 
+cam1Pos = [-4.31837, 3.16485, -1.40049];
+cam1Orientation = [];
+cam2Pos = [-4.3058, 3.34875, -4.15416];
+cam2Orientation = [];
+cam3Pos = [4.41376, 3.32004, -4.03407];
+cam3Orientation =[];
+cam4Pos = [4.38502, 3.27992, -1.30325];
+cam4Orientation = [];
+cam5Pos = [4.36588, 3.21471, 1.41838];
+cam5Orientation = [];
+cam6Pos = [4.33365, 3.33527, 4.16674];
+cam6Orientation = [];
+cam7Pos = [-4.39346, 3.30429, 4.03519];
+cam7Orientation = [];
+
+OptiTrackChromosome = [cam1,cam2,cam3,cam4,cam5,cam6,cam7]
+OptiTrackCost = problem.CostFunction(OptiTrackChromosome, specs)
+figTitleOptiTrack = sprintf('OptiTrack Camera Coverage - %d Cameras (Cost: %.4f)', specs.Cams, saveData.BestCost);
+visualizeCameraCoverage(OptiTrackChromosome, specs, figTitle);
+
+coveragePlotFilename = sprintf('%dOptiTrackCams_Run_%s_coverage.png', specs.Cams, dateTimeStr);
+saveas(gcf, coveragePlotFilename);
+fprintf('Coverage plot saved to: %s\n', coveragePlotFilename);
