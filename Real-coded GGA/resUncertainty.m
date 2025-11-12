@@ -11,24 +11,14 @@ function errorVolume = resUncertainty(cameraChromosome, specs)
     PrincipalPoint = specs.PrincipalPoint;
     TargetSpace = specs.Target;
     
-    cameras = cell(numCams,1);
-    
     
     adjacentSurfaces = [1 2; 2 3; 3 4; 4 1];
     du = 0.5; %pixels
     dv = 0.5; %pixels
     penaltyUncertainty = 100; %high uncertainty for points camera cannot see 
     
-    %Compute Camera Transforms
-    for i = 1:numCams
-        chromStartIdx = (i-1)*6+1;
-        chromEndIdx = i*6;
-        camPositions = cameraChromosome(chromStartIdx: chromStartIdx+2);
-        camOrientations = cameraChromosome(chromEndIdx-2: chromEndIdx);
-    
-        T = se3(eul2rotm(camOrientations, "XYZ"), camPositions); %camera to world cTw
-        cameras{i} = CentralCamera(name="cam"+i,resolution= resolution, pixel= pixelSize, focal= focalLength, pose=T, center = PrincipalPoint); 
-    end    
+    %Compute Camera Transforms -> RVC3 Central Camera 
+    cameras = setupCameras(cameraChromosome, numCams, resolution, pixelSize, focalLength, PrincipalPoint);    
         
     numPoints = size(TargetSpace,1);
     uncertainties = zeros(numPoints,1);

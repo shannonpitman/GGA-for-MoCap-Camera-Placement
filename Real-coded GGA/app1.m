@@ -3,7 +3,7 @@ clear; % clear workspace
 close all;
 
 %% Design Specifications
-specs.Cams = 4; %Number of Cameras
+specs.Cams = 7; %Number of Cameras
 specs.Resolution = [640 480]; %VGA resolution
 specs.PixelSize = 1.4e-6; %Square Pixel Size
 specs.PrincipalPoint = [specs.Resolution(1)/2, specs.Resolution(2)/2];
@@ -11,7 +11,7 @@ specs.Focal = 0.0028; %focal length [m]
 
 % Target space is an uniformly discretised grid within the flight volume 
 % This workspace volume matches the available dimensions of the MS.G flight envelope 
-flight_envelope = [-4 4; -4 4; 0 4.5]; %m
+flight_envelope = [-3 3; -3 3; 0 2]; %m -> desired space: [-4 4; -4 4; 0 4.5]
 spacing = 0.5;
 x_marker = flight_envelope(1,1):spacing:flight_envelope(1,2);
 y_marker = flight_envelope(2,1):spacing:flight_envelope(2,2);
@@ -46,7 +46,7 @@ specs.SectionCentres = section_centres;
 % 2 = Dynamic Occlusion only  
 % 3 = Combined (weighted)
 
-costFunctionType = 2; % Change this to select cost function
+costFunctionType = 1; % Change this to select cost function
 
 %Weights for combined cost function (only used if costFunctionType = 3)
 %Weights need to sum to 1
@@ -71,13 +71,12 @@ problem.VarMax = repmat(cameraUpperBounds,1,specs.Cams);
 problem.nVar = 6* specs.Cams;
 
 %% GA Parameters
-
 params.MaxIt = 60;
 params.nPop = 300;
 params.beta = 1;
 params.pC = 1;
 params.gamma = 0.1;
-params.mu = 0.02; %probability of mutation
+params.mu = 0.05; %probability of mutation
 params.sigma = 00.1;
 
 %% Run GA
@@ -219,34 +218,9 @@ end
 % currentDateTime = datetime('now');
 % dateTimeStr = string(currentDateTime, 'yyyyMMdd_HHmmSS');
 % saveData.BestCost = 73.73;
-% figTitle = sprintf('Camera Coverage - %d Cameras (Cost: %.4f)', specs.Cams, saveData.BestCost);
+figTitle = sprintf('Camera Coverage - %d Cameras (Cost: %.4f)', specs.Cams, saveData.BestCost);
 visualizeCameraCoverage(out.bestsol.Chromosome, specs, figTitle);
 
 coveragePlotFilename = sprintf('%dCams_Run_%s_coverage.png', specs.Cams, dateTimeStr);
-saveas(gcf, coveragePlotFilename);
-fprintf('Coverage plot saved to: %s\n', coveragePlotFilename);
-
-%% Comparison to OpTitrack setup 
-cam1Pos = [-4.31837, 3.16485, -1.40049];
-cam1Orientation = [];
-cam2Pos = [-4.3058, 3.34875, -4.15416];
-cam2Orientation = [];
-cam3Pos = [4.41376, 3.32004, -4.03407];
-cam3Orientation =[];
-cam4Pos = [4.38502, 3.27992, -1.30325];
-cam4Orientation = [];
-cam5Pos = [4.36588, 3.21471, 1.41838];
-cam5Orientation = [];
-cam6Pos = [4.33365, 3.33527, 4.16674];
-cam6Orientation = [];
-cam7Pos = [-4.39346, 3.30429, 4.03519];
-cam7Orientation = [];
-
-OptiTrackChromosome = [cam1,cam2,cam3,cam4,cam5,cam6,cam7]
-OptiTrackCost = problem.CostFunction(OptiTrackChromosome, specs)
-figTitleOptiTrack = sprintf('OptiTrack Camera Coverage - %d Cameras (Cost: %.4f)', specs.Cams, saveData.BestCost);
-visualizeCameraCoverage(OptiTrackChromosome, specs, figTitle);
-
-coveragePlotFilename = sprintf('%dOptiTrackCams_Run_%s_coverage.png', specs.Cams, dateTimeStr);
 saveas(gcf, coveragePlotFilename);
 fprintf('Coverage plot saved to: %s\n', coveragePlotFilename);
