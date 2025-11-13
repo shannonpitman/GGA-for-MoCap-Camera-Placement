@@ -1,8 +1,8 @@
-function visualizeCameraCoverage(cameraChromosome, specs, figTitle)
+function [coverageStats]= visualizeCameraCoverage(cameraChromosome, specs, figTitle)
 %Visualizes camera coverage of target points with color coding:
-% Green: No cameras see the point
-% Magenta: Only one camera sees the point  
-% Red: Two or more cameras see the point
+% Red: No cameras see the point
+% Cyan: Only one camera sees the point  
+% Green: Two or more cameras see the point
 
     numCams = specs.Cams;
     
@@ -13,18 +13,7 @@ function visualizeCameraCoverage(cameraChromosome, specs, figTitle)
     PrincipalPoint = specs.PrincipalPoint;
     TargetSpace = specs.Target;
     
-    cameras = cell(numCams,1);
-    
-    %Compute Camera Transforms
-    for i = 1:numCams
-        chromStartIdx = (i-1)*6+1;
-        chromEndIdx = i*6;
-        camPositions = cameraChromosome(chromStartIdx: chromStartIdx+2);
-        camOrientations = cameraChromosome(chromEndIdx-2: chromEndIdx);
-    
-        T = se3(eul2rotm(camOrientations, "XYZ"), camPositions);
-        cameras{i} = CentralCamera(name="cam"+i, resolution=resolution, pixel=pixelSize, focal=focalLength, pose=T, center=PrincipalPoint); 
-    end
+    cameras = setupCameras(cameraChromosome, numCams, resolution, pixelSize, focalLength, PrincipalPoint);
     
     numPoints = size(TargetSpace,1);
     cameraCoverage = zeros(numPoints,1);
@@ -47,16 +36,28 @@ function visualizeCameraCoverage(cameraChromosome, specs, figTitle)
         
         cameraCoverage(p) = visibleCount;
     end
-    
+    % Calculate statistics
+    coverageStats.numPoints = numPoints;
+    coverageStats.zeroCameras = sum(cameraCoverage == 0);
+    coverageStats.oneCamera = sum(cameraCoverage == 1);
+    coverageStats.twoPlusCameras = sum(cameraCoverage >= 2);
+    coverageStats.zeroCamerasPercent = 100*coverageStats.zeroCameras/numPoints;
+    coverageStats.oneCameraPercent = 100*coverageStats.oneCamera/numPoints;
+    coverageStats.twoPlusCamerasPercent = 100*coverageStats.twoPlusCameras/numPoints;
+    coverageStats.avgCoverage = mean(cameraCoverage);
+    coverageStats.maxCoverage = max(cameraCoverage);
+    coverageStats.minCoverage = min(cameraCoverage);
+    coverageStats.medianCoverage = median(cameraCoverage);
+
     % Colour map based on coverage
     colors = zeros(numPoints, 3);
     parfor p = 1:numPoints
         if cameraCoverage(p) == 0
-            colors(p,:) = [0, 1, 0]; % Green: no cameras
+            colors(p,:) = [1, 0, 0]; % Red:  no cameras
         elseif cameraCoverage(p) == 1
-            colors(p,:) = [1, 0, 1]; % Magenta: one camera
+            colors(p,:) = [0, 1, 1]; % Cyan: one camera
         else
-            colors(p,:) = [1, 0, 0]; % Red: two or more cameras
+            colors(p,:) = [0, 1, 0]; % Green: two or more cameras
         end
     end
     
@@ -98,6 +99,9 @@ function visualizeCameraCoverage(cameraChromosome, specs, figTitle)
     % Calculate average coverage
     avgCoverage = mean(cameraCoverage);
     fprintf('Average camera coverage: %.2f cameras per point\n', avgCoverage);
-    
+    fprintf('Maximum camera coverage: %d cameras per point\n', coverageStats.maxCoverage);
+    fprintf('Minimum camera coverage: %d cameras per point\n', coverageStats.minCoverage);
+    fprintf('Median camera coverage: %.2f cameras per point\n', coverageStats.medianCoverage);
     hold off;
+    
 end

@@ -7,7 +7,10 @@ function Q = calculatePointOcclusion(visibleCams, camViewVectors, minAngle, maxA
     %Need at least 2 cameras to triangulate
     if numVisible < 2
         Q = 360; % Maximum error
+        if numVisible < 1
+            Q = Q + 360;  %Further penalty if no cameras see the point (based on paper) 
         return;
+        end
     end
     
     horizViewVectors = camViewVectors(1:2, :); % Project view vectors onto horizontal plane

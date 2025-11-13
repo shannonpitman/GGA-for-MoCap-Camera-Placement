@@ -47,6 +47,8 @@ function out = RunGA(problem, params, specs)
     % Best Cost of Iterations -> record of best cost after each generation 
     bestcost = nan(MaxIt,1);
     bestChromosomes = nan(MaxIt, nVar);
+    avgcost = nan(MaxIt,1); %average cost of the entire population 
+    topTenAvgCost = nan(MaxIt,1); %average cost of the top 10 solutions 
 
     % Main Loop
     for it = 1:MaxIt
@@ -109,9 +111,14 @@ function out = RunGA(problem, params, specs)
         % Update Best Cost of Iteration
         bestcost(it) = bestsol.Cost;
         bestChromosomes(it,:) = bestsol.Chromosome;
+
+        % Calculate Average Costs
+        allCosts = [pop.Cost];
+        avgcost(it) = mean(allCosts);
+        topTenAvgCost(it) = mean(allCosts(1:10));
         
         % Display Iteration Information
-        disp(['Iteration ' num2str(it) ': Best Cost = ', num2str(bestcost(it))]);
+        disp(['Iteration ' num2str(it) ': Best Cost = ', num2str(bestcost(it)), '  Avg Cost = ', num2str(avgcost(it))]);
 
     end
 
@@ -120,4 +127,6 @@ function out = RunGA(problem, params, specs)
     out.bestsol = bestsol;
     out.bestcost = bestcost;
     out.bestChromosomes = bestChromosomes;
+    out.avgcost = avgcost;
+    out.topTenAvgCost = topTenAvgCost;
 end 
