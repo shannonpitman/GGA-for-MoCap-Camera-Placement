@@ -2,10 +2,10 @@ clc; %clear screen
 clear; % clear workspace
 close all;
 
-%% Design Specifications
 specs.Cams = 7; %Number of Cameras
 specs.Resolution = [640 480]; %VGA resolution
 specs.PixelSize = 1.4e-6; %Square Pixel Size
+
 specs.PrincipalPoint = [specs.Resolution(1)/2, specs.Resolution(2)/2];
 specs.Focal = 0.0028; %focal length [m]
 
@@ -46,7 +46,7 @@ specs.SectionCentres = section_centres;
 % 2 = Dynamic Occlusion only  
 % 3 = Combined (weighted)
 
-costFunctionType = 1; % Change this to select cost function
+costFunctionType = 3; % Change this to select cost function
 
 %Weights for combined cost function (only used if costFunctionType = 3)
 %Weights need to sum to 1
@@ -89,17 +89,28 @@ currentDateTime = datetime('now');
 dateTimeStr = string(currentDateTime, 'yyyyMMdd_HHmmSS');
 filename = sprintf('%dCams_Run_%s.mat', specs.Cams, dateTimeStr);
 
-% Prepare data to save
+% Data to save
 saveData.BestSolution = out.bestsol;
 saveData.BestCost = out.bestsol.Cost;
 saveData.CameraConfiguration = reshape(out.bestsol.Chromosome, 6, specs.Cams)';
 saveData.Specifications = specs;
 saveData.GAParams = params;
 saveData.ConvergenceHistory = out.bestcost;
+saveData.AvgCostHistory = out.avgcost;
+saveData.TopTenAvgCostHistory = out.topTenAvgCost;
 saveData.ElapsedTime = elapsedTime;
 saveData.Timestamp = currentDateTime;
 
-% Save camera positions and orientations (best solution configuaratrion)
+%Coverage statistics
+figTitle = sprintf('Camera Coverage - %d Cameras (Cost: %.4f)', specs.Cams, saveData.BestCost);
+[coverageStats] = visualizeCameraCoverage(out.bestsol.Chromosome, specs, figTitle);
+
+coveragePlotFilename = sprintf('%dCams_Run_%s_coverage.png', specs.Cams, dateTimeStr);
+saveas(gcf, coveragePlotFilename);
+fprintf('Coverage plot saved to: %s\n', coveragePlotFilename);
+saveData.CoverageStats = coverageStats;
+
+% Best solution configuration 
 for i = 1:specs.Cams
     chromStartIdx = (i-1)*6+1;
     chromEndIdx = i*6;
@@ -107,22 +118,29 @@ for i = 1:specs.Cams
     saveData.Cameras(i).Orientation = out.bestsol.Chromosome(chromEndIdx-2:chromEndIdx);
     saveData.Cameras(i).OrientationDegrees = rad2deg(saveData.Cameras(i).Orientation);
 end
+
+
 % Save to MAT file
 save(filename, 'saveData');
 fprintf('\n Optimization Complete :>\n');
 fprintf('Results saved to: %s\n', filename);
 fprintf('Best Cost: %.6f\n', saveData.BestCost);
-fprintf('Computation Time: %.2f seconds\n', elapsedTime);
+fprintf('Computation Time: %.2f hours\n', elapsedTime/3600);
 
-% Also save a human-readable text summary
+% Text summary
 txtFilename = sprintf('%dCams_Run_%s.txt', specs.Cams, dateTimeStr);
 fid = fopen(txtFilename, 'w');
 fprintf(fid, 'Genetic Algorithm Camera Placement Results\n');
 fprintf(fid, '==========================================\n\n');
 fprintf(fid, 'Timestamp: %s\n', char(currentDateTime));
 fprintf(fid, 'Number of Cameras: %d\n', specs.Cams);
-fprintf(fid, 'Best Cost (Uncertainty): %.6f\n', saveData.BestCost);
-fprintf(fid, 'Computation Time: %.2f seconds\n\n', elapsedTime);
+fprintf(fid, 'Best Cost (Cost Function %d): %.6f\n', costFunctionType, saveData.BestCost);
+fprintf(fid, 'Workspace Size: [%.1f %.1f; %.1f %.1f; %.1f %.1f] m\n', ...
+    flight_envelope(1,1), flight_envelope(1,2), ...
+    flight_envelope(2,1), flight_envelope(2,2), ...
+    flight_envelope(3,1), flight_envelope(3,2));
+fprintf(fid, 'Computation Time: %.2f seconds\n', elapsedTime);
+fprintf(fid, '\n==========================================\n\n');
 
 fprintf(fid, 'Camera Configurations:\n');
 fprintf(fid, '---------------------\n');
@@ -133,18 +151,56 @@ for i = 1:specs.Cams
     fprintf(fid, '  Orientation (deg): [%.1f, %.1f, %.1f]\n', saveData.Cameras(i).OrientationDegrees);
 end
 
+fprintf(fid, '\n==========================================\n\n');
+fprintf(fid, 'Camera Coverage Statistics:\n');
+fprintf(fid, '---------------------------\n');
+fprintf(fid, 'Total target points: %d\n', coverageStats.numPoints);
+fprintf(fid, 'Points with 0 cameras: %d (%.1f%%)\n', ...
+    coverageStats.zeroCameras, coverageStats.zeroCamerasPercent);
+fprintf(fid, 'Points with 1 camera: %d (%.1f%%)\n', ...
+    coverageStats.oneCamera, coverageStats.oneCameraPercent);
+fprintf(fid, 'Points with 2+ cameras: %d (%.1f%%)\n', ...
+    coverageStats.twoPlusCameras, coverageStats.twoPlusCamerasPercent);
+fprintf(fid, '\nCoverage Metrics:\n');
+fprintf(fid, '  Average coverage: %.2f cameras per point\n', coverageStats.avgCoverage);
+fprintf(fid, '  Maximum coverage: %d cameras per point\n', coverageStats.maxCoverage);
+fprintf(fid, '  Minimum coverage: %d cameras per point\n', coverageStats.minCoverage);
+fprintf(fid, '  Median coverage: %.2f cameras per point\n', coverageStats.medianCoverage);
+
 fclose(fid);
 fprintf('Summary saved to: %s\n', txtFilename);
 
+% Convergence Plot with Subplots
+figure('Name', 'GA Convergence Analysis', 'Position', [100, 100, 1200, 500]);
 
-figure('Name', 'GA Convergence', 'Position', [100, 100, 800, 600]);
-semilogy(out.bestcost, 'LineWidth', 2); % y axis has logarithmic scale and x-axis is linear 
+% Subplot 1: Best Cost Convergence
+subplot(1, 2, 1);
+semilogy(out.bestcost, 'LineWidth', 2, 'Color', [0 0.4470 0.7410]); 
+hold on;
+grid on;
 xlabel('Iterations');
 ylabel('Best Cost (logarithmic)');
-title(sprintf('GA Convergence - %d Cameras', specs.Cams))
+title(sprintf('Best Cost Convergence - %d Cameras', specs.Cams));
+text(0.6*params.MaxIt, max(out.bestcost)*0.5, ...
+    sprintf('Final Cost: %.4f\nTime: %.1fs', saveData.BestCost, elapsedTime), ...
+    'FontSize', 10, 'BackgroundColor', 'w', 'EdgeColor', 'k');
+hold off;
+
+% Subplot 2: Average Cost Evolution
+subplot(1, 2, 2);
+semilogy(out.avgcost, 'LineWidth', 2, 'Color', [0.8500 0.3250 0.0980], ...
+    'DisplayName', 'Population Average'); 
+hold on;
+semilogy(out.topTenAvgCost, 'LineWidth', 2, 'Color', [0.9290 0.6940 0.1250], ...
+    'DisplayName', 'Top 10 Average');
+semilogy(out.bestcost, 'LineWidth', 1.5, 'Color', [0 0.4470 0.7410], ...
+    'LineStyle', '--', 'DisplayName', 'Best Cost');
 grid on;
-% convergence statistics
-text(0.6*params.MaxIt, max(out.bestcost)*0.5, sprintf('Final Cost: %.4f\nTime: %.1fs', saveData.BestCost, elapsedTime),'FontSize', 10, 'BackgroundColor', 'w', 'EdgeColor', 'k');
+xlabel('Iterations');
+ylabel('Cost (logarithmic)');
+title('Population Cost Evolution');
+legend('Location', 'best');
+hold off;
 
 plotFilename = sprintf('%dCams_Run_%s_convergence.png', specs.Cams, dateTimeStr);
 saveas(gcf, plotFilename);
@@ -176,8 +232,9 @@ hold off
 
 cameraPlotFilename = sprintf('%dCams_Run_%s_cameras.png', specs.Cams, dateTimeStr);
 saveas(gcf, cameraPlotFilename); %saves as png
+fprintf('Camera plot saved to: %s\n', cameraPlotFilename);
 
-%Animation Plot 
+%% Animation Plot 
 % Create animation of evolving camera configurations
 animateFig = figure('Name', 'Camera Configuration Evolution');
 for frameIdx = params.MaxIt
@@ -195,6 +252,8 @@ for frameIdx = params.MaxIt
     frame = getframe(animateFig);
     im{frameIdx} = frame2im(frame);
 end
+
+
 %save animation as a gif
 % filenameAnimate = sprintf('%dEvolutionofCams_Run_%s.gif', specs.Cams, dateTimeStr);
 % for idx  = 1:params.MaxIt 
@@ -218,9 +277,4 @@ end
 % currentDateTime = datetime('now');
 % dateTimeStr = string(currentDateTime, 'yyyyMMdd_HHmmSS');
 % saveData.BestCost = 73.73;
-figTitle = sprintf('Camera Coverage - %d Cameras (Cost: %.4f)', specs.Cams, saveData.BestCost);
-visualizeCameraCoverage(out.bestsol.Chromosome, specs, figTitle);
 
-coveragePlotFilename = sprintf('%dCams_Run_%s_coverage.png', specs.Cams, dateTimeStr);
-saveas(gcf, coveragePlotFilename);
-fprintf('Coverage plot saved to: %s\n', coveragePlotFilename);
