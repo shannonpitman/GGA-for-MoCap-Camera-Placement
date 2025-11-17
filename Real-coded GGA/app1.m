@@ -5,7 +5,6 @@ close all;
 specs.Cams = 7; %Number of Cameras
 specs.Resolution = [640 480]; %VGA resolution
 specs.PixelSize = 1.4e-6; %Square Pixel Size
-
 specs.PrincipalPoint = [specs.Resolution(1)/2, specs.Resolution(2)/2];
 specs.Focal = 0.0028; %focal length [m]
 
