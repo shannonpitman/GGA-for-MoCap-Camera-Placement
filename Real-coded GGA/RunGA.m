@@ -88,7 +88,7 @@ function out = RunGA(problem, params, specs)
             % Perform Mutation
             % adaptive_m
             % u = mu* exp(-it/MaxIt); % Decrease mutation rate as convergence improves
-            popc(l).Chromosome = Mutate(popc(1).Chromosome, mu, sigma);
+            popc(l).Chromosome = Mutate(popc(l).Chromosome, mu, sigma);
             
             % Fix poor cameras every 10 iterations or for all new offspring
             if mod(it, 5) == 0 || rand < 0.2  % 20% chance each generation
