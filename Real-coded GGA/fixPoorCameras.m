@@ -1,6 +1,6 @@
 function y = fixPoorCameras(x, specs, coverageThreshold)
     % Quick fix for cameras that see too few points
-    % coverageThreshold: minimum fraction of points a camera should see (e.g., 0.05 = 5%)
+    % coverageThreshold: minimum fraction of points a camera should see
     
     numCams = specs.Cams;
     TargetSpace = specs.Target;

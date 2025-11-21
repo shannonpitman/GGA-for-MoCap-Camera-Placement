@@ -40,7 +40,7 @@ end
 specs.SectionCentres = section_centres;
 
 %% Problem Definition
-% Choose cost function:
+% Cost function:
 % 1 = Resolution Uncertainty only
 % 2 = Dynamic Occlusion only  
 % 3 = Combined (weighted)
@@ -49,8 +49,8 @@ costFunctionType = 3; % Change this to select cost function
 
 %Weights for combined cost function (only used if costFunctionType = 3)
 %Weights need to sum to 1
-specs.WeightUncertainty = 0.7; % Resolution uncertainty weight
-specs.WeightOcclusion = 0.3; % Dynamic occlusion weight
+specs.WeightUncertainty = 0.5; % Resolution uncertainty weight
+specs.WeightOcclusion = 0.5; % Dynamic occlusion weight
 
 % Select cost function
 switch costFunctionType
@@ -99,7 +99,6 @@ saveData.AvgCostHistory = out.avgcost;
 saveData.TopTenAvgCostHistory = out.topTenAvgCost;
 saveData.ElapsedTime = elapsedTime;
 saveData.Timestamp = currentDateTime;
-
 %Coverage statistics
 figTitle = sprintf('Camera Coverage - %d Cameras (Cost: %.4f)', specs.Cams, saveData.BestCost);
 [coverageStats] = visualizeCameraCoverage(out.bestsol.Chromosome, specs, figTitle);
@@ -134,11 +133,12 @@ fprintf(fid, '==========================================\n\n');
 fprintf(fid, 'Timestamp: %s\n', char(currentDateTime));
 fprintf(fid, 'Number of Cameras: %d\n', specs.Cams);
 fprintf(fid, 'Best Cost (Cost Function %d): %.6f\n', costFunctionType, saveData.BestCost);
+fprintf(fid, 'Cost Function w/ %d ResUncertainty Weight and %d Dynamic Occlusion Weight', specs.WeightUncertainty , specs.WeightOcclusion);
 fprintf(fid, 'Workspace Size: [%.1f %.1f; %.1f %.1f; %.1f %.1f] m\n', ...
     flight_envelope(1,1), flight_envelope(1,2), ...
     flight_envelope(2,1), flight_envelope(2,2), ...
     flight_envelope(3,1), flight_envelope(3,2));
-fprintf(fid, 'Computation Time: %.2f seconds\n', elapsedTime);
+fprintf(fid, 'Computation Time: %.2f hours\n', elapsedTime/3600);
 fprintf(fid, '\n==========================================\n\n');
 
 fprintf(fid, 'Camera Configurations:\n');
@@ -181,7 +181,7 @@ xlabel('Iterations');
 ylabel('Best Cost (logarithmic)');
 title(sprintf('Best Cost Convergence - %d Cameras', specs.Cams));
 text(0.6*params.MaxIt, max(out.bestcost)*0.5, ...
-    sprintf('Final Cost: %.4f\nTime: %.1fs', saveData.BestCost, elapsedTime), ...
+    sprintf('Final Cost: %.4f\nTime: %.1fhr', saveData.BestCost, elapsedTime/3600), ...
     'FontSize', 10, 'BackgroundColor', 'w', 'EdgeColor', 'k');
 hold off;
 
@@ -233,6 +233,34 @@ cameraPlotFilename = sprintf('%dCams_Run_%s_cameras.png', specs.Cams, dateTimeSt
 saveas(gcf, cameraPlotFilename); %saves as png
 fprintf('Camera plot saved to: %s\n', cameraPlotFilename);
 
+%% Append to Master Log File
+masterLogFile = 'GA_RunsLog.mat';
+
+% Determine if warm-start was used (check if pop(1) was pre-set in RunGA)
+warmStartUsed = false; % Set this to true when you use warm-start
+
+% Create new log entry
+newLogEntry.Timestamp = currentDateTime;
+newLogEntry.NumCameras = specs.Cams;
+newLogEntry.BestCost = saveData.BestCost;
+newLogEntry.ElapsedTime = elapsedTime;
+newLogEntry.CostFunctionType = costFunctionType;
+newLogEntry.WarmStart = warmStartUsed;
+newLogEntry.GAParams = params;
+newLogEntry.RunFilename = filename;  % Reference to full results file
+
+% Load existing log or create new one
+if isfile(masterLogFile)
+    load(masterLogFile, 'runLog');
+    runLog(end+1) = newLogEntry;
+else
+    runLog = newLogEntry;
+end
+
+% Save updated log
+save(masterLogFile, 'runLog');
+fprintf('Run logged to: %s (Total runs: %d)\n', masterLogFile, length(runLog));
+
 %% Animation Plot 
 % Create animation of evolving camera configurations
 animateFig = figure('Name', 'Camera Configuration Evolution');
@@ -252,6 +280,26 @@ for frameIdx = params.MaxIt
     im{frameIdx} = frame2im(frame);
 end
 
+%%
+% View all logged runs
+viewGALog();
+
+% View only 7-camera runs
+viewGALog('NumCameras', 7);
+
+% View only warm-start runs
+viewGALog('WarmStart', true);
+
+% Plot comparison of 7-camera runs only
+plotGARuns('NumCameras', 7);
+
+% Plot only warm-start vs cold-start for resolution uncertainty
+plotGARuns('CostFunction', 3);
+
+% Compare 7-camera, resolution uncertainty, matching GA params
+plotGARuns('NumCameras', 7, 'CostFunction', 1, 'MatchParams', true);
+
+%%
 
 %save animation as a gif
 % filenameAnimate = sprintf('%dEvolutionofCams_Run_%s.gif', specs.Cams, dateTimeStr);

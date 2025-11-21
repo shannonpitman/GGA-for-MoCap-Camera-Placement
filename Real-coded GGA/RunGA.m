@@ -91,7 +91,7 @@ function out = RunGA(problem, params, specs)
             popc(l).Chromosome = Mutate(popc(1).Chromosome, mu, sigma);
             
             % Fix poor cameras every 10 iterations or for all new offspring
-            if mod(it, 10) == 0 || rand < 0.2  % 20% chance each generation
+            if mod(it, 5) == 0 || rand < 0.2  % 20% chance each generation
                 popc(l).Chromosome = fixPoorCameras(popc(l).Chromosome, specs, 0.05);
             end
 
