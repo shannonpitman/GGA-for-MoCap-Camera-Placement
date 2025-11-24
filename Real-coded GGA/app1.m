@@ -75,7 +75,7 @@ params.nPop = 300;
 params.beta = 1;
 params.pC = 1;
 params.gamma = 0.1;
-params.mu = 0.05; %probability of mutation
+params.mu = 0.1; %probability of mutation
 params.sigma = 00.1;
 
 %% Run GA
@@ -133,7 +133,7 @@ fprintf(fid, '==========================================\n\n');
 fprintf(fid, 'Timestamp: %s\n', char(currentDateTime));
 fprintf(fid, 'Number of Cameras: %d\n', specs.Cams);
 fprintf(fid, 'Best Cost (Cost Function %d): %.6f\n', costFunctionType, saveData.BestCost);
-fprintf(fid, 'Cost Function w/ %d ResUncertainty Weight and %d Dynamic Occlusion Weight', specs.WeightUncertainty , specs.WeightOcclusion);
+fprintf(fid, 'Cost Function w/ %d ResUncertainty Weight and %d Dynamic Occlusion Weight \n', specs.WeightUncertainty , specs.WeightOcclusion);
 fprintf(fid, 'Workspace Size: [%.1f %.1f; %.1f %.1f; %.1f %.1f] m\n', ...
     flight_envelope(1,1), flight_envelope(1,2), ...
     flight_envelope(2,1), flight_envelope(2,2), ...
