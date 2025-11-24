@@ -1,23 +1,24 @@
-function uncertainty = computePointUncertainty(point, cameras, cameraCentres, numCams, adjacentSurfaces, du,dv, penaltyUncertainty, w2)
+function uncertainty = computePointUncertainty(point, cameras, cameraCentres, numCams, adjacentSurfaces, du,dv, penaltyUncertainty, w2, Resolution)
     uv = zeros(numCams,2);
     planes = cell(1, numCams);
     visIdx = false(numCams,1); %Logical operator to see if camera lies within bounds of image plane and is in front of the camera
     
     % Vectorized visibility check for all cameras
     for i = 1:numCams
-        [uv(i,:), visIdx(i)] = cameras{i}.project(point); %uv projected coordinates 
-        if visIdx(i)
+        uv(i,:) = cameras{i}.project(point); %uv projected coordinates 
+        if (uv(1) >= 1 && uv(1) <= Resolution(1) && uv(2) >= 1 && uv(2) <= Resolution(2))
             u = uv(i,1);
             v = uv(i,2);
             worldPoints = quantToWorld(cameras{i}, u,v, du, dv, cameraCentres(:,i));
             planes{i} = buildPyramidSurf(cameraCentres(:,i), worldPoints, adjacentSurfaces);
+            visIdx(i) = true;
         end
     end
     
     visibleIdx = find(visIdx);
     numVisible = length(visibleIdx);
     
-    %early exit if trinagulation is not possible
+    %early exit if triangulation is not possible
     if numVisible == 0 
         uncertainty = penaltyUncertainty; %point is not visible in any cameras FOV
         return;

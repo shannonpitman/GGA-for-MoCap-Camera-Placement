@@ -39,9 +39,7 @@ function vertices = calcVertices(numVisible, visibleIdx, adj, planes)
                 
                 A = [n1.'; n2.'; n3.'];
                    
-                if abs(det(A)) < -tol %check that planes aren't parraell and thus illconditioned -> no intesection 
-                     continue;
-                end
+                if abs(det(A)) > -tol %check that planes aren't parralel and thus illconditioned -> no intesection    
                 %least squares solve -> finds error region around point its trying to locate
                 b = [d1; d2; d3];
                 x = A\b; 
@@ -50,6 +48,7 @@ function vertices = calcVertices(numVisible, visibleIdx, adj, planes)
                     vertices(idx, :) = x.'; %row x,y,z
                     idx = idx +1;
                  end
+                end
              end
         end
     end

@@ -37,6 +37,7 @@ function out = RunGA(problem, params, specs)
     % pop(2).Chromosome = [5.000000000000000	3.135293348324546	1.795549488573229	1.648898066818321	-0.809489616591172	-0.732073310686882	5.000000000000000	-4.320533111305447	0.507980219777034	-1.476013469425586	-0.774576311879347	-0.080573556444475	4.896745385074944	-2.240068458379641	1.424049127293288	-2.215676212732957	-1.282317601389465	1.967342403343143	5.000000000000000	-3.237069360343214	0.458565590845076	-1.170764661173703	-1.068140036684545	1.023287923603299	5.000000000000000	1.822852881123080	1.606594661711947	1.736046137426712	0.763478556750995	1.157088648554378	-4.981946829345784	-3.754979006399330	1.061232114819257	-1.608409025747987	0.877630914268858	-0.901046250819087	-4.974169068633028	-0.838988812216320	0.760472457820022	1.260067040873139	1.329552685313434	1.265891584248071];
     % pop(2).Cost = CostFunction(pop(2).Chromosome, specs);
     % costs(2) = pop(2).Cost;   
+
     for i = 1:nPop
         % Generate Guided Random Solution 
         chromosomes(i,:) = initialPopulation(VarMin, VarMax, SectionCentres, numCams);
@@ -78,16 +79,17 @@ function out = RunGA(problem, params, specs)
         probs = exp(-beta*c);
 
         % Initialise Offsprings Population
-        popc = repmat(empty_individual, nC, 1);
+        popc = repmat(empty_individual, nC/2, 2); %Population children -> offspring 1 (column 1 ) offspring 2 (column 2)
         
         % Batch generate parent selections
         parent_indices = zeros(nC, 2);
+
         for k = 1:nC
             parent_indices(k,1) = RouletteWheelSelection(probs);
             parent_indices(k,2) = RouletteWheelSelection(probs);
         end
         
-        % Crossover and Mutation - vectorized where possible
+        % Crossover and Mutation
         offspring_chromosomes = zeros(nC, nVar);
         mutation_flags = rand(nC, nVar) < mu;
         
@@ -95,71 +97,51 @@ function out = RunGA(problem, params, specs)
             p1 = pop(parent_indices(2*k-1, 1));
             p2 = pop(parent_indices(2*k-1, 2));
             
-            % Perform Crossover
-            [child1, child2] = DoublePointCrossover(p1.Chromosome, p2.Chromosome, nVar);
+            % Perform Crossover 
+            [popc(k,1).Chromosome, popc(k,2).Chromosome] = DoublePointCrossover(p1.Chromosome, p2.Chromosome,nVar); %[offspring1, offspring2]
 
-            % Perform Mutation
-            % adaptive_m
-            % u = mu* exp(-it/MaxIt); % Decrease mutation rate as convergence improves
-            if any(mutation_flags(2*k-1, :))
-                child1 = Mutate(child1, mutation_flags(2*k-1, :), sigma);
-            end
-            
-            if any(mutation_flags(2*k, :))
-                child2 = Mutate(child2, mutation_flags(2*k, :), sigma);  % Use correct index
-            end
-            % Check for variable bounds -> all variables must be greater than varMin
-            % and less than varMax
-            child1 = max(min(child1, VarMax), VarMin);
-            child2 = max(min(child2, VarMax), VarMin);
+        end 
 
-            offspring_chromosomes(2*k-1, :) = child1;
-            offspring_chromosomes(2*k, :) = child2;
+        % Convert popc to Single Column (vertical) Matrix 
+        popc = popc(:);
 
+        % Mutation 
+        for l = 1:nC
+            popc(l).Chromosome = Mutate(popc(l).Chromosome, mu, sigma);
+    
+            % if mod(it, 10) == 0 || rand < 0.2  % or 20% chance each generation
+            %         popc(l).Chromosome = fixPoorCameras(popc(l).Chromosome, specs, 0.05);
+            % end
+    
+            popc(l).Chromosome = max(popc(l).Chromosome, VarMin); % if greater than VarMin -> unchanged
+            popc(l).Chromosome = min(popc(l).Chromosome, VarMax);
+            % Evaluation 
         end
 
-        % if mod(it, 10) == 0  % Every 10 iterations
-        %     for k = 1:nC
-        %         if rand < 0.2  % 20% chance for each offspring
-        %             offspring_chromosomes(k,:) = fixPoorCameras(offspring_chromosomes(k,:), specs, 0.05);
-        %         end
-        %     end
-        % end
+        parfor l = 1:nC
+            popc(l).Cost= CostFunction(popc(l).Chromosome, specs);
+        end
 
-        % Parallel evaluation of offspring
-        offspring_costs = zeros(nC, 1);
-        parfor k = 1:nC
-            offspring_costs(k) = CostFunction(offspring_chromosomes(k,:), specs);
-        end
-        
-        % Assign costs to offspring
-        for k = 1:nC
-            popc(k).Chromosome = offspring_chromosomes(k,:);
-            popc(k).Cost = offspring_costs(k);
-        end
-        
         % Find best in offspring
-        [minOffspringCost, minOffspringIdx] = min(offspring_costs);
-        if minOffspringCost < bestsol.Cost
+        [minOffspringCost, minOffspringIdx] = min([popc.Cost]);
+        if minOffspringCost< bestsol.Cost
             bestsol = popc(minOffspringIdx);
         end
 
         % Merge populations efficiently
-        merged_pop = [pop; popc];
-        merged_costs = [c'; offspring_costs];
-        
-        % Sort using vectorized operations
-        [~, sorted_idx] = sort(merged_costs);
-        pop = merged_pop(sorted_idx(1:nPop));
+        pop = SortPopulation([pop;popc]);
+
+        % Remove Extra Individuals 
+        pop = pop(1:nPop);
 
         % Update Best Cost of Iteration
         bestcost(it) = bestsol.Cost;
         bestChromosomes(it,:) = bestsol.Chromosome;
 
         % Calculate Average Costs - vectorized
-        allCosts = merged_costs(sorted_idx(1:nPop));
+        allCosts = [pop.Cost];
         avgcost(it) = mean(allCosts);
-        topTenAvgCost(it) = mean(allCosts(1:min(10, nPop)));
+        topTenAvgCost(it) = mean(allCosts(1:10));
         
         % Display Iteration Information
         if mod(it, 5) == 0 || it == 1

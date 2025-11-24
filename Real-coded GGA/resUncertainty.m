@@ -24,7 +24,7 @@ function errorVolume = resUncertainty(cameraChromosome, specs)
     
     parfor p =1:numPoints
         point = TargetSpace(p,:);
-        uncertainties(p) = computePointUncertainty(point, cameras, cameraCenters, numCams, adjacentSurfaces, du,dv, penaltyUncertainty, w2)
+        uncertainties(p) = computePointUncertainty(point, cameras, cameraCenters, numCams, adjacentSurfaces, du,dv, penaltyUncertainty, w2, resolution)
     end
 
     errorVolume = mean(uncertainties);
