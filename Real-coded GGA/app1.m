@@ -2,13 +2,15 @@ clc; %clear screen
 clear; % clear workspace
 close all;
 
+%% Specifications
 specs.Cams = 7; %Number of Cameras
 specs.Resolution = [640 480]; %VGA resolution
+specs.npix = [640 480]; %VGA resolution
 specs.PixelSize = 1.4e-6; %Square Pixel Size
 specs.PrincipalPoint = [specs.Resolution(1)/2, specs.Resolution(2)/2];
 specs.Focal = 0.0028; %focal length [m]
 
-% Target space is an uniformly discretised grid within the flight volume 
+% Target space is a uniformly discretised grid within the flight volume 
 % This workspace volume matches the available dimensions of the MS.G flight envelope 
 flight_envelope = [-3 3; -3 3; 0 2]; %m -> desired space: [-4 4; -4 4; 0 4.5]
 spacing = 0.5;
@@ -18,7 +20,10 @@ z_marker = flight_envelope(3,1):spacing:flight_envelope(3,2);
 [X,Y,Z] = meshgrid(x_marker, y_marker, z_marker);
 
 specs.Target = [X(:), Y(:), Z(:)];
+specs.NumPoints = size(specs.Target, 1);
 
+% Pre-compute static Data 
+% section centres based on flight enveloope size and number of cameras
 numSections = floor(specs.Cams/2);
 nx = ceil(sqrt(numSections)); %number of divisions in x direction of grid 
 ny = ceil(numSections /nx); %number of divisions in y direction of grid 
@@ -38,6 +43,26 @@ for i = 1:length(x_div)-1
 end
 
 specs.SectionCentres = section_centres;
+
+% Pre-compute data for resolution uncertainty
+specs.PreComputed.adjacentSurfaces = [1 2; 2 3; 3 4; 4 1];
+specs.PreComputed.du = 0.5; %pixels
+specs.PreComputed.dv = 0.5; %pixels
+specs.PreComputed.penaltyUncertainty = 100;
+specs.PreComputed.w2 = 0.2; %weight for ellipsoid optimization
+
+% Pre-compute data for dynamic occlusion
+specs.PreComputed.minTriangAngle = 40; % degrees
+specs.PreComputed.maxTriangAngle = 140; % degrees
+specs.PreComputed.maxCameraRange = 700; % cm effective range
+
+% Pre-allocate camera intrinsic matrix (same for all cameras)
+specs.K = [specs.Focal/specs.PixelSize, 0, specs.PrincipalPoint(1);
+           0, specs.Focal/specs.PixelSize, specs.PrincipalPoint(2);
+           0, 0, 1];
+
+% Pre-compute target space in homogeneous coordinates for batch processing
+specs.TargetHomogeneous = [specs.Target'; ones(1, specs.NumPoints)];
 
 %% Problem Definition
 % Cost function:
@@ -76,7 +101,7 @@ params.beta = 1;
 params.pC = 1;
 params.gamma = 0.1;
 params.mu = 0.1; %probability of mutation
-params.sigma = 00.1;
+params.sigma = 0.1;
 
 %% Run GA
 tic; % start timer
@@ -99,6 +124,7 @@ saveData.AvgCostHistory = out.avgcost;
 saveData.TopTenAvgCostHistory = out.topTenAvgCost;
 saveData.ElapsedTime = elapsedTime;
 saveData.Timestamp = currentDateTime;
+
 %Coverage statistics
 figTitle = sprintf('Camera Coverage - %d Cameras (Cost: %.4f)', specs.Cams, saveData.BestCost);
 [coverageStats] = visualizeCameraCoverage(out.bestsol.Chromosome, specs, figTitle);
@@ -117,7 +143,6 @@ for i = 1:specs.Cams
     saveData.Cameras(i).OrientationDegrees = rad2deg(saveData.Cameras(i).Orientation);
 end
 
-
 % Save to MAT file
 save(filename, 'saveData');
 fprintf('\n Optimization Complete :>\n');
@@ -133,7 +158,7 @@ fprintf(fid, '==========================================\n\n');
 fprintf(fid, 'Timestamp: %s\n', char(currentDateTime));
 fprintf(fid, 'Number of Cameras: %d\n', specs.Cams);
 fprintf(fid, 'Best Cost (Cost Function %d): %.6f\n', costFunctionType, saveData.BestCost);
-fprintf(fid, 'Cost Function w/ %d ResUncertainty Weight and %d Dynamic Occlusion Weight \n', specs.WeightUncertainty , specs.WeightOcclusion);
+fprintf(fid, 'Cost Function Weights: %.2f Resolution Uncertainty and %.2f Dynamic Occlusion \n', specs.WeightUncertainty , specs.WeightOcclusion);
 fprintf(fid, 'Workspace Size: [%.1f %.1f; %.1f %.1f; %.1f %.1f] m\n', ...
     flight_envelope(1,1), flight_envelope(1,2), ...
     flight_envelope(2,1), flight_envelope(2,2), ...
@@ -154,12 +179,9 @@ fprintf(fid, '\n==========================================\n\n');
 fprintf(fid, 'Camera Coverage Statistics:\n');
 fprintf(fid, '---------------------------\n');
 fprintf(fid, 'Total target points: %d\n', coverageStats.numPoints);
-fprintf(fid, 'Points with 0 cameras: %d (%.1f%%)\n', ...
-    coverageStats.zeroCameras, coverageStats.zeroCamerasPercent);
-fprintf(fid, 'Points with 1 camera: %d (%.1f%%)\n', ...
-    coverageStats.oneCamera, coverageStats.oneCameraPercent);
-fprintf(fid, 'Points with 2+ cameras: %d (%.1f%%)\n', ...
-    coverageStats.twoPlusCameras, coverageStats.twoPlusCamerasPercent);
+fprintf(fid, 'Points with 0 cameras: %d (%.1f%%)\n', coverageStats.zeroCameras, coverageStats.zeroCamerasPercent);
+fprintf(fid, 'Points with 1 camera: %d (%.1f%%)\n', coverageStats.oneCamera, coverageStats.oneCameraPercent);
+fprintf(fid, 'Points with 2+ cameras: %d (%.1f%%)\n', coverageStats.twoPlusCameras, coverageStats.twoPlusCamerasPercent);
 fprintf(fid, '\nCoverage Metrics:\n');
 fprintf(fid, '  Average coverage: %.2f cameras per point\n', coverageStats.avgCoverage);
 fprintf(fid, '  Maximum coverage: %d cameras per point\n', coverageStats.maxCoverage);
@@ -187,13 +209,10 @@ hold off;
 
 % Subplot 2: Average Cost Evolution
 subplot(1, 2, 2);
-semilogy(out.avgcost, 'LineWidth', 2, 'Color', [0.8500 0.3250 0.0980], ...
-    'DisplayName', 'Population Average'); 
+semilogy(out.avgcost, 'LineWidth', 2, 'Color', [0.8500 0.3250 0.0980], 'DisplayName', 'Population Average'); 
 hold on;
-semilogy(out.topTenAvgCost, 'LineWidth', 2, 'Color', [0.9290 0.6940 0.1250], ...
-    'DisplayName', 'Top 10 Average');
-semilogy(out.bestcost, 'LineWidth', 1.5, 'Color', [0 0.4470 0.7410], ...
-    'LineStyle', '--', 'DisplayName', 'Best Cost');
+semilogy(out.topTenAvgCost, 'LineWidth', 2, 'Color', [0.9290 0.6940 0.1250], 'DisplayName', 'Top 10 Average');
+semilogy(out.bestcost, 'LineWidth', 1.5, 'Color', [0 0.4470 0.7410], 'LineStyle', '--', 'DisplayName', 'Best Cost');
 grid on;
 xlabel('Iterations');
 ylabel('Cost (logarithmic)');

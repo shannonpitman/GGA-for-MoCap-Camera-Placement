@@ -12,11 +12,10 @@ function vertices = calcVertices(numVisible, visibleIdx, adj, planes)
     for i = 1:numVisible
         visiblePlanes{i} = planes{visibleIdx(i)};
     end
-
+    % Camera Pairs
     camPairs = nchoosek(1:numVisible,2);
     numPairs = size(camPairs,1);
 
-    % Camera Pairs
     for pairIdx = 1:numPairs
         i = camPairs(pairIdx, 1);
         k = camPairs(pairIdx, 2);
@@ -26,17 +25,17 @@ function vertices = calcVertices(numVisible, visibleIdx, adj, planes)
         cam_surfacesK = planes{visibleIdx(k)}; 
         
         for j =1:4
-            n1 = cam_surfacesI(1:3,adj(j,1));
+            n1 = cam_surfacesI(1:3, adj(j,1));
             d1 = cam_surfacesI(4, adj(j,1));
-            n2 = cam_surfacesI(1:3,adj(j,2));
-            d2 = cam_surfacesI(4,adj(j,2));
+            n2 = cam_surfacesI(1:3, adj(j,2));
+            d2 = cam_surfacesI(4, adj(j,2));
             %Process at all other pyramids 
-            n3All = cam_surfacesK(1:3,:);
-            d3All = cam_surfacesK(4,:);
+            n3All = cam_surfacesK(1:3, :);
+            d3All = cam_surfacesK(4, :);
             
             for l = 1:size(n3All,2)
-                n3 = n3All(:,l);
-                d3 = d3All(:,l);
+                n3 = n3All(:, l);
+                d3 = d3All(:, l);
                 
                 A = [n1.'; n2.'; n3.'];
                    

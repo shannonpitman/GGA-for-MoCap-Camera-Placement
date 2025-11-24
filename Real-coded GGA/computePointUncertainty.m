@@ -1,13 +1,20 @@
-function uncertainty = computePointUncertainty(point, cameras, numCams, resolution, adjacentSurfaces, du,dv, penaltyUncertainty, w2)
+function uncertainty = computePointUncertainty(point, cameras, cameraCentres, numCams, adjacentSurfaces, du,dv, penaltyUncertainty, w2)
     uv = zeros(numCams,2);
     planes = cell(1, numCams);
+    visIdx = false(numCams,1); %Logical operator to see if camera lies within bounds of image plane and is in front of the camera
     
+    % Vectorized visibility check for all cameras
     for i = 1:numCams
-        uv(i,:) = cameras{i}.project(point); %uv projected coordinates 
+        [uv(i,:), visIdx(i)] = cameras{i}.project(point); %uv projected coordinates 
+        if visIdx(i)
+            u = uv(i,1);
+            v = uv(i,2);
+            worldPoints = quantToWorld(cameras{i}, u,v, du, dv, cameraCentres(:,i));
+            planes{i} = buildPyramidSurf(cameraCentres(:,i), worldPoints, adjacentSurfaces);
+        end
     end
-
-    isVisible = (uv(:,1) >= 1) & (uv(:,1) <= resolution(1)) & (uv(:,2) >= 1) & (uv(:,2) <= resolution(2));
-    visibleIdx = find(isVisible);
+    
+    visibleIdx = find(visIdx);
     numVisible = length(visibleIdx);
     
     %early exit if trinagulation is not possible
@@ -19,14 +26,6 @@ function uncertainty = computePointUncertainty(point, cameras, numCams, resoluti
         return;
     end
 
-   for i = visibleIdx'
-       u = uv(i,1);
-       v = uv(i,2);
-       cameraCentres = cameras{i}.center().'; %world location of Camera center
-       worldPoints = quantToWorld(cameras{i}, u,v, du, dv, cameraCentres);
-       planes{i} = buildPyramidSurf(cameraCentres, worldPoints, adjacentSurfaces);
-   end
-
     vertices = calcVertices(numVisible, visibleIdx, adjacentSurfaces, planes);
     unique_vertices = unique(round(vertices,6),'rows', 'stable');
 
@@ -34,7 +33,7 @@ function uncertainty = computePointUncertainty(point, cameras, numCams, resoluti
     C0v_vert = cov(V_); %covariance matrix
     [A,~] = eig(C0v_vert); %[eigenvectors, eigenvalues in a diagonal matrix]
     
-    
+
     transformed_v = (A*V_.').';%rotated points 
 
     %Initial guess
