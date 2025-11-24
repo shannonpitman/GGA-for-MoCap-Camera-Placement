@@ -9,15 +9,16 @@ function occlusionError = dynamicOcclusion(cameraChromosome, specs)
     focalLength = specs.Focal;
     PrincipalPoint = specs.PrincipalPoint;
     TargetSpace = specs.Target;
-    
+    Npix = specs.npix;
+
     % Triangulability constraints (from paper)
     minTriangAngle = 40; % degrees
     maxTriangAngle = 140; % degrees
     maxCameraRange = 700; % cm effective range -> update when tested 
     
     % Initialize cameras
-    cameras = setupCameras(cameraChromosome, numCams, resolution, pixelSize, focalLength, PrincipalPoint);
-    
+    cameras = setupCameras(cameraChromosome, numCams, resolution, pixelSize, focalLength, PrincipalPoint,Npix);
+
     numPoints = size(TargetSpace, 1);
     occlusionAngles = zeros(numPoints, 1);
     
