@@ -8,7 +8,7 @@ function y = fixPoorCameras(x, specs, coverageThreshold)
     minPointsRequired = ceil(coverageThreshold * numPoints);
     
     % Setup cameras
-    cameras = setupCameras(x, numCams, specs.Resolution, specs.PixelSize, specs.Focal, specs.PrincipalPoint);
+    cameras = setupCameras(x, numCams, specs.Resolution, specs.PixelSize, specs.Focal, specs.PrincipalPoint, specs.npix);
     
     % Quick coverage check for each camera
     cameraCoverage = zeros(numCams, 1);
