@@ -81,26 +81,21 @@ function out = RunGA(problem, params, specs)
         % Initialise Offsprings Population
         popc = repmat(empty_individual, nC/2, 2); %Population children -> offspring 1 (column 1 ) offspring 2 (column 2)
         
-        % Batch generate parent selections
-        parent_indices = zeros(nC, 2);
+        % Pre-extract all parent chromosomes
+        parent_indices = RouletteWheelSelection(probs, nC*2);
+        parent_indices = reshape(parent_indices, nC, 2);
+        parent_chromosomes = zeros(nC, nVar);
 
         for k = 1:nC
-            parent_indices(k,1) = RouletteWheelSelection(probs);
-            parent_indices(k,2) = RouletteWheelSelection(probs);
+            parent_chromosomes(k,:) = pop(parent_indices(k,1)).Chromosome;
         end
         
-        % Crossover and Mutation
-        offspring_chromosomes = zeros(nC, nVar);
-        mutation_flags = rand(nC, nVar) < mu;
-        
+        % Perform crossover with pre-extracted data
         for k = 1:nC/2
-            p1 = pop(parent_indices(2*k-1, 1));
-            p2 = pop(parent_indices(2*k-1, 2));
-            
-            % Perform Crossover 
-            [popc(k,1).Chromosome, popc(k,2).Chromosome] = DoublePointCrossover(p1.Chromosome, p2.Chromosome,nVar); %[offspring1, offspring2]
-
-        end 
+            idx1 = 2*k-1;
+            idx2 = 2*k;
+            [popc(k,1).Chromosome, popc(k,2).Chromosome] = DoublePointCrossover(parent_chromosomes(idx1,:), parent_chromosomes(idx2,:), nVar);
+        end
 
         % Convert popc to Single Column (vertical) Matrix 
         popc = popc(:);
@@ -109,9 +104,9 @@ function out = RunGA(problem, params, specs)
         for l = 1:nC
             popc(l).Chromosome = Mutate(popc(l).Chromosome, mu, sigma);
     
-            % if mod(it, 10) == 0 || rand < 0.2  % or 20% chance each generation
-            %         popc(l).Chromosome = fixPoorCameras(popc(l).Chromosome, specs, 0.05);
-            % end
+            if mod(it, 10) == 0 || rand < 0.2  % or 20% chance each generation
+                    popc(l).Chromosome = fixPoorCameras(popc(l).Chromosome, specs, 0.05);
+            end
     
             popc(l).Chromosome = max(popc(l).Chromosome, VarMin); % if greater than VarMin -> unchanged
             popc(l).Chromosome = min(popc(l).Chromosome, VarMax);
