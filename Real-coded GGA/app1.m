@@ -80,7 +80,7 @@ specs.WeightOcclusion = 0.5; % Dynamic occlusion weight
 % Select cost function
 switch costFunctionType
     case 1
-        problem.CostFunction = @resUncertainty;
+        problem.CostFunction = @resUncertainty; %moved camera chromosome to combined cost function 
     case 2
         problem.CostFunction = @dynamicOcclusion;
     case 3

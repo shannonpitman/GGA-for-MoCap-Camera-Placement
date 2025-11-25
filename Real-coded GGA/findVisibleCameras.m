@@ -1,10 +1,10 @@
-function [visibleCams, camViewVectors] = findVisibleCameras(point, cameras, numCams, resolution, maxRange)
+function [visibleCams, camViewVectors] = findVisibleCameras(point, cameras, camCenters, numCams, resolution, maxRange)
 %Returns indices of cameras that can see the point and their view vectors
 
-    visibleCams = [];
-    camViewVectors = zeros(3, 0);
-    
-    point = point(:)';
+    % Pre-allocate for worst case (all cameras visible)
+    visibleCams = zeros(1, numCams);
+    camViewVectors = zeros(3, numCams);
+    visCount = 0;  % Counter for visible cameras
     
     for i = 1:numCams
         % Project point to camera image plane
@@ -14,20 +14,20 @@ function [visibleCams, camViewVectors] = findVisibleCameras(point, cameras, numC
         
         % Check if point is within field of view
         if (u >= 1 && u <= resolution(1) && v >= 1 && v <= resolution(2))
-            % Get camera center
-            camCenter = cameras{i}.center();
-            camCenter = camCenter(:)'; % Ensure row vector
             
             % Calculate view vector from camera to point
-            viewVector = point - camCenter;
+            viewVector = point - camCenters(:, i);
             distance = norm(viewVector);
             
             % Check if within effective range
             if distance <= maxRange && distance > 0
-                visibleCams(end+1) = i;
-                normalizedVector = viewVector / distance; %just direction of camera to point 
-                camViewVectors = [camViewVectors, normalizedVector(:)];
+                visCount = visCount + 1;
+                visibleCams(visCount) = i;
+                camViewVectors(:, visCount) = viewVector / distance;  % Normalized direction
             end
         end
     end
+    % Trim arrays to actual size
+    visibleCams = visibleCams(1:visCount);
+    camViewVectors = camViewVectors(:, 1:visCount);
 end

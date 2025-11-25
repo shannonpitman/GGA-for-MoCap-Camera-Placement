@@ -5,14 +5,18 @@ function totalCost = combinedCostFunction(cameraChromosome, specs)
     %Adjustable Weight parameters
     w_uncertainty = specs.WeightUncertainty; 
     w_occlusion = specs.WeightOcclusion; 
-    
+
+    % Initialize cameras
+    numCams = specs.Cams;
+    resolution = specs.Resolution;
+    pixelSize = specs.PixelSize; 
+    focalLength = specs.Focal; 
+    PrincipalPoint = specs.PrincipalPoint; 
+    Npix = specs.npix;
+    [cameras, CamCenters] = setupCameras(cameraChromosome, numCams, resolution, pixelSize, focalLength, PrincipalPoint,Npix);
     % Calculate individual cost components
-    uncertaintyCost = resUncertainty(cameraChromosome, specs);
-    occlusionCost = dynamicOcclusion(cameraChromosome, specs);
-    
-    % Normalize costs to similar scales before combining
-    % (both are already in similar scale - uncertainty in volume, occlusion in degrees)
-    % 
+    uncertaintyCost = resUncertainty(specs, cameras, CamCenters);
+    occlusionCost = dynamicOcclusion(specs, cameras, CamCenters);
     
     % Combined weighted cost
     totalCost = w_uncertainty * uncertaintyCost + w_occlusion * occlusionCost;
