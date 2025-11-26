@@ -95,7 +95,7 @@ problem.VarMax = repmat(cameraUpperBounds,1,specs.Cams);
 problem.nVar = 6* specs.Cams;
 
 %% GA Parameters
-params.MaxIt = 60;
+params.MaxIt = 100;
 params.nPop = 300;
 params.beta = 1;
 params.pC = 1;
