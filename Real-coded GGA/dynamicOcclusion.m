@@ -10,7 +10,7 @@ function occlusionError = dynamicOcclusion(specs, cameras, CamCenters)
     % Triangulability constraints (from paper)
     minTriangAngle = 40; % degrees
     maxTriangAngle = 140; % degrees
-    maxCameraRange = 4.5; %m -> 700cm effective range -> update when tested 
+    maxCameraRange = 7; %m -> 700cm effective range -> update when tested 
 
     numPoints = size(TargetSpace, 1);
     occlusionAngles = zeros(numPoints, 1);
