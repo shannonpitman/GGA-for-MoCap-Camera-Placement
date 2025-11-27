@@ -11,18 +11,18 @@ for i = 1:numCams
     % Check if point is within field of view
     if (u >= 1 && u <= resolution(1) && v >= 1 && v <= resolution(2))
     % Calculate view vector from camera to point
-        camCenter = cameras{i}.center();
-        camCenter = camCenter(:)';
+        camCenter = camCenters(:, i)';
         viewVector = point - camCenter;
         distance = norm(viewVector);
         % Check if within effective range
         if distance <= maxRange && distance > 0
             visCount = visCount + 1;
             visibleCams(visCount) = i;
-            camViewVectors(:, visCount) = viewVector / distance;  % 
+            camViewVectors(:, visCount) = viewVector / distance;  % direction only
         end
     end
-    % Trim arrays to actual size
-    visibleCams = visibleCams(1:visCount);
-    camViewVectors = camViewVectors(:, 1:visCount);
+end
+% Trim arrays to actual size
+visibleCams = visibleCams(1:visCount);
+camViewVectors = camViewVectors(:, 1:visCount);
 end

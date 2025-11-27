@@ -94,7 +94,7 @@ function out = RunGA(problem, params, specs)
         for k = 1:nC/2
             idx1 = 2*k-1;
             idx2 = 2*k;
-            [popc(k,1).Chromosome, popc(k,2).Chromosome] = DoublePointCrossover(parent_chromosomes(idx1,:), parent_chromosomes(idx2,:), nVar);
+            [popc(k,1).Chromosome, popc(k,2).Chromosome] = DoublePointCrossover(parent_chromosomes(idx1,:), parent_chromosomes(idx2,:), numCams);
         end
 
         % Convert popc to Single Column (vertical) Matrix 

@@ -95,14 +95,45 @@ problem.VarMax = repmat(cameraUpperBounds,1,specs.Cams);
 problem.nVar = 6* specs.Cams;
 
 %% GA Parameters
-params.MaxIt = 100;
-params.nPop = 300;
+params.MaxIt = 60;
+params.nPop = 100;
 params.beta = 1;
 params.pC = 1;
 params.gamma = 0.1;
 params.mu = 0.1; %probability of mutation
 params.sigma = 0.1;
 
+% profile on
+% % Single cost function evaluation timing
+% chromosome = initialPopulation(problem.VarMin, problem.VarMax, specs.SectionCentres, specs.Cams);
+% 
+% fprintf('\n=== Single Cost Function Breakdown ===\n');
+% 
+% % Time setupCameras
+% tic;
+% [cameras, CamCenters] = setupCameras(chromosome, specs.Cams, specs.Resolution, ...
+%     specs.PixelSize, specs.Focal, specs.PrincipalPoint, specs.npix);
+% t_setup = toc;
+% fprintf('setupCameras: %.4f sec\n', t_setup);
+% 
+% % Time resUncertainty
+% tic;
+% uncertCost = resUncertainty(specs, cameras, CamCenters);
+% t_uncert = toc;
+% fprintf('resUncertainty: %.4f sec\n', t_uncert);
+% 
+% % Time dynamicOcclusion
+% tic;
+% occCost = dynamicOcclusion(specs, cameras, CamCenters);
+% t_occl = toc;
+% fprintf('dynamicOcclusion: %.4f sec\n', t_occl);
+% 
+% fprintf('\nTotal single evaluation: %.4f sec\n', t_setup + t_uncert + t_occl);
+% fprintf('Estimated time for 300 pop × 100 iter: %.2f hours\n', ...
+%     (t_setup + t_uncert + t_occl) * 300 * 100 / 3600);
+% 
+% profile off
+% profile viewer
 %% Run GA
 tic; % start timer
 out = RunGA(problem, params, specs);
@@ -163,7 +194,7 @@ fprintf(fid, 'Workspace Size: [%.1f %.1f; %.1f %.1f; %.1f %.1f] m\n', ...
     flight_envelope(1,1), flight_envelope(1,2), ...
     flight_envelope(2,1), flight_envelope(2,2), ...
     flight_envelope(3,1), flight_envelope(3,2));
-fprintf(fid, 'Computation Time: %.2f hours\n', elapsedTime/3600);
+fprintf(fid, 'Computation Time: %.2f hours\n', elapsedTime);
 fprintf(fid, '\n==========================================\n\n');
 
 fprintf(fid, 'Camera Configurations:\n');
