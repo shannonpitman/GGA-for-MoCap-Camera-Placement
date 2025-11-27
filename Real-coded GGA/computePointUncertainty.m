@@ -5,11 +5,11 @@ function uncertainty = computePointUncertainty(point, cameras, cameraCentres, nu
     
     % Vectorized visibility check for all cameras
     for i = 1:numCams
-        uv(i,:) = cameras{i}.project(point); %uv projected coordinates 
-        if (uv(1) >= 1 && uv(1) <= Resolution(1) && uv(2) >= 1 && uv(2) <= Resolution(2))
-            u = uv(i,1);
-            v = uv(i,2);
-            worldPoints = quantToWorld(cameras{i}, u,v, du, dv, cameraCentres(:,i));
+        uv(i,:) = cameras{i}.project(point); %uv projected coordinates
+        u = uv(1);
+        v = uv(2);
+        if (u >= 1 && u <= Resolution(1) && v >= 1 && v <= Resolution(2))
+            worldPoints = quantToWorld(cameras{i}, u, v, du, dv, cameraCentres(:,i));
             planes{i} = buildPyramidSurf(cameraCentres(:,i), worldPoints, adjacentSurfaces);
             visIdx(i) = true;
         end
@@ -30,25 +30,32 @@ function uncertainty = computePointUncertainty(point, cameras, cameraCentres, nu
     vertices = calcVertices(numVisible, visibleIdx, adjacentSurfaces, planes);
     unique_vertices = unique(round(vertices,6),'rows', 'stable');
 
-    V_ = unique_vertices-point; %centre the points at the mean 
-    C0v_vert = cov(V_); %covariance matrix
-    [A,~] = eig(C0v_vert); %[eigenvectors, eigenvalues in a diagonal matrix]
+    V_centered = unique_vertices-point; %centre the data at the point (zero mean) -> standardize the data
+    C0v_vert = cov(V_centered); %covariance matrix
     
+    Eigs = eig(C0v_vert); %[eigenvectors, eigenvalues in a diagonal matrix]
+    uncertainty = sum(sqrt(abs(Eigs))); % uncertainty based on the trace of the cov matrix  [mm] 
 
-    transformed_v = (A*V_.').';%rotated points 
-
-    %Initial guess
-    axes0 = max(abs(transformed_v), [], 1).' ; %1x3 [a0,b0,c0], max magnitude of the x,y,z components of v 
-
-    fun = @(axes) optimiseEllipsoid(axes, transformed_v.', axes0, w2);
-    options = optimset('Display', 'off', 'TolX', 1e-6, 'TolFun', 1e-6, 'MaxIter', 1000, 'MaxFunEvals', 5000);
-    [axes_opt, ~] = fminsearch(fun, axes0, options);
-
-    %optimised axes [m]
-    a = abs(axes_opt(1));
-    b = abs(axes_opt(2));
-    c = abs(axes_opt(3));
-
-    uncertainty = 4/3*pi*a*b*c;%m^3
+    % Old code that found error volume 
+    % [A,~] = eig(C0v_vert); %[eigenvectors, eigenvalues in a diagonal matrix] -> eigenvectors: new axes which our data lies on, eigenvalues = variances along these new axes
+    % 
+    % 
+    % transformed_v = (A*V_centered.').';%rotated points 
+    % 
+    % 
+    % 
+    % %Initial guess
+    % axes0 = max(abs(transformed_v), [], 1).' ; %1x3 [a0,b0,c0], max magnitude of the x,y,z components of v 
+    % 
+    % fun = @(axes) optimiseEllipsoid(axes, transformed_v.', axes0, w2);
+    % options = optimset('Display', 'off', 'TolX', 1e-6, 'TolFun', 1e-6, 'MaxIter', 1000, 'MaxFunEvals', 5000);
+    % [axes_opt, ~] = fminsearch(fun, axes0, options);
+    % 
+    % %optimised axes [m]
+    % a = abs(axes_opt(1));
+    % b = abs(axes_opt(2));
+    % c = abs(axes_opt(3));
+    % 
+    % uncertainty = 4/3*pi*a*b*c;%m^3
 end
 
