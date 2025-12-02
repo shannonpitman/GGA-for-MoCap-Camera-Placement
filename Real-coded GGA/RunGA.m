@@ -17,6 +17,7 @@ function out = RunGA(problem, params, specs)
     nC = round(pC*nPop/2)*2; % number of offspring (needs to be even) -> number of elements in popc
     mu = params.mu; % percentage mutated
     sigma = params.sigma;
+    TournamentSize = params.Tournamentsize;
 
     % Template for Empty Individuals
     empty_individual.Chromosome = []; %chromosome 
@@ -64,32 +65,39 @@ function out = RunGA(problem, params, specs)
     % Best Cost of Iterations -> record of best cost after each generation 
     bestcost = nan(MaxIt,1);
     bestChromosomes = nan(MaxIt, nVar);
-    avgcost = nan(MaxIt,1); %average cost of the entire population 
-    topTenAvgCost = nan(MaxIt,1); %average cost of the top 10 solutions 
+    avgcost = nan(MaxIt,1); % average cost of the entire population 
+    topTenAvgCost = nan(MaxIt,1); % average cost of the top 10 solutions 
 
     % Main Loop
     for it = 1:MaxIt
+        % Uncomment if Roulette Wheel Selection is preferable
+        % % Selection Probabilities
+        % c = [pop.Cost];
+        % avgc = mean(c);
+        % if avgc ~=0
+        %     c = c/avgc;
+        % end
+        % probs = exp(-beta*c); % Boltzmann distribution 
+        % 
+        % % Initialise Offsprings Population
+        % popc = repmat(empty_individual, nC/2, 2); %Population children -> offspring 1 (column 1 ) offspring 2 (column 2)
+        % 
+        % % Parent chromosomes
+        % parent_indices = RouletteWheelSelection(probs, nC*2);
+        % parent_indices = reshape(parent_indices, nC, 2);
+        % parent_chromosomes = zeros(nC, nVar);
+        % 
+        % for k = 1:nC
+        %     parent_chromosomes(k,:) = pop(parent_indices(k,1)).Chromosome;
+        % end
+        % 
 
-        % Selection Probabilities
-        c = [pop.Cost];
-        avgc = mean(c);
-        if avgc ~=0
-            c = c/avgc;
-        end
-        probs = exp(-beta*c);
+        %Tournament Selection 
+        parent_chromosomes = Tournament(pop, nVar, nC, TournamentSize);
 
-        % Initialise Offsprings Population
-        popc = repmat(empty_individual, nC/2, 2); %Population children -> offspring 1 (column 1 ) offspring 2 (column 2)
-        
-        % Pre-extract all parent chromosomes
-        parent_indices = RouletteWheelSelection(probs, nC*2);
-        parent_indices = reshape(parent_indices, nC, 2);
-        parent_chromosomes = zeros(nC, nVar);
+        popc = repmat(empty_individual, nC/2, 2);
 
-        for k = 1:nC
-            parent_chromosomes(k,:) = pop(parent_indices(k,1)).Chromosome;
-        end
-        
+
         % Perform crossover with pre-extracted data
         for k = 1:nC/2
             idx1 = 2*k-1;
@@ -102,12 +110,14 @@ function out = RunGA(problem, params, specs)
 
         % Mutation 
         for l = 1:nC
+            % adaptive_m
+            % u = mu* exp(-it/MaxIt); % Decrease mutation rate as convergence improves
             popc(l).Chromosome = Mutate(popc(l).Chromosome, mu, sigma);
     
             if mod(it, 10) == 0 || rand < 0.2  % or 20% chance each generation
                     popc(l).Chromosome = fixPoorCameras(popc(l).Chromosome, specs, 0.05);
             end
-    
+   
             popc(l).Chromosome = max(popc(l).Chromosome, VarMin); % if greater than VarMin -> unchanged
             popc(l).Chromosome = min(popc(l).Chromosome, VarMax);
             % Evaluation 
