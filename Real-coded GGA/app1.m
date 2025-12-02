@@ -54,7 +54,7 @@ specs.PreComputed.w2 = 0.2; %weight for ellipsoid optimization
 % Pre-compute data for dynamic occlusion
 specs.PreComputed.minTriangAngle = 40; % degrees
 specs.PreComputed.maxTriangAngle = 140; % degrees
-specs.PreComputed.maxCameraRange = 700; % cm effective range
+specs.PreComputed.maxCameraRange = 16; %m effective range
 
 % Pre-allocate camera intrinsic matrix (same for all cameras)
 specs.K = [specs.Focal/specs.PixelSize, 0, specs.PrincipalPoint(1);
@@ -95,13 +95,14 @@ problem.VarMax = repmat(cameraUpperBounds,1,specs.Cams);
 problem.nVar = 6* specs.Cams;
 
 %% GA Parameters
-params.MaxIt = 60;
+params.MaxIt = 100;
 params.nPop = 100;
 params.beta = 1;
 params.pC = 1;
 params.gamma = 0.1;
 params.mu = 0.1; %probability of mutation
 params.sigma = 0.1;
+params.Tournamentsize =3;
 
 % profile on
 % % Single cost function evaluation timing
@@ -179,7 +180,7 @@ save(filename, 'saveData');
 fprintf('\n Optimization Complete :>\n');
 fprintf('Results saved to: %s\n', filename);
 fprintf('Best Cost: %.6f\n', saveData.BestCost);
-fprintf('Computation Time: %.2f hours\n', elapsedTime/3600);
+fprintf('Computation Time: %.2f min\n', elapsedTime/60);
 
 % Text summary
 txtFilename = sprintf('%dCams_Run_%s.txt', specs.Cams, dateTimeStr);
@@ -194,7 +195,7 @@ fprintf(fid, 'Workspace Size: [%.1f %.1f; %.1f %.1f; %.1f %.1f] m\n', ...
     flight_envelope(1,1), flight_envelope(1,2), ...
     flight_envelope(2,1), flight_envelope(2,2), ...
     flight_envelope(3,1), flight_envelope(3,2));
-fprintf(fid, 'Computation Time: %.2f hours\n', elapsedTime);
+fprintf(fid, 'Computation Time: %.2f min\n', elapsedTime/60);
 fprintf(fid, '\n==========================================\n\n');
 
 fprintf(fid, 'Camera Configurations:\n');
@@ -234,7 +235,7 @@ xlabel('Iterations');
 ylabel('Best Cost (logarithmic)');
 title(sprintf('Best Cost Convergence - %d Cameras', specs.Cams));
 text(0.6*params.MaxIt, max(out.bestcost)*0.5, ...
-    sprintf('Final Cost: %.4f\nTime: %.1fhr', saveData.BestCost, elapsedTime/3600), ...
+    sprintf('Final Cost: %.4f\nTime: %.1fsec', saveData.BestCost, elapsedTime), ...
     'FontSize', 10, 'BackgroundColor', 'w', 'EdgeColor', 'k');
 hold off;
 

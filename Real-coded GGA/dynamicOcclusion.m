@@ -8,9 +8,9 @@ function occlusionError = dynamicOcclusion(specs, cameras, CamCenters)
     TargetSpace = specs.Target;
 
     % Triangulability constraints (from paper)
-    minTriangAngle = 40; % degrees
-    maxTriangAngle = 140; % degrees
-    maxCameraRange = 7; %m -> 700cm effective range -> update when tested 
+    minTriangAngle = specs.PreComputed.minTriangAngle; % degrees
+    maxTriangAngle = specs.PreComputed.maxTriangAngle; % degrees
+    maxCameraRange = specs.PreComputed.maxCameraRange; %m -> 16m effective range (OptiTrack)-> update when tested 
 
     numPoints = size(TargetSpace, 1);
     occlusionAngles = zeros(numPoints, 1);
