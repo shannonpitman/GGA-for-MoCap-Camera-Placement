@@ -317,9 +317,7 @@ saveas(gcf, cameraPlotFilename); %saves as png
 fprintf('Camera plot saved to: %s\n', cameraPlotFilename);
 
 %% Append to Master Log File
-masterLogFile = 'GA_RunsLog.mat';
-
-
+masterLogFile = 'GGA_RunsLog.mat';
 
 % Create new log entry
 newLogEntry.Timestamp = currentDateTime;
