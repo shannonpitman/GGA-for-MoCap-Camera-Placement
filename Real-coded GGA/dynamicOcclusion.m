@@ -26,7 +26,7 @@ function occlusionError = dynamicOcclusion(specs, cameras, CamCenters)
         occlusionAngles(p) = calculatePointOcclusion(visibleCams, camViewVectors, minTriangAngle, maxTriangAngle);
     end
     
-    occlusionError = mean(occlusionAngles)/3.6; %scale to be a point score out of 100
+    occlusionError = mean(occlusionAngles); %scale to be a point score out of 100
 end
 
 

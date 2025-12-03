@@ -13,10 +13,14 @@ function totalCost = combinedCostFunction(cameraChromosome, specs)
     focalLength = specs.Focal; 
     PrincipalPoint = specs.PrincipalPoint; 
     Npix = specs.npix;
+    uncertNorm = specs.PreComputed.uncertNorm;
+    occlNorm = specs.PreComputed.occlNorm;
+
     [cameras, CamCenters] = setupCameras(cameraChromosome, numCams, resolution, pixelSize, focalLength, PrincipalPoint, Npix);
+    
     % Calculate individual cost components
-    uncertaintyCost = resUncertainty(specs, cameras, CamCenters);
-    occlusionCost = dynamicOcclusion(specs, cameras, CamCenters);
+    uncertaintyCost = resUncertainty(specs, cameras, CamCenters)/ uncertNorm;
+    occlusionCost = dynamicOcclusion(specs, cameras, CamCenters)/ occlNorm;
     
     % Combined weighted cost
     totalCost = w_uncertainty * uncertaintyCost + w_occlusion * occlusionCost;

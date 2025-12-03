@@ -64,6 +64,8 @@ specs.K = [specs.Focal/specs.PixelSize, 0, specs.PrincipalPoint(1);
 % Pre-compute target space in homogeneous coordinates for batch processing
 specs.TargetHomogeneous = [specs.Target'; ones(1, specs.NumPoints)];
 
+specs.PreComputed.uncertNorm = 100;  
+specs.PreComputed.occlNorm = 440;    
 %% Problem Definition
 % Cost function:
 % 1 = Resolution Uncertainty only
@@ -140,6 +142,28 @@ tic; % start timer
 out = RunGA(problem, params, specs);
 elapsedTime = toc; % end timer
 
+
+% %% Diagnostic: Check cost component ranges
+% fprintf('\n=== Cost Component Analysis ===\n');
+% numSamples = 30;
+% 
+% uncertVals = zeros(numSamples, 1);
+% occlVals = zeros(numSamples, 1);
+% 
+% parfor s = 1:numSamples
+%     testChrom = initialPopulation(problem.VarMin, problem.VarMax, specs.SectionCentres, specs.Cams);
+%     [cams, centers] = setupCameras(testChrom, specs.Cams, specs.Resolution, ...
+%         specs.PixelSize, specs.Focal, specs.PrincipalPoint, specs.npix);
+%     uncertVals(s) = resUncertainty(specs, cams, centers);
+%     occlVals(s) = dynamicOcclusion(specs, cams, centers);
+% end
+% 
+% fprintf('Uncertainty - Mean: %.4f, Std: %.4f, Range: [%.4f, %.4f]\n', ...
+%     mean(uncertVals), std(uncertVals), min(uncertVals), max(uncertVals));
+% fprintf('Occlusion   - Mean: %.4f, Std: %.4f, Range: [%.4f, %.4f]\n', ...
+%     mean(occlVals), std(occlVals), min(occlVals), max(occlVals));
+% fprintf('Ratio (Occl/Uncert): %.2f\n', mean(occlVals)/mean(uncertVals));
+
 %% Results 
 currentDateTime = datetime('now');
 dateTimeStr = string(currentDateTime, 'yyyyMMdd_HHmmSS');
@@ -156,6 +180,9 @@ saveData.AvgCostHistory = out.avgcost;
 saveData.TopTenAvgCostHistory = out.topTenAvgCost;
 saveData.ElapsedTime = elapsedTime;
 saveData.Timestamp = currentDateTime;
+
+% Determine if warm-start was used (check if pop(1) was pre-set in RunGA)
+warmStartUsed = true; % Set this to true when you use warm-start
 
 %Coverage statistics
 figTitle = sprintf('Camera Coverage - %d Cameras (Cost: %.4f)', specs.Cams, saveData.BestCost);
@@ -196,6 +223,11 @@ fprintf(fid, 'Workspace Size: [%.1f %.1f; %.1f %.1f; %.1f %.1f] m\n', ...
     flight_envelope(2,1), flight_envelope(2,2), ...
     flight_envelope(3,1), flight_envelope(3,2));
 fprintf(fid, 'Computation Time: %.2f min\n', elapsedTime/60);
+fprintf(fid, 'Mutation rate: %.2f \n', params.mu);
+fprintf(fid, 'Tournament Size: %.2f \n', params.Tournamentsize);
+fprintf(fid, 'Warm Starting Used: %s', warmStartUsed);
+fprintf(fid, 'Population Size: %d', params.nPop);
+fprintf(fid, 'Number of Generations: %d', params.MaxIt);
 fprintf(fid, '\n==========================================\n\n');
 
 fprintf(fid, 'Camera Configurations:\n');
@@ -287,8 +319,7 @@ fprintf('Camera plot saved to: %s\n', cameraPlotFilename);
 %% Append to Master Log File
 masterLogFile = 'GA_RunsLog.mat';
 
-% Determine if warm-start was used (check if pop(1) was pre-set in RunGA)
-warmStartUsed = false; % Set this to true when you use warm-start
+
 
 % Create new log entry
 newLogEntry.Timestamp = currentDateTime;

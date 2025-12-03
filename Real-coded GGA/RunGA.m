@@ -12,7 +12,7 @@ function out = RunGA(problem, params, specs)
     % Params 
     MaxIt = params.MaxIt;
     nPop = params.nPop;
-    beta = params.beta; % selection pressure
+    % beta = params.beta; % selection pressure for roulette wheel 
     pC = params.pC; % percentage children (crossover) 
     nC = round(pC*nPop/2)*2; % number of offspring (needs to be even) -> number of elements in popc
     mu = params.mu; % percentage mutated
