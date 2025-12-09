@@ -1,4 +1,4 @@
-function [cameras, cameraCenters] = setupCameras(cameraChromosome, numCams, resolution, pixelSize, focalLength, PrincipalPoint, Npix)
+function [cameras, cameraCenters] = setupCameras(cameraChromosome, numCams, resolution, focalLength, focalLengthWide, PrincipalPoint)
 %Initialize camera objects from chromosome
     cameras = cell(numCams, 1);
     cameraCenters = zeros(3, numCams);
@@ -9,7 +9,12 @@ function [cameras, cameraCenters] = setupCameras(cameraChromosome, numCams, reso
         camOrientation = cameraChromosome(chromEndIdx-2:chromEndIdx);
         
         T = se3(eul2rotm(camOrientation, "XYZ"), camPosition);
-        cameras{i} = CentralCamera(name="cam"+i, resolution=resolution, pixel=pixelSize, focal=focalLength, pose=T, center=PrincipalPoint, npix=Npix);
+        if mod(numCams,2) == 1 
+            f = focalLengthWide;
+        else
+            f = focalLength;
+        end
+        cameras{i} = CentralCamera(name="cam"+i, resolution=resolution, focal=f, pose=T, center=PrincipalPoint);
         cameraCenters(:, i) = camPosition(:);
     end
 end
