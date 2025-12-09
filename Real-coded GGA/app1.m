@@ -8,7 +8,10 @@ specs.Resolution = [640 480]; %VGA resolution
 specs.npix = [640 480]; %VGA resolution
 specs.PixelSize = 1.4e-6; %Square Pixel Size
 specs.PrincipalPoint = [specs.Resolution(1)/2, specs.Resolution(2)/2];
-specs.Focal = 0.0028; %focal length [m]
+specs.Focal = 0.0055; %focal length [m], OpenMV = 0.0028 
+specs.FocalWide = 0.0035; % focal length for wide angle camera [m]
+specs.Range = 16;%16m for passive markers for 800 exposure, gain of 6 and lowest f-stop
+specs.RangeWide = 9;%9m for passive markers
 
 % Target space is a uniformly discretised grid within the flight volume 
 % This workspace volume matches the available dimensions of the MS.G flight envelope 
@@ -54,12 +57,8 @@ specs.PreComputed.w2 = 0.2; %weight for ellipsoid optimization
 % Pre-compute data for dynamic occlusion
 specs.PreComputed.minTriangAngle = 40; % degrees
 specs.PreComputed.maxTriangAngle = 140; % degrees
-specs.PreComputed.maxCameraRange = 16; %m effective range
-
-% Pre-allocate camera intrinsic matrix (same for all cameras)
-specs.K = [specs.Focal/specs.PixelSize, 0, specs.PrincipalPoint(1);
-           0, specs.Focal/specs.PixelSize, specs.PrincipalPoint(2);
-           0, 0, 1];
+specs.PreComputed.maxCameraRange = specs.Range; %m effective range
+specs.PreComputed.maxCameraRangeWide = specs.RangeWide; %m effective range
 
 % Pre-compute target space in homogeneous coordinates for batch processing
 specs.TargetHomogeneous = [specs.Target'; ones(1, specs.NumPoints)];
@@ -102,7 +101,7 @@ params.nPop = 100;
 params.beta = 1;
 params.pC = 1;
 params.gamma = 0.1;
-params.mu = 0.1; %probability of mutation
+params.mu = 0.2; %probability of mutation
 params.sigma = 0.1;
 params.Tournamentsize =3;
 
@@ -182,7 +181,7 @@ saveData.ElapsedTime = elapsedTime;
 saveData.Timestamp = currentDateTime;
 
 % Determine if warm-start was used (check if pop(1) was pre-set in RunGA)
-warmStartUsed = true; % Set this to true when you use warm-start
+warmStartUsed = false; % Set this to true when you use warm-start
 
 %Coverage statistics
 figTitle = sprintf('Camera Coverage - %d Cameras (Cost: %.4f)', specs.Cams, saveData.BestCost);
@@ -204,7 +203,7 @@ end
 
 % Save to MAT file
 save(filename, 'saveData');
-fprintf('\n Optimization Complete :>\n');
+fprintf('\n :> Optimization Complete :>\n');
 fprintf('Results saved to: %s\n', filename);
 fprintf('Best Cost: %.6f\n', saveData.BestCost);
 fprintf('Computation Time: %.2f min\n', elapsedTime/60);
@@ -225,9 +224,9 @@ fprintf(fid, 'Workspace Size: [%.1f %.1f; %.1f %.1f; %.1f %.1f] m\n', ...
 fprintf(fid, 'Computation Time: %.2f min\n', elapsedTime/60);
 fprintf(fid, 'Mutation rate: %.2f \n', params.mu);
 fprintf(fid, 'Tournament Size: %.2f \n', params.Tournamentsize);
-fprintf(fid, 'Warm Starting Used: %s', warmStartUsed);
-fprintf(fid, 'Population Size: %d', params.nPop);
-fprintf(fid, 'Number of Generations: %d', params.MaxIt);
+fprintf(fid, 'Warm Starting Used: %s \n', warmStartUsed);
+fprintf(fid, 'Population Size: %d \n', params.nPop);
+fprintf(fid, 'Number of Generations: %d \n', params.MaxIt);
 fprintf(fid, '\n==========================================\n\n');
 
 fprintf(fid, 'Camera Configurations:\n');
@@ -341,45 +340,45 @@ end
 save(masterLogFile, 'runLog');
 fprintf('Run logged to: %s (Total runs: %d)\n', masterLogFile, length(runLog));
 
-%% Animation Plot 
-% Create animation of evolving camera configurations
-animateFig = figure('Name', 'Camera Configuration Evolution');
-for frameIdx = params.MaxIt
-    hold on;
-    chromosome = out.bestChromosomes(frameIdx, :);
-    % Update camera positions for the next frame in the animation
-    for i = 1:specs.Cams
-        chromStartIdx = (i-1)*6+1;
-        chromEndIdx = i*6;
-        T = se3(eul2rotm(chromosome(chromEndIdx-2:chromEndIdx), "XYZ"), chromosome(chromStartIdx:chromStartIdx+2));
-        cameras{i} = CentralCamera(name="cam"+i, pose=T);
-        cameras{i}.plot_camera('label', scale = 0.5);
-    end
-    drawnow;
-    frame = getframe(animateFig);
-    im{frameIdx} = frame2im(frame);
-end
+ %% Animation Plot 
+% % Create animation of evolving camera configurations
+% animateFig = figure('Name', 'Camera Configuration Evolution');
+% for frameIdx = params.MaxIt
+%     hold on;
+%     chromosome = out.bestChromosomes(frameIdx, :);
+%     % Update camera positions for the next frame in the animation
+%     for i = 1:specs.Cams
+%         chromStartIdx = (i-1)*6+1;
+%         chromEndIdx = i*6;
+%         T = se3(eul2rotm(chromosome(chromEndIdx-2:chromEndIdx), "XYZ"), chromosome(chromStartIdx:chromStartIdx+2));
+%         cameras{i} = CentralCamera(name="cam"+i, pose=T);
+%         cameras{i}.plot_camera('label', scale = 0.5);
+%     end
+%     drawnow;
+%     frame = getframe(animateFig);
+%     im{frameIdx} = frame2im(frame);
+% end
 
-%%
-% View all logged runs
-viewGALog();
-
-% View only 7-camera runs
-viewGALog('NumCameras', 7);
-
-% View only warm-start runs
-viewGALog('WarmStart', true);
-
-% Plot comparison of 7-camera runs only
-plotGARuns('NumCameras', 7);
-
-% Plot only warm-start vs cold-start for resolution uncertainty
-plotGARuns('CostFunction', 3);
-
-% Compare 7-camera, resolution uncertainty, matching GA params
-plotGARuns('NumCameras', 7, 'CostFunction', 1, 'MatchParams', true);
-
-%%
+% %%
+% % View all logged runs
+% viewGALog();
+% 
+% % View only 7-camera runs
+% viewGALog('NumCameras', 7);
+% 
+% % View only warm-start runs
+% viewGALog('WarmStart', true);
+% 
+% % Plot comparison of 7-camera runs only
+% plotGARuns('NumCameras', 7);
+% 
+% % Plot only warm-start vs cold-start for resolution uncertainty
+% plotGARuns('CostFunction', 3);
+% 
+% % Compare 7-camera, resolution uncertainty, matching GA params
+% plotGARuns('NumCameras', 7, 'CostFunction', 1, 'MatchParams', true);
+% 
+% %%
 
 %save animation as a gif
 % filenameAnimate = sprintf('%dEvolutionofCams_Run_%s.gif', specs.Cams, dateTimeStr);
