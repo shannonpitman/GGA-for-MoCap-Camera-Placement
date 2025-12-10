@@ -11,7 +11,8 @@ function occlusionError = dynamicOcclusion(specs, cameras, CamCenters)
     minTriangAngle = specs.PreComputed.minTriangAngle; % degrees
     maxTriangAngle = specs.PreComputed.maxTriangAngle; % degrees
     maxCameraRange = specs.PreComputed.maxCameraRange; %m -> 16m effective range (OptiTrack)-> update when tested 
-
+    maxCameraRangeWide = specs.PreComputed.maxCameraRangeWide;
+    focalWide = specs.FocalWide;
     numPoints = size(TargetSpace, 1);
     occlusionAngles = zeros(numPoints, 1);
     
@@ -20,7 +21,7 @@ function occlusionError = dynamicOcclusion(specs, cameras, CamCenters)
         point = TargetSpace(p, :);
         
         % Find which cameras can see this point
-        [visibleCams, camViewVectors] = findVisibleCameras(point, cameras, CamCenters, numCams, resolution, maxCameraRange);
+        [visibleCams, camViewVectors] = findVisibleCameras(point, cameras, CamCenters, numCams, resolution, maxCameraRange, maxCameraRangeWide, focalWide);
         
         % Calculate occlusion angle for this point
         occlusionAngles(p) = calculatePointOcclusion(visibleCams, camViewVectors, minTriangAngle, maxTriangAngle);
