@@ -9,7 +9,7 @@ function [cameras, cameraCenters] = setupCameras(cameraChromosome, numCams, reso
         camOrientation = cameraChromosome(chromEndIdx-2:chromEndIdx);
         
         T = se3(eul2rotm(camOrientation, "XYZ"), camPosition);
-        if mod(numCams,2) == 1 
+        if mod(i,2) == 0
             f = focalLengthWide;
         else
             f = focalLength;

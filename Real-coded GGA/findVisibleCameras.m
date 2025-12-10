@@ -1,4 +1,4 @@
-function [visibleCams, camViewVectors] = findVisibleCameras(point, cameras, camCenters, numCams, resolution, maxRange)
+function [visibleCams, camViewVectors] = findVisibleCameras(point, cameras, camCenters, numCams, resolution, maxRange, maxRangeWide, FocalWide)
 %Returns indices of cameras that can see the point and their view vectors
 visibleCams = zeros(1, numCams);
 camViewVectors = zeros(3, numCams);
@@ -14,8 +14,14 @@ for i = 1:numCams
         camCenter = camCenters(:, i)';
         viewVector = point - camCenter;
         distance = norm(viewVector);
+        % Determine effective range based on lens type
+        if cameras{i}.f == FocalWide
+            effectiveRange = maxRange;
+        else
+            effectiveRange = maxRangeWide;
+        end
         % Check if within effective range
-        if distance <= maxRange && distance > 0
+        if distance <= effectiveRange && distance > 0
             visCount = visCount + 1;
             visibleCams(visCount) = i;
             camViewVectors(:, visCount) = viewVector / distance;  % direction only
