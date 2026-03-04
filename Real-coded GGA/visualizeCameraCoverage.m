@@ -12,9 +12,9 @@ function [coverageStats]= visualizeCameraCoverage(cameraChromosome, specs, figTi
     focalLength = specs.Focal;
     PrincipalPoint = specs.PrincipalPoint;
     TargetSpace = specs.Target;
-    Npix = specs.npix;
+    % Npix = specs.npix;
     
-    cameras = setupCameras(cameraChromosome, numCams, resolution, pixelSize, focalLength, PrincipalPoint, Npix);
+    cameras = setupCameras(cameraChromosome, numCams, resolution, pixelSize, focalLength, PrincipalPoint);
     
     numPoints = size(TargetSpace,1);
     cameraCoverage = zeros(numPoints,1);
