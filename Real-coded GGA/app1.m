@@ -4,8 +4,8 @@ close all;
 
 %% Specifications
 specs.Cams = 7; %Number of Cameras
-specs.Resolution = [640 480]; %VGA resolution
-specs.npix = [640 480]; %VGA resolution
+specs.Resolution = [1280 1024]; %[640 480] VGA resolution
+%specs.npix = [640 480]; %VGA resolution
 specs.PixelSize = 1.4e-6; %Square Pixel Size
 specs.PrincipalPoint = [specs.Resolution(1)/2, specs.Resolution(2)/2];
 specs.Focal = 0.0055; %focal length [m], OpenMV = 0.0028 
@@ -15,37 +15,66 @@ specs.RangeWide = 9;%9m for passive markers
 
 % Target space is a uniformly discretised grid within the flight volume 
 % This workspace volume matches the available dimensions of the MS.G flight envelope 
-flight_envelope = [-3 3; -3 3; 0 2]; %m -> desired space: [-4 4; -4 4; 0 4.5]
-spacing = 0.5;
+flight_envelope = [-4 4; -4 4; 0 4]; %m -> desired space: [-4 4; -4 4; 0 4.5]
+spacing = 1; %increase to have a more discretised space -> faster (1m : 10 x 10 x 4 = 400 points evaluated) 
 x_marker = flight_envelope(1,1):spacing:flight_envelope(1,2);
 y_marker = flight_envelope(2,1):spacing:flight_envelope(2,2);
 z_marker = flight_envelope(3,1):spacing:flight_envelope(3,2);
 [X,Y,Z] = meshgrid(x_marker, y_marker, z_marker);
 
+
+%%
 specs.Target = [X(:), Y(:), Z(:)];
 specs.NumPoints = size(specs.Target, 1);
 
 % Pre-compute static Data 
-% section centres based on flight enveloope size and number of cameras
+% section centres based on flight envelope size and number of cameras
 numSections = floor(specs.Cams/2);
-nx = ceil(sqrt(numSections)); %number of divisions in x direction of grid 
-ny = ceil(numSections /nx); %number of divisions in y direction of grid 
-x_div = linspace(flight_envelope(1,1), flight_envelope(1,2), nx+1);
-y_div = linspace(flight_envelope(2,1), flight_envelope(2,2), ny+1);
 z_mid = mean(flight_envelope(3,:)); %mid-height
-
-count = 1;
-section_centres = zeros(numSections,3);
-for i = 1:length(x_div)-1
-    for j = 1:length(y_div)-1
-        if count <= numSections
-            section_centres(count,:) = [(x_div(i) + x_div(i+1))/2, (y_div(j)+ y_div(j+1))/2, z_mid];
-            count = count+1;
-        end
-    end
+spaceCentre = [mean(flight_envelope(1,:)), mean(flight_envelope(2,:)), z_mid]; %centre of the flightspace
+if mod(numSections, 2)== 1
+    %Odd = add the centre as a viewpoint, distribute the rest on grid
+    gridSections = numSections -1;
+    centrePoint = spaceCentre;
+else
+    gridSections = numSections;
+    centrePoint = [];
 end
 
-specs.SectionCentres = section_centres;
+if gridSections > 0
+    % Find most balanced grid for gridSections
+    bestNx = gridSections; bestNy = 1;
+    for tryNx = 1:ceil(sqrt(gridSections))
+        tryNy = ceil(gridSections / tryNx);
+        if tryNx * tryNy >= gridSections
+            if abs(tryNx - tryNy) < abs(bestNx - bestNy)
+                bestNx = tryNx;
+                bestNy = tryNy;
+            end
+        end
+    end
+    nx = bestNx;
+    ny = bestNy;
+    
+    % Evenly spaced centres across the full grid
+    x_centres = linspace(flight_envelope(1,1), flight_envelope(1,2), 2*nx+1);
+    x_centres = x_centres(2:2:end); % midpoints
+    y_centres = linspace(flight_envelope(2,1), flight_envelope(2,2), 2*ny+1);
+    y_centres = y_centres(2:2:end);
+    
+    [Xc, Yc] = meshgrid(x_centres, y_centres);
+    gridCentres = [Xc(:), Yc(:), repmat(z_mid, nx*ny, 1)];
+    
+    % If more grid cells than needed, keep most central ones
+    if size(gridCentres,1) > gridSections
+        dists = vecnorm(gridCentres - spaceCentre, 2, 2);
+        [~, sortIdx] = sort(dists);
+        gridCentres = gridCentres(sortIdx(1:gridSections), :);
+    end
+else
+    gridCentres = [];
+end
+specs.SectionCentres = [centrePoint; gridCentres];
 
 % Pre-compute data for resolution uncertainty
 specs.PreComputed.adjacentSurfaces = [1 2; 2 3; 3 4; 4 1];
@@ -96,8 +125,8 @@ problem.VarMax = repmat(cameraUpperBounds,1,specs.Cams);
 problem.nVar = 6* specs.Cams;
 
 %% GA Parameters
-params.MaxIt = 100;
-params.nPop = 100;
+params.MaxIt = 150;
+params.nPop = 150;
 params.beta = 1;
 params.pC = 1;
 params.gamma = 0.1;
