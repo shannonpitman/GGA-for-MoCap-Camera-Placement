@@ -1,0 +1,9 @@
+function params = setupGAparams(MaxIt, nPop)
+params.MaxIt = MaxIt;
+params.nPop = nPop;
+params.beta = 1;
+params.pC = 1;
+params.gamma = 0.1;
+params.mu = 0.2; %probability of mutation
+params.sigma = 0.1;
+params.Tournamentsize =3;

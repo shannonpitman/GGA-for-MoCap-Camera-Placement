@@ -1,11 +1,11 @@
-function [coverageStats]= visualizeCameraCoverage(cameraChromosome, specs, figTitle)
+function [coverageStats]= visualizeCameraCoverage(out, specs)
 %Visualizes camera coverage of target points with color coding:
 % Red: No cameras see the point
 % Cyan: Only one camera sees the point  
 % Green: Two or more cameras see the point
 
     numCams = specs.Cams;
-    
+    cameraChromosome = out.bestsol.Chromosome;
     %Camera Parameters
     resolution = specs.Resolution;
     pixelSize = specs.PixelSize;
@@ -74,7 +74,7 @@ function [coverageStats]= visualizeCameraCoverage(cameraChromosome, specs, figTi
     xlabel('X (m)');
     ylabel('Y (m)');
     zlabel('Z (m)');
-    title(figTitle);
+    title('Camera Coverage - %d Cameras (Cost: %.4f)', specs.Cams, out.bestsol.Cost);
     view(45, 30);
     
     % Subplot 2: Pie chart
