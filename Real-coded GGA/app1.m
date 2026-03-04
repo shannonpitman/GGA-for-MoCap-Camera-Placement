@@ -1,8 +1,19 @@
+%% Camera Placement Optimiser for an optical MoCape tracking system
+% This guided genetic algorithm optimises the arrangement of a network of
+% cameras based on the application. The user must specify, the number of
+% cameras, the size of the testspace, mounting constraints, and the 
+% modality of operation (UGV or UAV, with a uniform or normally distributed 
+% discretisation of the space). The GA parameters also may be specified 
+% based on the designer's need and speed of the run. The cost function must
+% also be specified to be a hybrid combination of assessment based on 
+% dynamic occlusion or resultion uncertainty based on the application or 
+% hardware constraints. 
+
 clc; %clear screen 
 clear; % clear workspace
 close all;
 
-%% Specifications
+%% Hardware Specifications
 specs.Cams = 7; %Number of Cameras
 specs.Resolution = [1280 1024]; %[640 480] VGA resolution
 %specs.npix = [640 480]; %VGA resolution
@@ -13,25 +24,81 @@ specs.FocalWide = 0.0035; % focal length for wide angle camera [m]
 specs.Range = 16;%16m for passive markers for 800 exposure, gain of 6 and lowest f-stop
 specs.RangeWide = 9;%9m for passive markers
 
-% Target space is a uniformly discretised grid within the flight volume 
-% This workspace volume matches the available dimensions of the MS.G flight envelope 
-flight_envelope = [-4 4; -4 4; 0 4]; %m -> desired space: [-4 4; -4 4; 0 4.5]
-spacing = 1; %increase to have a more discretised space -> faster (1m : 10 x 10 x 4 = 400 points evaluated) 
-x_marker = flight_envelope(1,1):spacing:flight_envelope(1,2);
-y_marker = flight_envelope(2,1):spacing:flight_envelope(2,2);
-z_marker = flight_envelope(3,1):spacing:flight_envelope(3,2);
+%% Target Space Modality
+% Select the desired target type:
+% 1. UAV: entire space (full flight volume)
+% 2. UGV: focus on floor plane (small slab above floor)
+
+targetType = 1;
+
+% Select the desired discretisation method
+% 1. Uniform grid (evenly spaced volume)
+% 2. Normalised grid ( concentrated discretisation in the centre)
+targetMode = 1;
+
+volume = [-4 4; -4 4; 0 4]; %m This workspace volume matches the available dimensions of the MS.G flight envelope 
+UGV_maxHeight = 0.5; %m height ceiling of slab for UGVs
+spacing = 1; %increase for faster evaluation
+
+switch targetType
+    case 1
+        targetSpace = volume;
+    case 2
+        targetSpace = volume;
+        targetSpace(3,:) = [0, UGV_maxHeight];
+        if spacing > UGV_maxHeight
+            spacing = UGV_maxHeight/2; %at least two layers
+        end
+end
+
+% Generate a uniform grid
+x_marker = targetSpace(1,1):spacing:targetSpace(1,2);
+y_marker = targetSpace(2,1):spacing:targetSpace(2,2);
+z_marker = targetSpace(3,1):spacing:targetSpace(3,2);
 [X,Y,Z] = meshgrid(x_marker, y_marker, z_marker);
+uniformGrid = [X(:),Y(:),Z(:)];
 
+switch targetMode
+    case 1
+        % Uniform Grid
+        specs.Target = uniformGrid;
+    case 2
+        % Geneate normally-concentrated grid via inverse CDF warping
+        Nx = numel(x_marker); % Number of points along each axis matches the uniform grid
+        Ny = numel(y_marker);
+        Nz = numel(z_marker);
+    
+        % Evenly spaced points in (0,1)
+        u_x = linspace(0, 1, Nx + 2);  
+        u_x = u_x(2:end-1);
+        u_y = linspace(0, 1, Ny + 2);  
+        u_y = u_y(2:end-1);
+        u_z = linspace(0, 1, Nz + 2);  
+        u_z = u_z(2:end-1);
+    
+        x_norm = norminv(u_x);  % inverse normal CDF 
+        y_norm = norminv(u_y);
+        z_norm = norminv(u_z);
+    
+        % Rescale to volume bounds: map [min(norm), max(norm)] -> [bound_lo, bound_hi]
+        rescale_to_bounds = @(vals, lo, hi) lo + (vals - min(vals)) / (max(vals) - min(vals)) * (hi - lo);
+    
+        x_conc = rescale_to_bounds(x_norm, targetSpace(1,1), targetSpace(1,2));
+        y_conc = rescale_to_bounds(y_norm, targetSpace(2,1), targetSpace(2,2));
+        z_conc = rescale_to_bounds(z_norm, targetSpace(3,1), targetSpace(3,2));
+    
+        [Xc, Yc, Zc] = meshgrid(x_conc, y_conc, z_conc);
+        specs.Target = [Xc(:), Yc(:), Zc(:)];
+end
 
-%%
-specs.Target = [X(:), Y(:), Z(:)];
+%% 
 specs.NumPoints = size(specs.Target, 1);
 
 % Pre-compute static Data 
 % section centres based on flight envelope size and number of cameras
 numSections = floor(specs.Cams/2);
-z_mid = mean(flight_envelope(3,:)); %mid-height
-spaceCentre = [mean(flight_envelope(1,:)), mean(flight_envelope(2,:)), z_mid]; %centre of the flightspace
+z_mid = mean(targetSpace(3,:)); %mid-height
+spaceCentre = [mean(targetSpace(1,:)), mean(targetSpace(2,:)), z_mid]; %centre of the flightspace
 if mod(numSections, 2)== 1
     %Odd = add the centre as a viewpoint, distribute the rest on grid
     gridSections = numSections -1;
@@ -57,9 +124,9 @@ if gridSections > 0
     ny = bestNy;
     
     % Evenly spaced centres across the full grid
-    x_centres = linspace(flight_envelope(1,1), flight_envelope(1,2), 2*nx+1);
+    x_centres = linspace(targetSpace(1,1), targetSpace(1,2), 2*nx+1);
     x_centres = x_centres(2:2:end); % midpoints
-    y_centres = linspace(flight_envelope(2,1), flight_envelope(2,2), 2*ny+1);
+    y_centres = linspace(targetSpace(2,1), targetSpace(2,2), 2*ny+1);
     y_centres = y_centres(2:2:end);
     
     [Xc, Yc] = meshgrid(x_centres, y_centres);
@@ -247,9 +314,9 @@ fprintf(fid, 'Number of Cameras: %d\n', specs.Cams);
 fprintf(fid, 'Best Cost (Cost Function %d): %.6f\n', costFunctionType, saveData.BestCost);
 fprintf(fid, 'Cost Function Weights: %.2f Resolution Uncertainty and %.2f Dynamic Occlusion \n', specs.WeightUncertainty , specs.WeightOcclusion);
 fprintf(fid, 'Workspace Size: [%.1f %.1f; %.1f %.1f; %.1f %.1f] m\n', ...
-    flight_envelope(1,1), flight_envelope(1,2), ...
-    flight_envelope(2,1), flight_envelope(2,2), ...
-    flight_envelope(3,1), flight_envelope(3,2));
+    targetSpace(1,1), targetSpace(1,2), ...
+    targetSpace(2,1), targetSpace(2,2), ...
+    targetSpace(3,1), targetSpace(3,2));
 fprintf(fid, 'Computation Time: %.2f min\n', elapsedTime/60);
 fprintf(fid, 'Mutation rate: %.2f \n', params.mu);
 fprintf(fid, 'Tournament Size: %.2f \n', params.Tournamentsize);
