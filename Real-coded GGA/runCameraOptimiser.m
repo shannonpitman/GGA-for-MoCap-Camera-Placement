@@ -28,7 +28,7 @@ targetType = 1;
 
 % Discretisation method of grid
 % 1= Uniform grid (evenly spaced volume)
-% 2= Normalised grid ( concentrated discretisation in the centre)
+% 2= Normalised grid (concentrated discretisation in the centre)
 targetMode = 1;
 
 % Grid spacing [m]
@@ -50,11 +50,6 @@ end
 
 costFunctionType = 3;
 
-%Weights for combined cost function (only used if costFunctionType = 3)
-%Weights need to sum to 1
-specs.WeightUncertainty = 0.5; % Resolution uncertainty weight
-specs.WeightOcclusion = 0.5; % Dynamic occlusion weight
-
 % GA PARAMETERS
 maxGenerations = 150;
 populationSize = 150;
@@ -66,7 +61,12 @@ warmStartUsed = false; % Set this to true when you use warm-start
 
 %% Set-up
 % Hardware (input camera intrinsics)
-specs = setupHardwareSpecs;
+specs = setupHardwareSpecs(numCams);
+
+%Weights for combined cost function (only used if costFunctionType = 3)
+%Weights need to sum to 1
+specs.WeightUncertainty = 0.5; % Resolution uncertainty weight
+specs.WeightOcclusion = 0.5; % Dynamic occlusion weight
 
 % Target Space
 specs.Target = generateTargetSpace(volume, targetMode, spacing);

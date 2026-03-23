@@ -133,7 +133,7 @@ function out = RunGA(problem, params, specs)
             bestsol = popc(minOffspringIdx);
         end
 
-        % Merge populations efficiently
+        % Merge populations: Elitism
         pop = SortPopulation([pop;popc]);
 
         % Remove Extra Individuals 
