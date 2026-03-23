@@ -66,7 +66,7 @@ warmStartUsed = false; % Set this to true when you use warm-start
 
 %% Set-up
 % Hardware (input camera intrinsics)
-specs = setupHardwareSpecs;
+specs = setupHardwareSpecs(numCams);
 
 % Target Space
 specs.Target = generateTargetSpace(volume, targetMode, spacing);
