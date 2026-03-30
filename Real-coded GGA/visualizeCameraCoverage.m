@@ -62,7 +62,8 @@ function [coverageStats]= visualizeCameraCoverage(out, specs)
             colors(p,:) = [0, 1, 0]; % Green: two or more cameras
         end
     end
-    
+    modalityLabel = getModalityLabel(specs);
+
     % Create figure with subplots
     figure('Name', 'Normal Discretised Flightspace', 'Position', [100, 100, 1400, 600]);
     
@@ -74,7 +75,7 @@ function [coverageStats]= visualizeCameraCoverage(out, specs)
     xlabel('X (m)');
     ylabel('Y (m)');
     zlabel('Z (m)');
-    title('Camera Coverage - %d Cameras (Cost: %.4f)', specs.Cams, out.bestsol.Cost);
+    title(sprintf('Camera Coverage - %d Cameras (Cost: %.4f)', specs.Cams, out.bestsol.Cost));
     view(45, 30);
     
     % Subplot 2: Pie chart
@@ -84,17 +85,23 @@ function [coverageStats]= visualizeCameraCoverage(out, specs)
                coverageStats.twoPlusCamerasPercent];
     pieLabels = {'0 Cameras', '1 Camera', '2+ Cameras'};
     pieColors = [1, 0, 0; 0, 1, 1; 0, 1, 0]; % Match scatter plot colors
+
+    % Filter out zero-value slices
+    mask = pieData > 0;
+    filteredData = pieData(mask);
+    filteredLabels = pieLabels(mask);
+    filteredColors = pieColors(mask, :);
     
-    p = pie(pieData);
+    p = pie(filteredData);
     
-    % Set colors for pie slices
+    % Set colors
     for i = 1:2:length(p)
-        p(i).FaceColor = pieColors((i+1)/2, :);
+        p(i).FaceColor = filteredColors((i+1)/2, :);
     end
     
-    % Add percentage labels to pie slices
+    % Set percentage labels
     for i = 2:2:length(p)
-        p(i).String = sprintf('%.1f%%', pieData(i/2));
+        p(i).String = sprintf('%.1f%%', filteredData(i/2));
         p(i).FontSize = 12;
         p(i).FontWeight = 'bold';
     end
@@ -113,13 +120,15 @@ function [coverageStats]= visualizeCameraCoverage(out, specs)
         end
     end
     
-    legend(pieLabels, 'Location', 'southoutside', 'Orientation', 'horizontal');
+    legend(filteredLabels, 'Location', 'eastoutside', 'Orientation', 'vertical');
     title('Coverage Distribution');
     
     % Overall figure title
-    sgtitle('Coverage for a Normal Discretised Flightspace', 'FontSize', 14, 'FontWeight', 'bold');
+    sgtitle({sprintf('Coverage Analysis - %d Cameras', specs.Cams), modalityLabel}, ...
+        'FontSize', 14, 'FontWeight', 'bold');
     
     % Print statistics
+    fprintf('\n Camera Coverage Statistics (%s)\n', modalityLabel);
     fprintf('\n Camera Coverage Statistics \n');
     fprintf('Points with 0 cameras: %d (%.1f%%)\n', ...
         coverageStats.zeroCameras, coverageStats.zeroCamerasPercent);
