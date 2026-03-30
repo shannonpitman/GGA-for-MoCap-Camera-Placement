@@ -1,6 +1,8 @@
 function plotResults(out, specs, params, elapsedTime)
 currentDateTime = datetime('now');
 dateTimeStr = string(currentDateTime, 'yyyyMMdd_HHmmSS');
+modalityLabel = getModalityLabel(specs);
+
 % Convergence Plot with Subplots
 figure('Name', 'GA Convergence Analysis', 'Position', [100, 100, 1200, 500]);
 
@@ -30,6 +32,14 @@ title('Population Cost Evolution');
 legend('Location', 'best');
 hold off;
 
+if specs.warmStart
+    warmStr = 'Warm-Started';
+else
+    warmStr = 'Random Population';
+end
+sgtitle({sprintf('GA Convergence Analysis - %d Cameras (%s)', specs.Cams, warmStr), modalityLabel}, ...
+    'FontSize', 14, 'FontWeight', 'bold');
+
 plotFilename = sprintf('%dCams_Run_%s_convergence.png', specs.Cams, dateTimeStr);
 saveas(gcf, plotFilename);
 fprintf('Convergence plot saved to: %s\n', plotFilename);
@@ -58,7 +68,7 @@ grid('on')
 xlabel('X (m)')
 ylabel('Y (m)')
 zlabel('Z (m)')
-title(sprintf('Optimal Camera Placement - Cost: %.4f', out.bestsol.Cost))
+title({sprintf('Optimal Camera Placement - Cost: %.4f', out.bestsol.Cost), modalityLabel})
 view(45, 30)
 hold off
 

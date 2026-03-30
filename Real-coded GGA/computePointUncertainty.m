@@ -36,7 +36,8 @@ function uncertainty = computePointUncertainty(point, cameras, cameraCentres, nu
     Eigs = eig(C0v_vert); %[eigenvectors, eigenvalues in a diagonal matrix]
     uncertainty = sum(sqrt(abs(Eigs))); % uncertainty based on the trace of the cov matrix 
 
-    % Old code that found error volume 
+    % Old code that found error volume based on Wu, Sharma and Huang
+    % formulation
     % [A,~] = eig(C0v_vert); %[eigenvectors, eigenvalues in a diagonal matrix] -> eigenvectors: new axes which our data lies on, eigenvalues = variances along these new axes
     % 
     % 
