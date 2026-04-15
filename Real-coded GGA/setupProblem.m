@@ -2,9 +2,9 @@ function problem = setupProblem(numCams, costFunctionType, camUpperBounds, camLo
 % Select cost function
 switch costFunctionType
     case 1
-        problem.CostFunction = @resUncertainty; %moved camera chromosome to combined cost function 
+        problem.CostFunction = @resUncertaintyCost;
     case 2
-        problem.CostFunction = @dynamicOcclusion;
+        problem.CostFunction = @dynamicOcclusionCost;
     case 3
         problem.CostFunction = @combinedCostFunction;
 end
@@ -12,3 +12,4 @@ end
 problem.VarMin = repmat(camLowerBounds,1,numCams);
 problem.VarMax = repmat(camUpperBounds,1,numCams);
 problem.nVar = 6*numCams;
+end
