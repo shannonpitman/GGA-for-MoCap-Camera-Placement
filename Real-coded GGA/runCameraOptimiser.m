@@ -81,6 +81,7 @@ specs.TargetType = targetType;
 specs.TargetMode = targetMode;
 specs.Target = generateTargetSpace(volume, targetMode, spacing);
 specs.NumPoints = size(specs.Target,1);
+specs.spacing = spacing;
 
 % Section centres for guided initial population
 specs.SectionCentres = generateSectionCentres(numCams, volume);

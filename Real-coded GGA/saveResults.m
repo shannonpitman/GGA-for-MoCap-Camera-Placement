@@ -50,6 +50,17 @@ currentDateTime = datetime('now');
     fprintf(fid, 'Population Size: %d\n', params.nPop);
     fprintf(fid, 'Number of Generations: %d\n', params.MaxIt);
 
+    % --- NEW: Log target modality and grid info ---
+    targetTypeNames = {'UAV (Full Volume)', 'UGV (Floor Slab)'};
+    gridModeNames = {'Uniform Grid', 'Normal Grid'};
+    if isfield(specs, 'TargetType') && specs.TargetType >= 1 && specs.TargetType <= 2
+        fprintf(fid, 'Target Type: %s\n', targetTypeNames{specs.TargetType});
+    end
+    if isfield(specs, 'TargetMode') && specs.TargetMode >= 1 && specs.TargetMode <= 2
+        fprintf(fid, 'Grid Mode: %s\n', gridModeNames{specs.TargetMode});
+    end
+    fprintf(fid, 'Number of Target Points: %d\n', specs.NumPoints);
+
     fprintf(fid, '\nCamera Configurations:\n');
     fprintf(fid, '---------------------\n');
     for i = 1:specs.Cams
@@ -83,9 +94,33 @@ currentDateTime = datetime('now');
     newLogEntry.WarmStart = warmStartUsed;
     newLogEntry.GAParams = params;
     newLogEntry.RunFilename = matFilename;
+    
+    if isfield(specs, 'TargetType')
+        newLogEntry.TargetType = specs.TargetType;
+    else
+        newLogEntry.TargetType = NaN; % unknown for legacy runs
+    end
+
+    if isfield(specs, 'TargetMode')
+        newLogEntry.GridMode = specs.TargetMode;
+    else
+        newLogEntry.GridMode = NaN;
+    end
+
+    newLogEntry.Spacing = specs.spacing;
+    newLogEntry.NumTargetPoints = specs.NumPoints;
 
     if isfile(masterLogFile)
         load(masterLogFile, 'runLog');
+        
+        % Backwards compatibility: ensure existing entries have new fields ---
+        requiredFields = {'TargetType', 'GridMode', 'Spacing', 'NumTargetPoints'};
+        for f = 1:length(requiredFields)
+            if ~isfield(runLog, requiredFields{f})
+                [runLog.(requiredFields{f})] = deal(NaN);
+            end
+        end
+        
         runLog(end+1) = newLogEntry; 
     else
         runLog = newLogEntry;
