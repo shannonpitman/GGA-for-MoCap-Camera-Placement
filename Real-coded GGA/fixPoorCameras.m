@@ -8,16 +8,22 @@ function y = fixPoorCameras(x, specs, coverageThreshold)
     minPointsRequired = ceil(coverageThreshold * numPoints);
     
     % Setup cameras
-    cameras = setupCameras(x, numCams, specs.Resolution, specs.PixelSize, specs.Focal, specs.PrincipalPoint);
+    resolution = specs.Resolution;
+    focalLength = specs.Focal;
+    focalLengthWide = specs.FocalWide;
+    PrincipalPoint = specs.PrincipalPoint;
+    maxRange = specs.PreComputed.maxCameraRange;
+    maxRangeWide = specs.PreComputed.maxCameraRangeWide;
+ 
+    [cameras, camCenters] = setupCameras(x, numCams, resolution, focalLength, focalLengthWide, PrincipalPoint);
     
-    % Quick coverage check for each camera
+    % Coverage check for each camera (with range check via findVisibleCameras)
     cameraCoverage = zeros(numCams, 1);
-    for c = 1:numCams
-        for p = 1:numPoints
-            uv = cameras{c}.project(TargetSpace(p, :));
-            if (uv(1) >= 1 && uv(1) <= specs.Resolution(1) && uv(2) >= 1 && uv(2) <= specs.Resolution(2))
-                cameraCoverage(c) = cameraCoverage(c) + 1;
-            end
+    for p = 1:numPoints
+        point = TargetSpace(p, :);
+        [visibleCams, ~] = findVisibleCameras(point, cameras, camCenters, numCams, resolution, maxRange, maxRangeWide, focalLengthWide);
+        for k = 1:length(visibleCams)
+            cameraCoverage(visibleCams(k)) = cameraCoverage(visibleCams(k)) + 1;
         end
     end
     

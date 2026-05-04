@@ -18,7 +18,7 @@ function errorVolume = resUncertainty(specs, cameras, CamCenters)
     
     parfor p =1:numPoints
         point = TargetSpace(p,:);
-        uncertainties(p) = computePointUncertainty(point, cameras, CamCenters, numCams, adjacentSurfaces, du,dv, penaltyUncertainty, w2, resolution)
+        uncertainties(p) = computePointUncertainty(point, cameras, CamCenters, numCams, adjacentSurfaces, du,dv, penaltyUncertainty, w2, resolution);
     end
 
     errorVolume = mean(uncertainties);

@@ -3,39 +3,28 @@ function [coverageStats]= visualizeCameraCoverage(out, specs)
 % Red: No cameras see the point
 % Cyan: Only one camera sees the point  
 % Green: Two or more cameras see the point
-
+ 
     numCams = specs.Cams;
     cameraChromosome = out.bestsol.Chromosome;
     %Camera Parameters
     resolution = specs.Resolution;
-    pixelSize = specs.PixelSize;
     focalLength = specs.Focal;
+    focalLengthWide = specs.FocalWide;
     PrincipalPoint = specs.PrincipalPoint;
     TargetSpace = specs.Target;
-    % Npix = specs.npix;
+    maxRange = specs.PreComputed.maxCameraRange;
+    maxRangeWide = specs.PreComputed.maxCameraRangeWide;
     
-    cameras = setupCameras(cameraChromosome, numCams, resolution, pixelSize, focalLength, PrincipalPoint);
+    [cameras, camCenters] = setupCameras(cameraChromosome, numCams, resolution, focalLength, focalLengthWide, PrincipalPoint);
     
     numPoints = size(TargetSpace,1);
     cameraCoverage = zeros(numPoints,1);
     
-    %Amount of cams seeing each point
+    %Amount of cams seeing each point (with range check via findVisibleCameras)
     for p = 1:numPoints
         point = TargetSpace(p,:);
-        visibleCount = 0;
-        
-        for i = 1:numCams
-            uv = cameras{i}.project(point);
-            u = uv(1);
-            v = uv(2);
-            
-            %In camera's field of view
-            if (u >= 1 && u <= resolution(1) && v >= 1 && v <= resolution(2))
-                visibleCount = visibleCount + 1;
-            end
-        end
-        
-        cameraCoverage(p) = visibleCount;
+        [visibleCams, ~] = findVisibleCameras(point, cameras, camCenters, numCams, resolution, maxRange, maxRangeWide, focalLengthWide);
+        cameraCoverage(p) = length(visibleCams);
     end
     
     % Calculate statistics
@@ -50,7 +39,7 @@ function [coverageStats]= visualizeCameraCoverage(out, specs)
     coverageStats.maxCoverage = max(cameraCoverage);
     coverageStats.minCoverage = min(cameraCoverage);
     coverageStats.medianCoverage = median(cameraCoverage);
-
+ 
     % Colour map based on coverage
     colors = zeros(numPoints, 3);
     parfor p = 1:numPoints
@@ -63,7 +52,7 @@ function [coverageStats]= visualizeCameraCoverage(out, specs)
         end
     end
     modalityLabel = getModalityLabel(specs);
-
+ 
     % Create figure with subplots
     figure('Name', 'Normal Discretised Flightspace', 'Position', [100, 100, 1400, 600]);
     
@@ -85,7 +74,7 @@ function [coverageStats]= visualizeCameraCoverage(out, specs)
                coverageStats.twoPlusCamerasPercent];
     pieLabels = {'0 Cameras', '1 Camera', '2+ Cameras'};
     pieColors = [1, 0, 0; 0, 1, 1; 0, 1, 0]; % Match scatter plot colors
-
+ 
     % Filter out zero-value slices
     mask = pieData > 0;
     filteredData = pieData(mask);
