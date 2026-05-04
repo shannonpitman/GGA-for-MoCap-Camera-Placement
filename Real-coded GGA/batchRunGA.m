@@ -126,7 +126,9 @@ else
         schedule(i).ErrorMsg   = '';
     end
     
-    batchDateStr = string(datetime('now'), 'yyyyMMdd_HHmmss');
+    batchTimestamp = datetime('now');
+    batchConfig = cfg;
+    batchDateStr = string(batchTimestamp, 'yyyyMMdd_HHmmss');
     batchLogFile = sprintf('BatchLog_%s.mat', batchDateStr);
     startIdx = max(1, cfg.ResumeFrom);
 end
