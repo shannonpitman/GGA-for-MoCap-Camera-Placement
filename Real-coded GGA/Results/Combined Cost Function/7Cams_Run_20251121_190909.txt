@@ -1,0 +1,63 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 21-Nov-2025 19:09:05
+Number of Cameras: 7
+Best Cost (Cost Function 3): 34.944782
+Cost Function w/ 5.000000e-01 ResUncertainty Weight and 5.000000e-01 Dynamic Occlusion WeightWorkspace Size: [-3.0 3.0; -3.0 3.0; 0.0 2.0] m
+Computation Time: 3.76 hours
+
+==========================================
+
+Camera Configurations:
+---------------------
+
+Camera 1:
+  Position (m): [-5.000, -4.004, 4.745]
+  Orientation (rad): [-2.191, 0.785, -1.692]
+  Orientation (deg): [-125.6, 45.0, -96.9]
+
+Camera 2:
+  Position (m): [5.000, 2.991, 1.166]
+  Orientation (rad): [1.610, -0.943, -0.480]
+  Orientation (deg): [92.2, -54.0, -27.5]
+
+Camera 3:
+  Position (m): [4.970, -2.970, 3.653]
+  Orientation (rad): [-2.726, -1.212, 2.441]
+  Orientation (deg): [-156.2, -69.4, 139.9]
+
+Camera 4:
+  Position (m): [4.732, 4.500, 4.595]
+  Orientation (rad): [2.094, -0.431, -0.755]
+  Orientation (deg): [120.0, -24.7, -43.2]
+
+Camera 5:
+  Position (m): [4.963, -4.500, 0.662]
+  Orientation (rad): [-1.572, -0.552, -0.910]
+  Orientation (deg): [-90.1, -31.6, -52.2]
+
+Camera 6:
+  Position (m): [5.000, -4.001, 0.009]
+  Orientation (rad): [-1.417, -0.915, 0.350]
+  Orientation (deg): [-81.2, -52.4, 20.1]
+
+Camera 7:
+  Position (m): [4.881, 4.500, 2.826]
+  Orientation (rad): [2.001, -1.064, -1.601]
+  Orientation (deg): [114.7, -61.0, -91.7]
+
+==========================================
+
+Camera Coverage Statistics:
+---------------------------
+Total target points: 845
+Points with 0 cameras: 82 (9.7%)
+Points with 1 camera: 443 (52.4%)
+Points with 2+ cameras: 320 (37.9%)
+
+Coverage Metrics:
+  Average coverage: 1.34 cameras per point
+  Maximum coverage: 4 cameras per point
+  Minimum coverage: 0 cameras per point
+  Median coverage: 1.00 cameras per point

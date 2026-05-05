@@ -1,0 +1,154 @@
+from mpl_toolkits import mplot3d
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import axes3d
+import math
+
+# Coordonnées de l'origine
+world_origin = np.zeros(3)
+# Vecteurs de la base du monde
+dx, dy, dz = np.eye(3)
+# Vecteur de translation
+t = np. array([3, -4, 2])
+p0 = [1, 0, 0]
+p1 = [0, 1, 0]
+p2 = [0, 0, 1]
+
+def Matrice_Rotation_2D(teta):
+    return np.array([[math.cos(teta), -math.sin(teta)], [math.sin(teta), math.cos(teta)]])
+
+# Matrice de rotation 3D autour de l'axe x
+
+
+def Matrice_Rotation_3D_X(teta):
+    return np.array([[1, 0, 0, 0], [0, math.cos(teta), -math.sin(teta), 0], [0, math.sin(teta), math.cos(teta), 0], [0, 0, 0, 1]])
+# Matrice de rotation autour axe y
+
+
+def matrice_rotation_3D_Y(teta):
+    teta = math.radians(teta)
+    return np.array([[math.cos(teta), 0, math.sin(teta), 0], [0, 1, 0, 0], [-math.sin(teta), 0, math.cos(teta), 0], [0, 0, 0, 1]])
+# Matrice de rotation autour axe z
+
+
+def matrice_rotation_3D_Z(teta):
+    return np.array([[math.cos(teta), -math.sin(teta), 0, 0], [math.sin(teta), math.cos(teta), 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+# Matrice de Translation
+
+
+def matrice_translation_3D(Tx, Ty, Tz):
+    return np.array([[1, 0, 0, Tx], [0, 1, 0, Ty], [0, 0, 1, Tz], [0, 0, 0, 1]])
+
+
+origine = [0, 0, 0]
+# Zip function iterator of tuples qui associe les éléments à la suite X devient (0,0,0)
+# Concatène les tableaux possiblement
+X, Y, Z = zip(origine, origine, origine)
+print(X)
+U, V, W = zip(p0, p1, p2)
+print(U)
+Pmonde = np.array([-3, 0, 2, 1])
+# Teta in degree
+Ry = matrice_rotation_3D_Y(20)
+print("Ry :",Ry)
+T = matrice_translation_3D(5, 0, 21)
+print("T : ",T)
+# Coordonnées de l'origine référentiel monde
+monde = np.array([5, 0, 21,1])
+print(monde.shape)
+vecteurmondex = [1, 0, 0,0]
+vecteurmondey = [0, 1, 0,0]
+vecteurmondez = [0, 0, 1,0]
+monderotationx = np.dot(Ry,vecteurmondex)
+monderotationy = np.dot(Ry,vecteurmondey)
+monderotationz = np.dot(Ry,vecteurmondez)
+# Test normalisation du vecteur 
+monderotationx = monderotationx/np.linalg.norm(monderotationx)
+monderotationy =monderotationy/np.linalg.norm(monderotationy)
+monderotationz = monderotationz/np.linalg.norm(monderotationz)
+print("Vecteur rotation ",monderotationx,"y",monderotationy,"z",monderotationz)
+# Pc = T*R*Pm
+intermediate = np.dot(Ry,Pmonde)
+Pcamera = np.dot(T,intermediate)
+print("Pc :",Pcamera)
+
+# define axis and figure
+fig = plt.figure(figsize=(6, 4))
+# Crée le plan de la figure en mode 3D
+ax = fig.add_subplot(111,projection='3d')
+
+# set limit
+ax.set(xlim=(-10, 10), ylim=(-10, 10), zlim=(0, 20))
+
+#############
+# Monde
+#############
+#Caméra 1
+
+X, Y, Z = zip(monde[0:3], monde[0:3], monde[0:3])
+print("X",X)
+U, V, W = zip(monderotationx[0:3],monderotationy[0:3], monderotationz[0:3])
+# Plot a 2D/3D field of arrow X,Y,Z defines the arrow location
+# U,V,W defines the arrow direction [C] define the color
+ax.quiver(X, Y, Z, U, V, W, color="blue",
+          arrow_length_ratio=0.01 )
+ax.plot([X[0],U[0]+X[0]+10],[Y[1],V[1]+Y[1]+10],[Z[2],W[2]+Z[2]+10],"g-")
+
+# Référentiel du monde
+######
+U2, V2, W2 = zip(p0, p1, p2)
+U1, V1, W1 = zip(origine, origine, origine)
+# Référentiel de la caméra
+ax.quiver(U1, V1, W1, U2, V2, W2, color="red", arrow_length_ratio=0.01)
+# Add view vector
+print("ICI",[U1[0],U2[0]],[V1[1],V2[1]],[W1[2],W2[2]])
+
+ax.plot([U1[0],U2[0]+5],[V1[1],V2[1]+5],[W1[2],W2[2]+5],"g-")
+# Caméra 2 
+T2 = matrice_translation_3D(5,5,5)
+C2 = np.dot(T2,np.array([0,0,0,1]))
+X2, Y2, Z2 = zip(C2[0:3], C2[0:3], C2[0:3])
+X2p, Y2p, Z2p =  zip(p0, p1, p2)
+# Ne pas oublier que le deuxième triplet indique la direction des flêches dans le ax.quiver
+ax.quiver(X2, Y2, Z2, X2p, Y2p, Z2p, color="blue", arrow_length_ratio=0.01)
+ax.plot([X2[0],X2p[0]+5],[Y2[1],Y2p[1]+5],[Z2[2],Z2p[2]+5],"g-")
+print("C2:",C2)
+print("Caméra 2 : ",X2,X2p)
+# Caméra 3 
+T3 = matrice_translation_3D(4,1,5)
+C3 = np.dot(T3,np.array([0,0,0,1]))
+X3, Y3, Z3 = zip(C3[0:3], C3[0:3], C3[0:3])
+X3p, Y3p, Z3p =  zip(p0, p1, p2)
+# Ne pas oublier que le deuxième triplet indique la direction des flêches dans le ax.quiver
+ax.quiver(X3, Y3, Z3, X3p, Y3p, Z3p, color="blue", arrow_length_ratio=0.01)
+ax.plot([X3[0],X3p[0]+5],[Y3[1],Y3p[1]+5],[Z3[2],Z3p[2]+5],"g-")
+# Caméra 4 
+T4 = matrice_translation_3D(2,0,1)
+C4 = np.dot(T4,np.array([0,0,0,1]))
+X4, Y4, Z4 = zip(C4[0:3], C4[0:3], C4[0:3])
+X4p, Y4p, Z4p =  zip(p0, p1, p2)
+# Ne pas oublier que le deuxième triplet indique la direction des flêches dans le ax.quiver
+ax.quiver(X4, Y4, Z4, X4p, Y4p, Z4p, color="blue", arrow_length_ratio=0.01)
+ax.plot([X4[0],X4p[0]+5],[Y4[1],Y4p[1]+5],[Z4[2],Z4p[2]+5],"g-")
+# Add a line occluder
+xo = [-5,5]
+yo = [-5,5]
+zo = [0,5]
+occluder = xo+yo+zo
+ax.set_xlabel('X')
+ax.set_ylabel('Y')
+ax.set_zlabel('Z')
+def fun(x, y):
+    return -x + y
+xs = ys =  np.arange(0, 5, 1)
+Xs, Ys = np.meshgrid(xs, ys)
+zs = np.array(fun(np.ravel(Xs), np.ravel(Ys)))
+Zs = zs.reshape(Xs.shape)
+print("X:",Xs,"size(X)",np.shape((Xs)))
+print(np.shape([0,5]))
+ax.plot_surface(Xs, Ys, Zs)
+# Questionnements : 
+# Comment connaître quand l'occluder rencontre un axe de vision caméra égalité entre equations de droites ? 
+# Comment comptabiliser les sections d'angles occludés : Sommer les angles de projection entre deux caméras Beta
+# Essayer de mettre en place plusieurs caméras et vecteurs de vision les croiser et tenter la fonction de coût
+plt.show()
