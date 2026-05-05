@@ -1,0 +1,30 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 03-Nov-2025 15:13:26
+Number of Cameras: 4
+Best Cost (Uncertainty): 81.921092
+Computation Time: 5401.06 seconds
+
+Camera Configurations:
+---------------------
+
+Camera 1:
+  Position (m): [-5.000, -4.469, 1.737]
+  Orientation (rad): [-1.426, 0.844, -0.628]
+  Orientation (deg): [-81.7, 48.3, -36.0]
+
+Camera 2:
+  Position (m): [2.510, -3.865, 0.429]
+  Orientation (rad): [-1.094, -0.126, 0.105]
+  Orientation (deg): [-62.7, -7.2, 6.0]
+
+Camera 3:
+  Position (m): [-5.000, -2.927, 3.515]
+  Orientation (rad): [-1.982, 0.875, -1.088]
+  Orientation (deg): [-113.6, 50.1, -62.3]
+
+Camera 4:
+  Position (m): [4.998, 3.115, 0.296]
+  Orientation (rad): [1.134, -0.783, -0.389]
+  Orientation (deg): [65.0, -44.9, -22.3]

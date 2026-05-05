@@ -1,0 +1,50 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 05-Nov-2025 12:52:33
+Number of Cameras: 8
+Best Cost (Uncertainty): 69.532889
+Computation Time: 9864.54 seconds
+
+Camera Configurations:
+---------------------
+
+Camera 1:
+  Position (m): [3.759, 4.500, 3.180]
+  Orientation (rad): [1.921, -0.568, -0.786]
+  Orientation (deg): [110.1, -32.6, -45.0]
+
+Camera 2:
+  Position (m): [4.194, -4.500, 1.771]
+  Orientation (rad): [-1.247, -0.852, 0.165]
+  Orientation (deg): [-71.4, -48.8, 9.5]
+
+Camera 3:
+  Position (m): [5.000, 1.460, 2.125]
+  Orientation (rad): [-1.343, -1.388, 1.169]
+  Orientation (deg): [-77.0, -79.5, 67.0]
+
+Camera 4:
+  Position (m): [4.891, -0.046, 4.800]
+  Orientation (rad): [-2.544, -0.974, 1.899]
+  Orientation (deg): [-145.8, -55.8, 108.8]
+
+Camera 5:
+  Position (m): [-5.000, -4.186, 2.906]
+  Orientation (rad): [-1.781, 0.797, -1.129]
+  Orientation (deg): [-102.0, 45.7, -64.7]
+
+Camera 6:
+  Position (m): [5.000, -4.069, 1.666]
+  Orientation (rad): [-1.296, -0.853, 0.741]
+  Orientation (deg): [-74.2, -48.9, 42.5]
+
+Camera 7:
+  Position (m): [1.644, -4.450, 0.760]
+  Orientation (rad): [-1.168, 0.124, -0.072]
+  Orientation (deg): [-66.9, 7.1, -4.1]
+
+Camera 8:
+  Position (m): [-1.328, 4.500, 2.917]
+  Orientation (rad): [1.831, -0.242, -0.433]
+  Orientation (deg): [104.9, -13.9, -24.8]

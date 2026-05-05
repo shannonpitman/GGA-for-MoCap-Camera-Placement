@@ -1,0 +1,63 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 13-Nov-2025 18:56:57
+Number of Cameras: 7
+Best Cost (Cost Function 3): 62.138844
+Workspace Size: [-3.0 3.0; -3.0 3.0; 0.0 2.0] m
+Computation Time: 11509.54 seconds
+
+==========================================
+
+Camera Configurations:
+---------------------
+
+Camera 1:
+  Position (m): [-1.335, 4.499, 1.414]
+  Orientation (rad): [1.771, -0.069, -0.037]
+  Orientation (deg): [101.4, -4.0, -2.1]
+
+Camera 2:
+  Position (m): [-5.000, 3.118, 1.181]
+  Orientation (rad): [1.623, 1.178, 1.227]
+  Orientation (deg): [93.0, 67.5, 70.3]
+
+Camera 3:
+  Position (m): [4.748, -3.575, 4.800]
+  Orientation (rad): [2.740, -0.022, -0.244]
+  Orientation (deg): [157.0, -1.2, -14.0]
+
+Camera 4:
+  Position (m): [-5.000, 0.858, 1.408]
+  Orientation (rad): [-2.041, 1.371, -1.520]
+  Orientation (deg): [-116.9, 78.6, -87.1]
+
+Camera 5:
+  Position (m): [-4.216, 4.494, 0.118]
+  Orientation (rad): [1.470, 0.695, 0.117]
+  Orientation (deg): [84.2, 39.8, 6.7]
+
+Camera 6:
+  Position (m): [-4.946, -0.060, 0.830]
+  Orientation (rad): [1.372, 1.087, 0.990]
+  Orientation (deg): [78.6, 62.3, 56.7]
+
+Camera 7:
+  Position (m): [3.453, 4.500, 0.657]
+  Orientation (rad): [1.457, -0.796, -0.770]
+  Orientation (deg): [83.5, -45.6, -44.1]
+
+==========================================
+
+Camera Coverage Statistics:
+---------------------------
+Total target points: 845
+Points with 0 cameras: 237 (28.0%)
+Points with 1 camera: 466 (55.1%)
+Points with 2+ cameras: 142 (16.8%)
+
+Coverage Metrics:
+  Average coverage: 0.92 cameras per point
+  Maximum coverage: 3 cameras per point
+  Minimum coverage: 0 cameras per point
+  Median coverage: 1.00 cameras per point

@@ -1,0 +1,11 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 02-Dec-2025 16:03:37
+Number of Cameras: 7
+Best Cost (Cost Function 3): 0.460069
+Cost Function Weights: 0.50 Resolution Uncertainty and 0.50 Dynamic Occlusion 
+Workspace Size: [-3.0 3.0; -3.0 3.0; 0.0 2.0] m
+Computation Time: 89.27 min
+Mutation rate: 0.10 
+Tournament Size: 3.00 
