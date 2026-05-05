@@ -1,0 +1,68 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 10-Apr-2026 00:28:57
+Number of Cameras: 8
+Best Cost (Cost Function 3): 0.020102
+Cost Function Weights: 0.50 Resolution Uncertainty and 0.50 Dynamic Occlusion
+Computation Time: 385.44 min
+Mutation Rate: 0.50
+Tournament Size: 3
+Warm Starting Used: false
+Population Size: 100
+Number of Generations: 150
+Target Type: UAV (Full Volume)
+Grid Mode: Normal Grid
+Number of Target Points: 2601
+
+Camera Configurations:
+---------------------
+
+Camera 1:
+  Position (m):        [4.463, 3.651, 4.497]
+  Orientation (rad):    [3.142, -1.208, -1.680]
+  Orientation (deg):    [180.0, -69.2, -96.2]
+
+Camera 2:
+  Position (m):        [-2.861, 3.949, 4.731]
+  Orientation (rad):    [2.982, 0.025, -0.765]
+  Orientation (deg):    [170.9, 1.5, -43.8]
+
+Camera 3:
+  Position (m):        [3.150, -2.824, 4.595]
+  Orientation (rad):    [-2.968, -1.048, 2.743]
+  Orientation (deg):    [-170.1, -60.1, 157.2]
+
+Camera 4:
+  Position (m):        [-1.779, -4.500, 2.432]
+  Orientation (rad):    [-2.153, -0.142, 0.802]
+  Orientation (deg):    [-123.4, -8.1, 46.0]
+
+Camera 5:
+  Position (m):        [-4.504, 2.463, 4.578]
+  Orientation (rad):    [2.702, -0.067, 2.142]
+  Orientation (deg):    [154.8, -3.8, 122.7]
+
+Camera 6:
+  Position (m):        [4.284, 2.643, 4.255]
+  Orientation (rad):    [3.085, -0.673, -2.828]
+  Orientation (deg):    [176.8, -38.6, -162.0]
+
+Camera 7:
+  Position (m):        [4.109, -1.133, 4.762]
+  Orientation (rad):    [2.828, -0.500, -2.197]
+  Orientation (deg):    [162.0, -28.7, -125.9]
+
+Camera 8:
+  Position (m):        [-2.083, -4.414, 1.560]
+  Orientation (rad):    [-2.222, 0.057, -0.278]
+  Orientation (deg):    [-127.3, 3.2, -15.9]
+
+Camera Coverage Statistics:
+---------------------------
+Total target points: 2601
+Points with 0 cameras: 0 (0.0%)
+Points with 1 camera:  0 (0.0%)
+Points with 2+ cameras: 2601 (100.0%)
+Average coverage: 7.93 cameras per point
+Max coverage: 8 | Min: 5 | Median: 8.00
