@@ -7,9 +7,13 @@
 % The cost function is a weighted combination of resolution uncertainty and
 % dynamic occlusion handling and can also be adjusted by the user.
 
-clc; %clear screen 
+clc; %clear screen
 clear; % clear workspace
 close all;
+
+% Add every code subfolder (GA_Core, CostFunctions, Geometry, Setup,
+% Plotting, Analysis) to the MATLAB path for this session.
+addProjectPaths();
 
 %% User Inputs
 % CAMERA NETWORK

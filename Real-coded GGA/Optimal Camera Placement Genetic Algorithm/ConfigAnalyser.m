@@ -33,12 +33,18 @@ classdef ConfigAnalyser < handle
 
     methods
         function obj = ConfigAnalyser(varargin)
+            % Make sure code subfolders are on the path.
+            addProjectPaths();
+
             p = inputParser;
             addOptional(p, 'NumCameras', 7, @isnumeric);
             addOptional(p, 'TargetType', 1, @isnumeric);
             addOptional(p, 'GridMode', 1, @isnumeric);
             addParameter(p, 'File', '', @ischar);
-            addParameter(p, 'LogFile', 'GGA_RunsLog.mat', @ischar);
+            % Default log lives under Results/Logs/
+            defaultLog = fullfile(fileparts(mfilename('fullpath')), ...
+                                  'Results', 'Logs', 'GGA_RunsLog.mat');
+            addParameter(p, 'LogFile', defaultLog, @ischar);
             addParameter(p, 'Volume', [-4 4; -4 4; 0 4], @isnumeric);
             addParameter(p, 'WallBounds', [-5 5; -4.5 4.5; 0 4.8], @isnumeric);
             parse(p, varargin{:});
@@ -47,10 +53,11 @@ classdef ConfigAnalyser < handle
             obj.wallBounds = p.Results.WallBounds;
 
             if ~isempty(p.Results.File)
-                % Load specific file
-                tmp = load(p.Results.File, 'saveData');
+                % Load specific file (basename or full path both accepted)
+                runFile = resolveRunPath(p.Results.File);
+                tmp = load(runFile, 'saveData');
                 sd = tmp.saveData;
-                obj.sourceFile = p.Results.File;
+                obj.sourceFile = runFile;
             else
                 % Find best CF3 from log
                 load(p.Results.LogFile, 'runLog');
@@ -71,13 +78,14 @@ classdef ConfigAnalyser < handle
                 [~, bestIdx] = min([filtered.BestCost]);
                 bestRun = filtered(bestIdx);
 
-                if ~isfile(bestRun.RunFilename)
-                    error('Result file not found: %s', bestRun.RunFilename);
+                bestPath = resolveRunPath(bestRun.RunFilename, bestRun.NumCameras);
+                if ~isfile(bestPath)
+                    error('Result file not found: %s', bestPath);
                 end
 
-                tmp = load(bestRun.RunFilename, 'saveData');
+                tmp = load(bestPath, 'saveData');
                 sd = tmp.saveData;
-                obj.sourceFile = bestRun.RunFilename;
+                obj.sourceFile = bestPath;
             end
 
             obj.specs = sd.Specifications;

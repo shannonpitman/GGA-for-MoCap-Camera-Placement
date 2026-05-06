@@ -48,9 +48,12 @@ function plotCoverageHeatmap(varargin)
 % camera count) for each grid mode, loads the full result .mat file,
 % and computes per-point camera visibility.
 
-    %% Parse inputs
+    %% Parse inputs — default log lives under Results/Logs/.
+    defaultLog = fullfile(fileparts(fileparts(mfilename('fullpath'))), ...
+                          'Results', 'Logs', 'GGA_RunsLog.mat');
+
     p = inputParser;
-    addParameter(p, 'LogFile',       'GGA_RunsLog.mat', @ischar);
+    addParameter(p, 'LogFile',       defaultLog, @ischar);
     addParameter(p, 'NumCameras',    [],                @isnumeric);
     addParameter(p, 'CostFunction',  [],                @isnumeric);
     addParameter(p, 'MarkerSize',    40,                @isnumeric);
@@ -108,7 +111,7 @@ function plotCoverageHeatmap(varargin)
         [bestCost, bestIdx] = min([candidates.BestCost]);
         bestRun = candidates(bestIdx);
 
-        matFile = bestRun.RunFilename;
+        matFile = resolveRunPath(bestRun.RunFilename, bestRun.NumCameras);
         if ~isfile(matFile)
             fprintf('Result file not found: %s (skipping %s)\n', matFile, gridModeNames{gm});
             continue;

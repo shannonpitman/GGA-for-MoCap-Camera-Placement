@@ -42,9 +42,16 @@ function analyseConfiguration(varargin)
 %
 % See also: plotCoverageHeatmap, plotGARuns, batchRunGA
 
+    % Make sure code subfolders are on the path.
+    addProjectPaths();
+
     %% Parse inputs
+    % Default log lives under Results/Logs/ (post-restructure layout).
+    defaultLog = fullfile(fileparts(mfilename('fullpath')), ...
+                          'Results', 'Logs', 'GGA_RunsLog.mat');
+
     p = inputParser;
-    addParameter(p, 'LogFile',      'GGA_RunsLog.mat', @ischar);
+    addParameter(p, 'LogFile',      defaultLog, @ischar);
     addParameter(p, 'NumCameras',   7,                 @isnumeric);
     addParameter(p, 'TargetType',   1,                 @isnumeric);
     addParameter(p, 'GridMode',     1,                 @isnumeric);
@@ -55,10 +62,11 @@ function analyseConfiguration(varargin)
 
     %% Load result
     if ~isempty(opts.RunFile)
-        % Direct file load
-        tmp = load(opts.RunFile, 'saveData');
+        % Direct file load — accept basename (resolved against Results/) or full path
+        runFile = resolveRunPath(opts.RunFile);
+        tmp = load(runFile, 'saveData');
         sd = tmp.saveData;
-        fprintf('Loaded: %s\n', opts.RunFile);
+        fprintf('Loaded: %s\n', runFile);
     else
         % Find best CF3 run from log
         load(opts.LogFile, 'runLog');
@@ -80,14 +88,15 @@ function analyseConfiguration(varargin)
         
         [~, bestIdx] = min([filtered.BestCost]);
         bestRun = filtered(bestIdx);
-        
-        if ~isfile(bestRun.RunFilename)
-            error('Result file not found: %s', bestRun.RunFilename);
+
+        bestPath = resolveRunPath(bestRun.RunFilename, bestRun.NumCameras);
+        if ~isfile(bestPath)
+            error('Result file not found: %s', bestPath);
         end
-        
-        tmp = load(bestRun.RunFilename, 'saveData');
+
+        tmp = load(bestPath, 'saveData');
         sd = tmp.saveData;
-        fprintf('Loaded best CF3: %s (Cost=%.6f)\n', bestRun.RunFilename, bestRun.BestCost);
+        fprintf('Loaded best CF3: %s (Cost=%.6f)\n', bestPath, bestRun.BestCost);
     end
 
     %% Extract data

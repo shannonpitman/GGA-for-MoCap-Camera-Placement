@@ -6,18 +6,36 @@ function viewGALog(varargin)
 %   viewGALog('NumCameras', 7)           % Only 7-camera runs
 %   viewGALog('WarmStart', true)         % Only warm-start runs
 
-    % Parse inputs
+    % Make sure code subfolders are on the path.
+    addProjectPaths();
+
+    % Parse inputs — default log lives under Results/Logs/.
+    defaultLog = fullfile(fileparts(mfilename('fullpath')), ...
+                          'Results', 'Logs', 'GA_RunsLog.mat');
+
     p = inputParser;
-    addParameter(p, 'LogFile', 'GA_RunsLog.mat', @ischar);
+    addParameter(p, 'LogFile', defaultLog, @ischar);
     addParameter(p, 'NumCameras', [], @isnumeric);
     addParameter(p, 'CostFunction', [], @isnumeric);
     addParameter(p, 'WarmStart', [], @islogical);
     parse(p, varargin{:});
-    
+
     logFile = p.Results.LogFile;
-    
+
+    % Back-compat: also try the GGA name and the legacy root location.
     if ~isfile(logFile)
-        error('Log file not found: %s', logFile);
+        projectRoot = fileparts(mfilename('fullpath'));
+        candidates = { ...
+            fullfile(projectRoot, 'Results', 'Logs', 'GGA_RunsLog.mat'), ...
+            fullfile(projectRoot, 'GA_RunsLog.mat'), ...
+            fullfile(projectRoot, 'GGA_RunsLog.mat')};
+        for c = candidates
+            if isfile(c{1}), logFile = c{1}; break; end
+        end
+    end
+
+    if ~isfile(logFile)
+        error('Log file not found: %s', p.Results.LogFile);
     end
     
     load(logFile, 'runLog');
