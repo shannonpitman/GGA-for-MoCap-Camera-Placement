@@ -61,6 +61,7 @@ function stats = sanityCheckCoverage(varargin)
 
     %% Build cameras with the SAME specs the cost function uses
     specs       = sd.Specifications;
+    specs       = backfillLegacySpecs(specs);   % top-up legacy saves
     chrom       = sd.BestSolution.Chromosome;
     numCams     = specs.Cams;
     targetSpace = specs.Target;
