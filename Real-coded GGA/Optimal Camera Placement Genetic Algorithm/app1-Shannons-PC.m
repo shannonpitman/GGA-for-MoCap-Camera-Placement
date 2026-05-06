@@ -1,7 +1,11 @@
-clc; %clear screen 
+clc; %clear screen
 clear; % clear workspace
 close all;
- 
+
+% Add every code subfolder to the MATLAB path for this session.
+addProjectPaths();
+projectRoot = fileparts(mfilename('fullpath'));
+
 %% Specifications
 specs.Cams = 7; %Number of Cameras
 specs.Resolution = [1280 1024]; %[640 480] VGA resolution
@@ -163,10 +167,15 @@ elapsedTime = toc; % end timer
 %     mean(occlVals), std(occlVals), min(occlVals), max(occlVals));
 % fprintf('Ratio (Occl/Uncert): %.2f\n', mean(occlVals)/mean(uncertVals));
 
-%% Results 
+%% Results — write into Results/<N>Cams/ (post-restructure layout)
 currentDateTime = datetime('now');
 dateTimeStr = string(currentDateTime, 'yyyyMMdd_HHmmSS');
-filename = sprintf('%dCams_Run_%s.mat', specs.Cams, dateTimeStr);
+
+resultsRunDir = fullfile(projectRoot, 'Results', sprintf('%dCams', specs.Cams));
+if ~isfolder(resultsRunDir), mkdir(resultsRunDir); end
+
+basename = sprintf('%dCams_Run_%s.mat', specs.Cams, dateTimeStr);
+filename = fullfile(resultsRunDir, basename);
 
 % Data to save
 saveData.BestSolution = out.bestsol;
@@ -187,7 +196,8 @@ warmStartUsed = false; % Set this to true when you use warm-start
 figTitle = sprintf('Camera Coverage - %d Cameras (Cost: %.4f)', specs.Cams, saveData.BestCost);
 [coverageStats] = visualizeCameraCoverage(out.bestsol.Chromosome, specs, figTitle);
 
-coveragePlotFilename = sprintf('%dCams_Run_%s_coverage.png', specs.Cams, dateTimeStr);
+coveragePlotFilename = fullfile(resultsRunDir, ...
+    sprintf('%dCams_Run_%s_coverage.png', specs.Cams, dateTimeStr));
 saveas(gcf, coveragePlotFilename);
 fprintf('Coverage plot saved to: %s\n', coveragePlotFilename);
 saveData.CoverageStats = coverageStats;
@@ -283,7 +293,8 @@ title('Population Cost Evolution');
 legend('Location', 'best');
 hold off;
 
-plotFilename = sprintf('%dCams_Run_%s_convergence.png', specs.Cams, dateTimeStr);
+plotFilename = fullfile(resultsRunDir, ...
+    sprintf('%dCams_Run_%s_convergence.png', specs.Cams, dateTimeStr));
 saveas(gcf, plotFilename);
 fprintf('Convergence plot saved to: %s\n', plotFilename);
 
@@ -311,14 +322,18 @@ title(sprintf('Optimal Camera Placement - Cost: %.4f', saveData.BestCost))
 view(45, 30)
 hold off
 
-cameraPlotFilename = sprintf('%dCams_Run_%s_cameras.png', specs.Cams, dateTimeStr);
+cameraPlotFilename = fullfile(resultsRunDir, ...
+    sprintf('%dCams_Run_%s_cameras.png', specs.Cams, dateTimeStr));
 saveas(gcf, cameraPlotFilename); %saves as png
 fprintf('Camera plot saved to: %s\n', cameraPlotFilename);
 
-%% Append to Master Log File
-masterLogFile = 'GGA_RunsLog.mat';
+%% Append to Master Log File (Results/Logs/GGA_RunsLog.mat)
+logsDir = fullfile(projectRoot, 'Results', 'Logs');
+if ~isfolder(logsDir), mkdir(logsDir); end
+masterLogFile = fullfile(logsDir, 'GGA_RunsLog.mat');
 
-% Create new log entry
+% Create new log entry — store basename only for portability so loaders
+% can resolve via Results/<N>Cams/.
 newLogEntry.Timestamp = currentDateTime;
 newLogEntry.NumCameras = specs.Cams;
 newLogEntry.BestCost = saveData.BestCost;
@@ -326,7 +341,7 @@ newLogEntry.ElapsedTime = elapsedTime;
 newLogEntry.CostFunctionType = costFunctionType;
 newLogEntry.WarmStart = warmStartUsed;
 newLogEntry.GAParams = params;
-newLogEntry.RunFilename = filename;  % Reference to full results file
+newLogEntry.RunFilename = basename;  % basename, resolved via Results/<N>Cams/
 
 % Load existing log or create new one
 if isfile(masterLogFile)

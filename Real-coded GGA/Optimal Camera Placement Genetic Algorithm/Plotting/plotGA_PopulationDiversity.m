@@ -83,7 +83,12 @@ function plotGA_PopulationDiversity(varargin)
         if ~isfield(runs(i), 'RunFilename') || isempty(runs(i).RunFilename)
             continue;
         end
-        matPath = fullfile(opts.RunDir, runs(i).RunFilename);
+        % Resolve location under Results/<N>Cams/ (post-restructure layout)
+        if isfield(runs(i), 'NumCameras')
+            matPath = resolveRunPath(runs(i).RunFilename, runs(i).NumCameras, opts.RunDir);
+        else
+            matPath = resolveRunPath(runs(i).RunFilename, [], opts.RunDir);
+        end
         if ~isfile(matPath), continue; end
 
         data = load(matPath, 'saveData');

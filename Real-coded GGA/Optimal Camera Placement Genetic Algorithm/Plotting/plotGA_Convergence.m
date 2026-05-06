@@ -122,7 +122,13 @@ function plotGA_Convergence(varargin)
             continue;
         end
 
-        matPath = fullfile(opts.RunDir, runs(i).RunFilename);
+        % After restructure, run .mat files live in Results/<N>Cams/.
+        % resolveRunPath finds them by basename + camera count.
+        if isfield(runs(i), 'NumCameras')
+            matPath = resolveRunPath(runs(i).RunFilename, runs(i).NumCameras, opts.RunDir);
+        else
+            matPath = resolveRunPath(runs(i).RunFilename, [], opts.RunDir);
+        end
         if ~isfile(matPath)
             warning('File not found: %s — skipping.', matPath);
             continue;

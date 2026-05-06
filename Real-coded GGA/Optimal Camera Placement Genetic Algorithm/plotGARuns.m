@@ -1,10 +1,14 @@
-%% Generates figures from GA results from batch-run 
+%% Generates figures from GA results from batch-run
 clear; clc; close all;
 
-%% File Management
-logFile   = 'GGA_RunsLog.mat';     % Master run log
-runDir    = pwd;                    % Directory containing individual run .mat files
-outputDir = 'figures';             % Where to save PDFs
+% Make sure every code subfolder is on the MATLAB path.
+projectRoot = fileparts(mfilename('fullpath'));
+addProjectPaths();
+
+%% File Management (post-restructure layout)
+logFile   = fullfile(projectRoot, 'Results', 'Logs', 'GGA_RunsLog.mat'); % Master run log
+runDir    = fullfile(projectRoot, 'Results');   % Parent of <N>Cams subfolders
+outputDir = fullfile(projectRoot, 'figures');   % Where to save PDFs
 
 if ~isfolder(outputDir)
     mkdir(outputDir);

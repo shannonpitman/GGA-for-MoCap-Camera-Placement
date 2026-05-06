@@ -27,14 +27,21 @@ currentDateTime = datetime('now');
         saveData.Cameras(i).OrientationDegrees = rad2deg(saveData.Cameras(i).Orientation);
     end
 
-    %% MAT file
+    %% MAT file (written into Results/<N>Cams/, RunFilename stays a basename
+    %  so existing log entries that store basenames keep resolving.)
+    projectRoot = fileparts(fileparts(mfilename('fullpath')));   % .../<proj>
+    runDir      = fullfile(projectRoot, 'Results', sprintf('%dCams', specs.Cams));
+    if ~isfolder(runDir), mkdir(runDir); end
+
     matFilename = sprintf('%dCams_Run_%s.mat', specs.Cams, dateTimeStr);
-    save(matFilename, 'saveData');
-    fprintf('Results saved to: %s\n', matFilename);
+    matFullPath = fullfile(runDir, matFilename);
+    save(matFullPath, 'saveData');
+    fprintf('Results saved to: %s\n', matFullPath);
 
     %% Text summary
     txtFilename = sprintf('%dCams_Run_%s.txt', specs.Cams, dateTimeStr);
-    fid = fopen(txtFilename, 'w');
+    txtFullPath = fullfile(runDir, txtFilename);
+    fid = fopen(txtFullPath, 'w');
 
     fprintf(fid, 'Genetic Algorithm Camera Placement Results\n');
     fprintf(fid, '==========================================\n\n');
@@ -81,10 +88,12 @@ currentDateTime = datetime('now');
         coverageStats.maxCoverage, coverageStats.minCoverage, coverageStats.medianCoverage);
 
     fclose(fid);
-    fprintf('Summary saved to: %s\n', txtFilename);
+    fprintf('Summary saved to: %s\n', txtFullPath);
 
-    %% Append to master log
-    masterLogFile = 'GGA_RunsLog.mat';
+    %% Append to master log (Results/Logs/GGA_RunsLog.mat)
+    logsDir = fullfile(projectRoot, 'Results', 'Logs');
+    if ~isfolder(logsDir), mkdir(logsDir); end
+    masterLogFile = fullfile(logsDir, 'GGA_RunsLog.mat');
 
     newLogEntry.Timestamp = currentDateTime;
     newLogEntry.NumCameras = specs.Cams;

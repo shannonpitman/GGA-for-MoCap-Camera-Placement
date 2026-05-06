@@ -10,6 +10,9 @@ function batchRunGA(varargin)
 % Cold-start runs execute FIRST for each condition so that the best
 % chromosome is available to seed the warm-start runs.
 
+% Make sure every code subfolder is on the MATLAB path.
+addProjectPaths();
+
 %% Inputs
 p = inputParser;
 
@@ -129,7 +132,11 @@ else
     batchTimestamp = datetime('now');
     batchConfig = cfg;
     batchDateStr = string(batchTimestamp, 'yyyyMMdd_HHmmss');
-    batchLogFile = sprintf('BatchLog_%s.mat', batchDateStr);
+
+    % Batch logs live alongside the master run log under Results/Logs/.
+    logsDir = fullfile(fileparts(mfilename('fullpath')), 'Results', 'Logs');
+    if ~isfolder(logsDir), mkdir(logsDir); end
+    batchLogFile = fullfile(logsDir, sprintf('BatchLog_%s.mat', batchDateStr));
     startIdx = max(1, cfg.ResumeFrom);
 end
 

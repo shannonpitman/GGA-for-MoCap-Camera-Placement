@@ -6,7 +6,8 @@ function [filteredLog, filterDesc] = loadGARuns(varargin)
 %   describing the active filters (useful for filenames and annotations).
 %
 %   Name-Value Parameters:
-%     'LogFile'      - Path to .mat log file (default: 'GGA_RunsLog.mat')
+%     'LogFile'      - Path to .mat log file
+%                      (default: <projectRoot>/Results/Logs/GGA_RunsLog.mat)
 %     'NumCameras'   - Scalar camera count to keep
 %     'CostFunction' - Scalar cost function type (1, 2, or 3)
 %     'WarmStart'    - Logical true/false
@@ -16,8 +17,12 @@ function [filteredLog, filterDesc] = loadGARuns(varargin)
 %     'MatchParams'  - true to keep only runs whose GAParams match the
 %                      first passing run (default: false)
 
+    % Default log lives under <projectRoot>/Results/Logs/.
+    defaultLog = fullfile(fileparts(fileparts(mfilename('fullpath'))), ...
+                          'Results', 'Logs', 'GGA_RunsLog.mat');
+
     p = inputParser;
-    addParameter(p, 'LogFile',      'GGA_RunsLog.mat', @ischar);
+    addParameter(p, 'LogFile',      defaultLog, @ischar);
     addParameter(p, 'NumCameras',   [],  @isnumeric);
     addParameter(p, 'CostFunction', [],  @isnumeric);
     addParameter(p, 'WarmStart',    [],  @islogical);
@@ -29,9 +34,16 @@ function [filteredLog, filterDesc] = loadGARuns(varargin)
 
     opts = p.Results;
 
-    %% Load
+    %% Load — fall back to the legacy root-level location if needed.
     if ~isfile(opts.LogFile)
-        error('loadGARuns:fileNotFound', 'Log file not found: %s', opts.LogFile);
+        legacy = fullfile(fileparts(fileparts(mfilename('fullpath'))), ...
+                          'GGA_RunsLog.mat');
+        if isfile(legacy)
+            opts.LogFile = legacy;
+        else
+            error('loadGARuns:fileNotFound', ...
+                  'Log file not found: %s', opts.LogFile);
+        end
     end
     load(opts.LogFile, 'runLog');
     N = length(runLog);
