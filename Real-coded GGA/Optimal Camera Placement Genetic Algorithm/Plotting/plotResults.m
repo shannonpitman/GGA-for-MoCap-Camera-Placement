@@ -127,15 +127,16 @@ fprintf('Convergence plot saved to: %s.pdf\n', plotFilename);
 % =====================================================================
 % Camera Visualisation Figure
 % =====================================================================
-cameras = cell(specs.Cams, 1);
-for i = 1:specs.Cams
-    chromStart = (i-1)*6 + 1;
-    chromEnd = i*6;
-    pos = out.bestsol.Chromosome(chromStart:chromStart+2);
-    ori = out.bestsol.Chromosome(chromEnd-2:chromEnd);
-    T = se3(eul2rotm(ori, "XYZ"), pos);
-    cameras{i} = CentralCamera(name="cam"+i, pose=T);
-end
+% Build cameras with the SAME focal length and resolution that
+% setupCameras / the cost function use, so the plotted frustum reflects
+% the FOV that actually drives visibility checks.
+[cameras, camCenters] = setupCameras(out.bestsol.Chromosome, specs.Cams, ...
+    specs.Resolution, specs.Focal, specs.FocalWide, specs.PrincipalPoint);
+
+% Effective range per lens type (matches findVisibleCameras post-fix)
+maxRange     = specs.PreComputed.maxCameraRange;
+maxRangeWide = specs.PreComputed.maxCameraRangeWide;
+focalWide    = specs.FocalWide;
 
 fig2 = figure('Name', 'Camera Configuration', ...
     'Units', 'inches', ...
@@ -144,10 +145,23 @@ fig2 = figure('Name', 'Camera Configuration', ...
     'Color', sty.BackgroundColor);
 hold on;
 
-% Plot cameras
+% Plot cameras with frustums clipped at their actual effective range
 for i = 1:specs.Cams
-    cameras{i}.plot_camera('label', scale = 0.5)
+    if cameras{i}.f == focalWide
+        rng_i = maxRangeWide;
+        col_i = [0.85 0.40 0.10]; % wide lens — orange
+    else
+        rng_i = maxRange;
+        col_i = [0.10 0.45 0.75]; % narrow lens — blue
+    end
+    plotCameraFOV(cameras{i}, camCenters(:,i), rng_i, ...
+        'Color', col_i, 'Label', sprintf('cam%d', i));
 end
+
+% Overlay target space so the reader can see what's being captured
+TargetSpace = specs.Target;
+plot3(TargetSpace(:,1), TargetSpace(:,2), TargetSpace(:,3), '.', ...
+    'Color', [0.4 0.4 0.4], 'MarkerSize', 3);
 
 axis('equal')
 grid('on')

@@ -353,21 +353,21 @@ end
 function plotCameraConfig(chrom, specs, cost, label)
     numCams = specs.Cams;
 
-    cameras = cell(numCams, 1);
-    for i = 1:numCams
-        chromStart = (i-1)*6 + 1;
-        pos = chrom(chromStart:chromStart+2);
-        ori = chrom(chromStart+3:chromStart+5);
-        T = se3(eul2rotm(ori, "XYZ"), pos);
-        cameras{i} = CentralCamera('name', sprintf('cam%d', i), 'pose', T);
-    end
+    % Build cameras with the actual focal length, resolution and principal
+    % point that the cost function uses, so the drawn FOV matches the FOV
+    % seen by findVisibleCameras / computePointUncertainty.
+    [cameras, camCenters] = setupCameras(chrom, numCams, specs.Resolution, ...
+        specs.Focal, specs.FocalWide, specs.PrincipalPoint);
 
     figure('Name', sprintf('Camera Config — %s', label), ...
         'Position', [100, 100, 800, 600]);
     hold on;
 
-    for i = 1:numCams
-        cameras{i}.plot_camera('label', 'scale', 0.5);
+    drawCamerasWithFOV(cameras, camCenters, specs);
+    if isfield(specs, 'Target')
+        T = specs.Target;
+        plot3(T(:,1), T(:,2), T(:,3), '.', ...
+            'Color', [0.4 0.4 0.4], 'MarkerSize', 3);
     end
 
     axis equal; grid on;
@@ -385,21 +385,39 @@ end
 function plotCamerasInAxis(chrom, specs)
     numCams = specs.Cams;
 
-    cameras = cell(numCams, 1);
-    for i = 1:numCams
-        chromStart = (i-1)*6 + 1;
-        pos = chrom(chromStart:chromStart+2);
-        ori = chrom(chromStart+3:chromStart+5);
-        T = se3(eul2rotm(ori, "XYZ"), pos);
-        cameras{i} = CentralCamera('name', sprintf('cam%d', i), 'pose', T);
-    end
+    [cameras, camCenters] = setupCameras(chrom, numCams, specs.Resolution, ...
+        specs.Focal, specs.FocalWide, specs.PrincipalPoint);
 
     hold on;
-    for i = 1:numCams
-        cameras{i}.plot_camera('label', 'scale', 0.5);
+    drawCamerasWithFOV(cameras, camCenters, specs);
+    if isfield(specs, 'Target')
+        T = specs.Target;
+        plot3(T(:,1), T(:,2), T(:,3), '.', ...
+            'Color', [0.4 0.4 0.4], 'MarkerSize', 3);
     end
     axis equal; grid on;
     xlabel('X (m)'); ylabel('Y (m)'); zlabel('Z (m)');
     view(45, 30);
     hold off;
+end
+
+
+function drawCamerasWithFOV(cameras, camCenters, specs)
+% Draw every camera's true FOV pyramid clipped at its effective range.
+    numCams      = specs.Cams;
+    maxRange     = specs.PreComputed.maxCameraRange;
+    maxRangeWide = specs.PreComputed.maxCameraRangeWide;
+    focalWide    = specs.FocalWide;
+
+    for i = 1:numCams
+        if cameras{i}.f == focalWide
+            rng_i = maxRangeWide;
+            col_i = [0.85 0.40 0.10]; % wide lens — orange
+        else
+            rng_i = maxRange;
+            col_i = [0.10 0.45 0.75]; % narrow lens — blue
+        end
+        plotCameraFOV(cameras{i}, camCenters(:,i), rng_i, ...
+            'Color', col_i, 'Label', sprintf('cam%d', i));
+    end
 end
