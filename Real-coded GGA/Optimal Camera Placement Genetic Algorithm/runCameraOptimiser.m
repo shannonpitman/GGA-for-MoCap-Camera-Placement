@@ -60,13 +60,28 @@ maxGenerations = 150;
 populationSize = 100;
 
 % WARM-START
-warmStartUsed = false; % Set this to true when you use warm-start
-warmStartBestSol = [-3.94453694866477	2.80270658457369	4.70420099523774	3.14028385018124	0.865374203482423	1.52808794739770	4.81414500579010	1.49344760628434	4.07726936557076	3.13638271864850	-0.421481339363494	-2.45179618042072	-4.95492972522762	-2.48343183175008	4.54438986956409	-1.91517534692494	0.350745443390892	-1.63869078772669	-4.87109356019903	1.97091349231205	3.73307831294323	3.07387024977452	0.275222610101504	2.32742052217727	1.98977952260285	-4.50000000000000	4.24773888189726	-2.08157684817404	-0.170059426054804	0.423818681832194	4.74229673914245	1.50991375796534	4.62881140632982	-3.14159265358979	-0.227255198303810	3.14159265358979	-0.484212964041819	-4.47751014807785	2.13048050788250	-1.72318139201811	-0.0469945210243474	-1.1266562383236155]; % Uncomment and insert chromosome to seed pop(1)
-perturbed = Mutate(warmStartBestSol, 1, 0.5); %mutates all genes 
-perturbed = max(perturbed, problem.VarMin);
-perturbed = min(perturbed, problem.VarMax);
-warmStartChromosome = [warmStartBestSol; perturbed];
->>>>>>> 3c2db45fdf89886dd088769d5b0ce831e4cb2f08
+% To warm-start the GA from a previously found chromosome, set
+% warmStartUsed = true and assign warmStartBestSol to a saved
+% chromosome (1 x 6*numCams row vector — same convention as
+% saveData.BestSolution.Chromosome). The chromosome MUST come from
+% a post-bugfix run; pre-fix chromosomes were optimised against the
+% corrupted cost surface and will mislead the GA.
+warmStartUsed    = false;
+warmStartBestSol = [];      % e.g. load(...).saveData.BestSolution.Chromosome
+
+if warmStartUsed
+    if isempty(warmStartBestSol) || numel(warmStartBestSol) ~= 6*numCams
+        error('runCameraOptimiser:BadWarmStart', ...
+            'warmStartUsed=true requires warmStartBestSol of length %d.', ...
+            6*numCams);
+    end
+    perturbed = Mutate(warmStartBestSol, 1, 0.5);                 % perturb all genes
+    perturbed = max(perturbed, problem.VarMin);
+    perturbed = min(perturbed, problem.VarMax);
+    warmStartChromosome = [warmStartBestSol; perturbed];
+else
+    warmStartChromosome = [];
+end
 
 %% Set-up
 % Hardware (input camera intrinsics)

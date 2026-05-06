@@ -1,49 +1,66 @@
 function tf = isInsidePlanes(x, planes, tol, numVisible)
-% Returns true if point x lies inside the intersection of all visible
-% camera frustums. Each frustum is defined by a set of half-spaces
-% (n_k . x >= d_k for inward-pointing normals, with a small tolerance tol
-% which is expected to be a small negative number to admit boundary cases).
+% ISINSIDEPLANES  True if x lies inside the intersection of all visible
+% camera frustums.
 %
-% The point is OUTSIDE camera i's frustum if ANY of its planes is violated
-% (i.e. n_k . x - d_k < tol). The vectorised check below mirrors the
-% intent of the commented-out scalar version: return false on the first
-% violated plane, in any visible camera.
-    for i= 1:numVisible
-        nVecs = planes{i}(1:3,:); %normals stacked as columns
-        dVals = planes{i}(4, :); %row of d offsets
+% Each frustum is described by inward-pointing half-space normals
+% (n_k . x >= d_k for every plane k of every visible camera). A point is
+% OUTSIDE if even one plane is violated (n_k . x - d_k < tol). `tol` is
+% expected to be a small negative number so points on the boundary are
+% admitted within numerical precision.
+%
+% INPUT SHAPES
+%   x        : 3x1 single point  ->  tf is scalar logical
+%              3xT batch         ->  tf is 1xT logical (true per-column)
+%              1x3 row           ->  treated as a single point
+%   planes   : numVisible-cell, each (4 x K) [n; d] stacked surfaces
+%   tol      : scalar, e.g. -1e-9
+%   numVisible : numel(planes)
+%
+% The implementation concatenates every visible camera's planes once and
+% does a single (P x T) = N' * X matmul, which is much faster than the
+% per-camera loop when there are many candidate points.
 
-        dotProd = nVecs' * x(:); %column: n_k . x for each plane k
-        if any(dotProd - dVals' < tol) %any violated plane => x is outside this frustum
-            tf = false;
-            return;
+    if nargin < 4 || isempty(numVisible)
+        numVisible = numel(planes);
+    end
+
+    % Normalise input to 3 x T column-points.
+    if isvector(x)
+        X = x(:);
+    else
+        X = x;
+        if size(X, 1) ~= 3 && size(X, 2) == 3
+            X = X.';
         end
     end
-    tf = true;
+
+    % Build the concatenated plane matrix once.
+    nPerCam = zeros(numVisible, 1);
+    for i = 1:numVisible
+        nPerCam(i) = size(planes{i}, 2);
+    end
+    P = sum(nPerCam);
+    if P == 0
+        tf = true(1, size(X, 2));
+        if size(X, 2) == 1, tf = tf(1); end
+        return;
+    end
+
+    Nall = zeros(3, P);
+    Dall = zeros(1, P);
+    col  = 0;
+    for i = 1:numVisible
+        c = nPerCam(i);
+        Nall(:, col+1:col+c) = planes{i}(1:3, :);
+        Dall(   col+1:col+c) = planes{i}(4,   :);
+        col = col + c;
+    end
+
+    % violations(p, t) = n_p . x_t - d_p ; point t is outside if any p violates.
+    violations = Nall.' * X - Dall.';      % P x T (broadcasting on Dall')
+    tf         = ~any(violations < tol, 1); % 1 x T
+
+    if size(X, 2) == 1
+        tf = tf(1);
+    end
 end
-
-
-
-
-
-
-
-
-
-
-
-
-% 
-% 
-% Non-vectorised code
-% 
-%     for cc = 1:numel(planes) %loop through number of pyramids (cams) 
-%         ps = planes{cc}; 
-%         for k = 1:numel(ps) %loop through the plane surfaces 
-%             if dot(ps(k).n, x) - ps(k).d < tol %if less than twiddle factor then not a vertex
-%                 tf = false;
-%                 return
-%             end
-%         end
-%     end
-%     tf = true;
-% end

@@ -99,6 +99,16 @@ function summary = reEvaluateSavedRuns(varargin)
         specs  = sd.Specifications;
         chrom  = sd.BestSolution.Chromosome;
 
+        % Backfill any fields older saves are missing (e.g. FocalWide,
+        % PreComputed.maxCameraRangeWide) so the corrected cost functions
+        % can evaluate.
+        try
+            specs = backfillLegacySpecs(specs);
+        catch ME
+            warning('Backfill failed on %s: %s', runFile, ME.message);
+            continue;
+        end
+
         %% Step 3 — recompute costs with the corrected code
         if opts.DryRun
             newRes = NaN; newOcc = NaN; newComb = NaN;

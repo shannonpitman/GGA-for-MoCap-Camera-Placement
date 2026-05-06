@@ -30,7 +30,7 @@ function results = batchRun7Cameras(varargin)
     addParameter(p, 'CostFunctions',   [1 2 3], @isnumeric);
     addParameter(p, 'NumColdRepeats',  5,       @isnumeric);
     addParameter(p, 'NumWarmRepeats',  1,       @isnumeric);
-    addParameter(p, 'Spacing',         0.5,     @isnumeric);
+    addParameter(p, 'Spacing',         1.0,     @isnumeric);
     addParameter(p, 'TargetType',      1,       @isnumeric); % 1=UAV
     addParameter(p, 'GridMode',        1,       @isnumeric); % 1=Uniform
     addParameter(p, 'MaxGenerations',  150,     @isnumeric);
