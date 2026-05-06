@@ -1,0 +1,68 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 23-Apr-2026 16:54:23
+Number of Cameras: 8
+Best Cost (Cost Function 3): 0.015315
+Cost Function Weights: 0.50 Resolution Uncertainty and 0.50 Dynamic Occlusion
+Computation Time: 381.72 min
+Mutation Rate: 0.50
+Tournament Size: 3
+Warm Starting Used: true
+Population Size: 100
+Number of Generations: 150
+Target Type: UAV (Full Volume)
+Grid Mode: Normal Grid
+Number of Target Points: 2601
+
+Camera Configurations:
+---------------------
+
+Camera 1:
+  Position (m):        [4.517, 3.101, 3.720]
+  Orientation (rad):    [2.751, -0.913, -1.902]
+  Orientation (deg):    [157.6, -52.3, -109.0]
+
+Camera 2:
+  Position (m):        [-3.238, 4.170, 4.696]
+  Orientation (rad):    [3.123, 0.274, -0.854]
+  Orientation (deg):    [179.0, 15.7, -48.9]
+
+Camera 3:
+  Position (m):        [3.231, -4.386, 4.800]
+  Orientation (rad):    [-2.537, -0.335, -0.018]
+  Orientation (deg):    [-145.4, -19.2, -1.1]
+
+Camera 4:
+  Position (m):        [-3.123, -4.459, 3.038]
+  Orientation (rad):    [-2.040, -0.147, 0.896]
+  Orientation (deg):    [-116.9, -8.4, 51.3]
+
+Camera 5:
+  Position (m):        [-4.871, 3.458, 3.473]
+  Orientation (rad):    [2.772, 0.153, 2.244]
+  Orientation (deg):    [158.8, 8.8, 128.6]
+
+Camera 6:
+  Position (m):        [4.393, 3.544, 4.756]
+  Orientation (rad):    [3.101, -0.876, -2.544]
+  Orientation (deg):    [177.7, -50.2, -145.7]
+
+Camera 7:
+  Position (m):        [4.120, -2.425, 4.491]
+  Orientation (rad):    [2.023, -1.075, -2.925]
+  Orientation (deg):    [115.9, -61.6, -167.6]
+
+Camera 8:
+  Position (m):        [-2.468, -4.282, 1.398]
+  Orientation (rad):    [-2.252, 0.229, -0.029]
+  Orientation (deg):    [-129.1, 13.1, -1.6]
+
+Camera Coverage Statistics:
+---------------------------
+Total target points: 2601
+Points with 0 cameras: 0 (0.0%)
+Points with 1 camera:  0 (0.0%)
+Points with 2+ cameras: 2601 (100.0%)
+Average coverage: 7.88 cameras per point
+Max coverage: 8 | Min: 6 | Median: 8.00

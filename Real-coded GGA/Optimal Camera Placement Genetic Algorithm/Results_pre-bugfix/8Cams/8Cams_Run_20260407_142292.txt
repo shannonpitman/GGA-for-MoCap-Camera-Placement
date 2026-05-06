@@ -1,0 +1,68 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 07-Apr-2026 14:22:29
+Number of Cameras: 8
+Best Cost (Cost Function 1): 0.328135
+Cost Function Weights: 0.50 Resolution Uncertainty and 0.50 Dynamic Occlusion
+Computation Time: 78.51 min
+Mutation Rate: 0.50
+Tournament Size: 3
+Warm Starting Used: false
+Population Size: 100
+Number of Generations: 150
+Target Type: UGV (Floor Slab)
+Grid Mode: Normal Grid
+Number of Target Points: 578
+
+Camera Configurations:
+---------------------
+
+Camera 1:
+  Position (m):        [2.442, 4.500, 0.293]
+  Orientation (rad):    [2.458, -0.036, 0.272]
+  Orientation (deg):    [140.9, -2.1, 15.6]
+
+Camera 2:
+  Position (m):        [-4.471, -3.632, 3.501]
+  Orientation (rad):    [-2.425, 0.373, -2.688]
+  Orientation (deg):    [-138.9, 21.4, -154.0]
+
+Camera 3:
+  Position (m):        [4.784, 1.492, 1.810]
+  Orientation (rad):    [-2.626, -0.526, 1.394]
+  Orientation (deg):    [-150.5, -30.1, 79.9]
+
+Camera 4:
+  Position (m):        [-4.882, -0.190, 3.640]
+  Orientation (rad):    [2.760, 0.435, 2.629]
+  Orientation (deg):    [158.1, 24.9, 150.6]
+
+Camera 5:
+  Position (m):        [-3.705, -0.936, 3.779]
+  Orientation (rad):    [3.142, 1.520, 2.293]
+  Orientation (deg):    [180.0, 87.1, 131.4]
+
+Camera 6:
+  Position (m):        [-2.676, -3.131, 4.545]
+  Orientation (rad):    [-2.577, -0.202, -1.027]
+  Orientation (deg):    [-147.7, -11.6, -58.9]
+
+Camera 7:
+  Position (m):        [-0.138, -4.349, 4.638]
+  Orientation (rad):    [-2.613, 0.151, -1.087]
+  Orientation (deg):    [-149.7, 8.7, -62.3]
+
+Camera 8:
+  Position (m):        [-4.993, -4.158, 4.180]
+  Orientation (rad):    [-2.873, 0.310, -0.960]
+  Orientation (deg):    [-164.6, 17.8, -55.0]
+
+Camera Coverage Statistics:
+---------------------------
+Total target points: 578
+Points with 0 cameras: 0 (0.0%)
+Points with 1 camera:  0 (0.0%)
+Points with 2+ cameras: 578 (100.0%)
+Average coverage: 7.92 cameras per point
+Max coverage: 8 | Min: 7 | Median: 8.00

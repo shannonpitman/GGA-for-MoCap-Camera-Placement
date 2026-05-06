@@ -1,0 +1,68 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 22-Apr-2026 00:33:15
+Number of Cameras: 8
+Best Cost (Cost Function 2): 2.510985
+Cost Function Weights: 0.50 Resolution Uncertainty and 0.50 Dynamic Occlusion
+Computation Time: 137.41 min
+Mutation Rate: 0.50
+Tournament Size: 3
+Warm Starting Used: true
+Population Size: 100
+Number of Generations: 150
+Target Type: UAV (Full Volume)
+Grid Mode: Uniform Grid
+Number of Target Points: 2601
+
+Camera Configurations:
+---------------------
+
+Camera 1:
+  Position (m):        [4.872, -3.721, 2.959]
+  Orientation (rad):    [-0.531, -1.517, 1.777]
+  Orientation (deg):    [-30.4, -86.9, 101.8]
+
+Camera 2:
+  Position (m):        [5.000, 3.845, 2.762]
+  Orientation (rad):    [2.589, -1.053, -2.077]
+  Orientation (deg):    [148.3, -60.4, -119.0]
+
+Camera 3:
+  Position (m):        [-4.187, -3.962, 0.123]
+  Orientation (rad):    [-1.396, 1.051, -0.882]
+  Orientation (deg):    [-80.0, 60.2, -50.5]
+
+Camera 4:
+  Position (m):        [5.000, -4.500, 0.000]
+  Orientation (rad):    [0.610, -1.508, 0.998]
+  Orientation (deg):    [35.0, -86.4, 57.2]
+
+Camera 5:
+  Position (m):        [4.011, 4.026, 0.867]
+  Orientation (rad):    [1.550, -1.167, 0.400]
+  Orientation (deg):    [88.8, -66.8, 22.9]
+
+Camera 6:
+  Position (m):        [-4.378, -4.433, 3.153]
+  Orientation (rad):    [-1.639, 0.696, -0.591]
+  Orientation (deg):    [-93.9, 39.9, -33.9]
+
+Camera 7:
+  Position (m):        [-3.813, 4.500, 4.800]
+  Orientation (rad):    [2.530, 0.740, -0.983]
+  Orientation (deg):    [144.9, 42.4, -56.3]
+
+Camera 8:
+  Position (m):        [-5.000, 4.260, 0.000]
+  Orientation (rad):    [-0.799, 1.887, 0.701]
+  Orientation (deg):    [-45.8, 108.1, 40.2]
+
+Camera Coverage Statistics:
+---------------------------
+Total target points: 2601
+Points with 0 cameras: 0 (0.0%)
+Points with 1 camera:  0 (0.0%)
+Points with 2+ cameras: 2601 (100.0%)
+Average coverage: 8.00 cameras per point
+Max coverage: 8 | Min: 8 | Median: 8.00
