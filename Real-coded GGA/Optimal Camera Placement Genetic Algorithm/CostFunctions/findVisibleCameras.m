@@ -15,10 +15,12 @@ for i = 1:numCams
         viewVector = point - camCenter;
         distance = norm(viewVector);
         % Determine effective range based on lens type
+        % Wide-angle lenses (FocalWide) have the SHORTER range (maxRangeWide).
+        % Narrow-angle / long-focal lenses have the LONGER range (maxRange).
         if cameras{i}.f == FocalWide
-            effectiveRange = maxRange;
-        else
             effectiveRange = maxRangeWide;
+        else
+            effectiveRange = maxRange;
         end
         % Check if within effective range
         if distance <= effectiveRange && distance > 0
