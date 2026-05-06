@@ -1,0 +1,63 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 04-May-2026 13:58:38
+Number of Cameras: 7
+Best Cost (Cost Function 3): 0.025345
+Cost Function Weights: 0.50 Resolution Uncertainty and 0.50 Dynamic Occlusion
+Computation Time: 60.38 min
+Mutation Rate: 0.50
+Tournament Size: 3
+Warm Starting Used: true
+Population Size: 100
+Number of Generations: 150
+Target Type: UAV (Full Volume)
+Grid Mode: Uniform Grid
+Number of Target Points: 726
+
+Camera Configurations:
+---------------------
+
+Camera 1:
+  Position (m):        [4.522, 4.247, 2.365]
+  Orientation (rad):    [1.699, -1.034, 0.666]
+  Orientation (deg):    [97.3, -59.3, 38.2]
+
+Camera 2:
+  Position (m):        [-4.418, -3.325, 4.800]
+  Orientation (rad):    [-2.257, 0.652, 0.981]
+  Orientation (deg):    [-129.3, 37.4, 56.2]
+
+Camera 3:
+  Position (m):        [0.701, 4.500, 3.851]
+  Orientation (rad):    [2.837, 0.151, 0.455]
+  Orientation (deg):    [162.6, 8.6, 26.1]
+
+Camera 4:
+  Position (m):        [-4.941, 1.264, 4.328]
+  Orientation (rad):    [2.968, 0.312, 2.769]
+  Orientation (deg):    [170.1, 17.9, 158.7]
+
+Camera 5:
+  Position (m):        [3.262, -3.617, 4.429]
+  Orientation (rad):    [-2.224, -0.123, -1.425]
+  Orientation (deg):    [-127.4, -7.0, -81.7]
+
+Camera 6:
+  Position (m):        [-3.255, -4.500, 4.063]
+  Orientation (rad):    [-2.233, 0.278, 0.115]
+  Orientation (deg):    [-127.9, 15.9, 6.6]
+
+Camera 7:
+  Position (m):        [3.616, -2.879, 3.685]
+  Orientation (rad):    [-2.756, -0.303, 1.360]
+  Orientation (deg):    [-157.9, -17.3, 77.9]
+
+Camera Coverage Statistics:
+---------------------------
+Total target points: 726
+Points with 0 cameras: 0 (0.0%)
+Points with 1 camera:  0 (0.0%)
+Points with 2+ cameras: 726 (100.0%)
+Average coverage: 6.99 cameras per point
+Max coverage: 7 | Min: 6 | Median: 7.00
