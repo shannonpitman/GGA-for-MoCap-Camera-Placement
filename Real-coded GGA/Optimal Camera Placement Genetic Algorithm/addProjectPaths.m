@@ -15,7 +15,8 @@ function projectRoot = addProjectPaths()
     projectRoot = fileparts(mfilename('fullpath'));
 
     codeSubfolders = {'GA_Core', 'CostFunctions', 'Geometry', ...
-                      'Setup',   'Plotting',      'Analysis'};
+                      'Setup',   'Plotting',      'Analysis', ...
+                      'Sensitivity'};
 
     for i = 1:numel(codeSubfolders)
         p = fullfile(projectRoot, codeSubfolders{i});
