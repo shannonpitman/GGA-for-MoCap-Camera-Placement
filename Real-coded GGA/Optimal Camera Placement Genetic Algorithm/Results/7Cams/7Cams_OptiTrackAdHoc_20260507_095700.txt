@@ -1,0 +1,71 @@
+OPTITRACK AD-HOC CAMERA CONFIGURATION
+=====================================
+** This is NOT a GA-optimised result. **
+It is the as-measured OptiTrack Motive rig converted into
+the GA chromosome representation, evaluated through the
+GA cost function for direct comparison against optimised runs.
+
+Timestamp: 07-May-2026 09:57:00
+Number of Cameras: 7
+Source: OptiTrack Motive measured rig (Y-up -> Z-up transformed)
+Target Type: UAV (Full Volume)
+Grid Mode:   Uniform Grid
+Grid Spacing: 0.500 m   (N = 2601 target points)
+Hardware: 1280x1024 res, focal 5.5/3.5 mm (narrow/wide), range 16.0/9.0 m
+
+Evaluated Costs (alternating narrow/wide focal per setupCameras):
+  Resolution Uncertainty (raw mean): 49.355626
+  Dynamic Occlusion       (raw mean): 75.710132
+  Combined CF3 (normalised):          0.332812
+  Cost Function Weights: 0.50 resolution + 0.50 occlusion
+  Evaluation time: 26.30 s
+
+Camera Configurations (after Y-up -> Z-up transform):
+----------------------------------------------------
+
+Camera 1:
+  Position (m):       [-4.318, 1.400, 3.165]
+  Orientation (rad):  [3.011, 0.974, 1.743]
+  Orientation (deg):  [172.5, 55.8, 99.9]
+
+Camera 2:
+  Position (m):       [-4.306, 4.154, 3.349]
+  Orientation (rad):  [2.195, 0.952, 2.497]
+  Orientation (deg):  [125.7, 54.6, 143.1]
+
+Camera 3:
+  Position (m):       [4.414, 4.034, 3.320]
+  Orientation (rad):  [2.340, -0.999, -2.358]
+  Orientation (deg):  [134.1, -57.2, -135.1]
+
+Camera 4:
+  Position (m):       [4.385, 1.303, 3.280]
+  Orientation (rad):  [3.055, -0.976, -1.655]
+  Orientation (deg):  [175.1, -55.9, -94.8]
+
+Camera 5:
+  Position (m):       [4.366, -1.418, 3.215]
+  Orientation (rad):  [-2.760, -1.156, -1.208]
+  Orientation (deg):  [-158.1, -66.2, -69.2]
+
+Camera 6:
+  Position (m):       [4.334, -4.167, 3.335]
+  Orientation (rad):  [-2.217, -0.941, -0.656]
+  Orientation (deg):  [-127.0, -53.9, -37.6]
+
+Camera 7:
+  Position (m):       [-4.393, -4.035, 3.304]
+  Orientation (rad):  [-2.319, 0.523, 0.474]
+  Orientation (deg):  [-132.9, 30.0, 27.1]
+
+Camera Coverage Statistics:
+---------------------------
+Total target points: 2601
+Points with 0 cameras: 0 (0.0%)
+Points with 1 camera:  0 (0.0%)
+Points with 2+ cameras: 2601 (100.0%)
+Average coverage: 6.61 cameras per point
+Max coverage: 7 | Min: 5 | Median: 7.00
+
+Note: The master log (GGA_RunsLog.mat) is intentionally NOT modified
+by this script; this file lives only as an annotated reference.
