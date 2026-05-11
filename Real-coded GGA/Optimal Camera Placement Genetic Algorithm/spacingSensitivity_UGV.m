@@ -1,4 +1,4 @@
-function sweep = spacingSensitivity_UGV()
+function sweep = spacingSensitivity_UGV(varargin)
 %SPACINGSENSITIVITY_UGV  Grid-spacing sensitivity sweep for UGV target space.
 %
 %   Sweeps the in-plane (x-y) grid spacing on the floor slab while holding
@@ -13,6 +13,9 @@ function sweep = spacingSensitivity_UGV()
 %
 %   USAGE:
 %       sweep = spacingSensitivity_UGV()
+%       sweep = spacingSensitivity_UGV('TolerancePct', 5)
+%       sweep = spacingSensitivity_UGV('Spacings', [0.25 0.5 0.75 1.0], ...
+%                                      'TolerancePct', 10)
 %
 %   NOTES:
 %     * Loads the GA-best CF3 7-cam UGV chromosome from GGA_RunsLog.mat.
@@ -27,20 +30,28 @@ function sweep = spacingSensitivity_UGV()
 
     addProjectPaths();
 
+    %% Optional overrides
+    p = inputParser;
+    addParameter(p, 'Spacings',     [0.25, 0.4, 0.5, 0.75, 1.0], @isnumeric);
+    addParameter(p, 'ZSpacing',     0.25,                        @isnumeric);
+    addParameter(p, 'TolerancePct', 2,                           @isnumeric);
+    addParameter(p, 'UGVmaxHeight', 0.5,                         @isnumeric);
+    parse(p, varargin{:});
+    args = p.Results;
+
     %% UGV-specific inputs
-    UGV_maxHeight = 0.5;                          % m, floor slab height
     opts.modeTag      = 'UGV';
     opts.targetType   = 2;                        % UGV: floor slab
-    opts.volume       = [-4 4; -4 4; 0 UGV_maxHeight];
+    opts.volume       = [-4 4; -4 4; 0 args.UGVmaxHeight];
     % x-y spacings to test. 0.25 m anchors to the legacy isotropic grid
     % so the recommendation pass can quote deviation relative to it.
-    opts.spacings     = [0.25, 0.4, 0.5, 0.75, 1.0];
-    opts.zSpacing     = 0.25;                     % fixed z step (3 layers on 0.5 m slab)
+    opts.spacings     = args.Spacings;
+    opts.zSpacing     = args.ZSpacing;            % fixed z step (3 layers on 0.5 m slab)
     opts.targetMode   = 1;                        % uniform grid
     opts.numCams      = 7;
     opts.weightUnc    = 0.5;
     opts.weightOcc    = 0.5;
-    opts.tolerancePct = 2;                        % flag deviations > 2% as too coarse
+    opts.tolerancePct = args.TolerancePct;        % deviation threshold (%)
 
     %% Configurations
     try
