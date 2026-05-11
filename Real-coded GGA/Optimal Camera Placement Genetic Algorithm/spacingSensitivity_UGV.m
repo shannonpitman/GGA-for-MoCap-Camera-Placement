@@ -1,41 +1,46 @@
 function sweep = spacingSensitivity_UGV()
 %SPACINGSENSITIVITY_UGV  Grid-spacing sensitivity sweep for UGV target space.
 %
-%   Same comparison as spacingSensitivity_UAV but with the floor-slab
-%   target space used for UGV optimisation: the workspace volume's z range
-%   is capped at UGV_maxHeight (default 0.5 m), and the spacing sweep
-%   tightens its upper bound to UGV_maxHeight/2 = 0.25 m so that at least
-%   two layers of target points fit in the slab.
+%   Sweeps the in-plane (x-y) grid spacing on the floor slab while holding
+%   the z (slab-thickness) spacing fixed. This decouples the slab-layer
+%   count from the x-y resolution so the GA-cost surface can be evaluated
+%   at coarse in-plane grids comparable to the UAV runs, without losing
+%   the 3-layer sampling of the 0.5 m slab.
+%
+%   Defaults reproduce the original UGV slab (UGV_maxHeight = 0.5 m, z step
+%   0.25 m -> z = [0, 0.25, 0.5], 3 layers) and sweep x-y from 0.25 m
+%   (matching the legacy isotropic grid) up to 1.0 m (matching UAV).
 %
 %   USAGE:
 %       sweep = spacingSensitivity_UGV()
 %
 %   NOTES:
-%     * The GA-best CF3 7-cam config loaded here is filtered to runs with
-%       TargetType=2 (UGV). If you have not yet run a UGV batch, this
-%       script will error — fall back to runCameraOptimiser with
-%       targetType=2 first, or temporarily edit the call to
-%       loadBestCF3Config to relax the filter.
-%     * Spacings below the marker spacing of 0.05 m (typical UGV) are
-%       not added by default; extend opts.spacings if the application
-%       has finer markers.
+%     * Loads the GA-best CF3 7-cam UGV chromosome from GGA_RunsLog.mat.
+%       Falls back to the UAV-best chromosome with a warning if no UGV
+%       CF3 runs are logged yet.
+%     * Pass the recommended x-y spacing back into batchRunGA via the
+%       Spacings parameter; UGV_ZSpacing remains 0.25 m unless you have
+%       a separate reason to vary z.
 %
-%   See also: spacingSensitivity_UAV, spacingSensitivityCore.
+%   See also: spacingSensitivity_UAV, spacingSensitivityCore,
+%             recommendSpacing, plotSpacingSensitivity.
 
     addProjectPaths();
 
     %% UGV-specific inputs
-    UGV_maxHeight = 0.5;                         % m, floor slab height
+    UGV_maxHeight = 0.5;                          % m, floor slab height
     opts.modeTag      = 'UGV';
-    opts.targetType   = 2;                       % UGV: floor slab
+    opts.targetType   = 2;                        % UGV: floor slab
     opts.volume       = [-4 4; -4 4; 0 UGV_maxHeight];
-    % Spacing sweep capped at UGV_maxHeight/2 to ensure >=2 z-layers
-    opts.spacings     = [0.05, 0.075, 0.1, 0.15, 0.2, UGV_maxHeight/2];
-    opts.targetMode   = 1;                       % uniform grid
+    % x-y spacings to test. 0.25 m anchors to the legacy isotropic grid
+    % so the recommendation pass can quote deviation relative to it.
+    opts.spacings     = [0.25, 0.4, 0.5, 0.75, 1.0];
+    opts.zSpacing     = 0.25;                     % fixed z step (3 layers on 0.5 m slab)
+    opts.targetMode   = 1;                        % uniform grid
     opts.numCams      = 7;
     opts.weightUnc    = 0.5;
     opts.weightOcc    = 0.5;
-    opts.tolerancePct = 2;
+    opts.tolerancePct = 2;                        % flag deviations > 2% as too coarse
 
     %% Configurations
     try
@@ -45,7 +50,7 @@ function sweep = spacingSensitivity_UGV()
     catch ME
         if strcmp(ME.identifier, 'loadBestCF3Config:NoMatch')
             warning(['No UGV-tagged CF3 runs found in master log. ' ...
-                     'Falling back to the UAV-best chromosome — re-run a ' ...
+                     'Falling back to the UAV-best chromosome - re-run a ' ...
                      'UGV CF3 batch and re-evaluate this sweep when available.']);
             [gaChrom, bestRun] = loadBestCF3Config(opts.numCams, 1, opts.targetMode);
             opts.configs(1).name = sprintf('GA-best CF3 UAV-fallback (cost=%.5f)', ...

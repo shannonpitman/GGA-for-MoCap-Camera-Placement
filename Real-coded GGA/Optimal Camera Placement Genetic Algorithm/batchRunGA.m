@@ -21,8 +21,12 @@ addParameter(p, 'CameraRange', [6 7 8], @isnumeric);
 addParameter(p, 'CostFunctions', [1 2 3], @isnumeric);
 addParameter(p, 'TargetTypes', [1 2], @isnumeric); % 1=UAV, 2=UGV
 addParameter(p, 'GridModes', [1 2], @isnumeric); % 1=Uniform, 2=Normal
-addParameter(p, 'Spacings', [0.25 0.5 1.0], @isnumeric); % metres
+addParameter(p, 'Spacings', [0.25 0.5 1.0], @isnumeric); % metres (x-y on the grid)
 addParameter(p, 'UGV_MaxHeight', 0.5, @isnumeric);
+% UGV z-axis spacing is decoupled from x-y. Default 0.25 m gives 3 z-layers
+% on a 0.5 m slab (z = [0, 0.25, 0.5]). x-y spacing is governed by Spacings
+% so UGV x-y can match UAV without forcing 33x33 in-plane resolution.
+addParameter(p, 'UGV_ZSpacing', 0.25, @(x) isnumeric(x) && isscalar(x) && x > 0);
 addParameter(p, 'NumRepeats', 3, @isnumeric);
 addParameter(p, 'SkipWarmStart', false, @islogical);
 
@@ -56,7 +60,12 @@ fprintf('Cameras: %s\n', mat2str(cfg.CameraRange));
 fprintf('Cost functions: %s\n', mat2str(cfg.CostFunctions));
 fprintf('Target types: %s\n', mat2str(cfg.TargetTypes));
 fprintf('Grid modes: %s\n', mat2str(cfg.GridModes));
-fprintf('Spacings: %s\n', mat2str(cfg.Spacings));
+fprintf('Spacings (x-y): %s m\n', mat2str(cfg.Spacings));
+if any(cfg.TargetTypes == 2)
+    fprintf('UGV slab: z in [0, %.3g] m, z-spacing fixed at %.3g m (%d layers)\n', ...
+        cfg.UGV_MaxHeight, cfg.UGV_ZSpacing, ...
+        numel(0:cfg.UGV_ZSpacing:cfg.UGV_MaxHeight));
+end
 fprintf('Repeats: %d\n', cfg.NumRepeats);
 fprintf('Warm-start: %s\n', string(~cfg.SkipWarmStart));
 fprintf('GA generations: %d\n', cfg.MaxGenerations);
@@ -171,10 +180,17 @@ for runIdx = startIdx:totalRuns
         warmStartUsed = s.WarmStart;
         volume = cfg.Volume;
         if targetType == 2
+            % UGV floor-slab volume
             volume(3,:) = [0, cfg.UGV_MaxHeight];
-            if spacing > cfg.UGV_MaxHeight
-                spacing = cfg.UGV_MaxHeight / 2;
-            end
+            % Anisotropic spacing for UGV: x-y honour the swept Spacing,
+            % z is held fixed (default 3 layers on a 0.5 m slab). This was
+            % previously clamped to UGV_MaxHeight/2 isotropic, which forced
+            % the in-plane grid to 0.25 m and made UGV runs ~7x slower than
+            % UAV. See generateTargetSpace for the vector-spacing contract.
+            zSp = min(cfg.UGV_ZSpacing, cfg.UGV_MaxHeight); % safety clamp
+            targetSpacing = [spacing, spacing, zSp];   % vector, for grid build
+        else
+            targetSpacing = spacing;                   % scalar, isotropic
         end
         
         specs = setupHardwareSpecs(numCams);
@@ -201,9 +217,12 @@ for runIdx = startIdx:totalRuns
         % Target space
         specs.TargetType = targetType;
         specs.TargetMode = targetMode;
-        specs.Target = generateTargetSpace(volume, targetMode, spacing);
+        specs.Target = generateTargetSpace(volume, targetMode, targetSpacing);
         specs.NumPoints = size(specs.Target, 1);
-        specs.spacing = spacing;
+        specs.spacing = spacing;                 % scalar x-y; kept for log
+        if targetType == 2
+            specs.spacingZ = zSp;                % UGV z spacing (info only)
+        end
         
         % Section centres
         specs.SectionCentres = generateSectionCentres(numCams, volume);

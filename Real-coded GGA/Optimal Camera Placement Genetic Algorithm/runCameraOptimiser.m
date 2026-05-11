@@ -35,16 +35,20 @@ targetType = 2;
 % 2= Normalised grid (concentrated discretisation in the centre)
 targetMode = 1;
 
-% Grid spacing [m]
-spacing = 0.5; %increase for faster evaluation, increase for UGV mode
+% Grid spacing [m] - x-y (in-plane). For UGV the z spacing is decoupled
+% so that x-y can be coarsened without losing slab layers.
+spacing = 0.5;
 
 % UGV max expected height of markers on UGV [m]
-UGV_maxHeight = 0.5; %only used if targetType =2
-if targetType ==2 %UGV max height in workspace volume
+UGV_maxHeight = 0.5;     % only used if targetType == 2
+UGV_zSpacing  = 0.25;    % z step on the UGV slab; 0.25 m -> 3 layers
+
+if targetType == 2
     volume(3,:) = [0, UGV_maxHeight];
-    if spacing > UGV_maxHeight
-        spacing = UGV_maxHeight/2; %at least two layers
-    end
+    % Anisotropic spacing: keep x-y as supplied, fix z to UGV_zSpacing.
+    targetSpacing = [spacing, spacing, min(UGV_zSpacing, UGV_maxHeight)];
+else
+    targetSpacing = spacing;   % isotropic for UAV
 end
 
 % COST FUNCTION:
@@ -100,9 +104,12 @@ specs.TargetType = targetType;
 
 % Target Space
 specs.TargetMode = targetMode;
-specs.Target = generateTargetSpace(volume, targetMode, spacing);
+specs.Target = generateTargetSpace(volume, targetMode, targetSpacing);
 specs.NumPoints = size(specs.Target,1);
-specs.spacing = spacing;
+specs.spacing = spacing;          % scalar x-y; kept for log
+if targetType == 2
+    specs.spacingZ = UGV_zSpacing;
+end
 
 % Section centres for guided initial population
 specs.SectionCentres = generateSectionCentres(numCams, volume);
