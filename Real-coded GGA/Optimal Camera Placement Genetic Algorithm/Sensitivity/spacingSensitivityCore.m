@@ -4,16 +4,22 @@ function sweep = spacingSensitivityCore(opts)
 %   sweep = spacingSensitivityCore(opts) runs the grid-spacing sensitivity
 %   sweep for the configurations and parameters supplied in opts.
 %
-%   opts fields (all required):
+%   opts fields (all required unless noted):
 %       modeTag        'UAV' or 'UGV' — used in filenames + figure dirs
 %       targetType     1 = UAV (full volume), 2 = UGV (floor slab)
 %       volume         3x2 [xLo xHi; yLo yHi; zLo zHi] (m)
-%       spacings       row vector of grid spacings to sweep (m)
+%       spacings       row vector of grid spacings to sweep (m). When
+%                      opts.zSpacing is set these are interpreted as x-y
+%                      only; otherwise they are applied isotropically.
 %       targetMode     1 = uniform grid, 2 = inverse-CDF concentrated
 %       numCams        camera count (must match the configurations supplied)
 %       weightUnc      CF3 weight on resolution uncertainty
 %       weightOcc      CF3 weight on dynamic occlusion
 %       configs        struct array with fields .name and .chromosome
+%       zSpacing       (optional) scalar z-axis spacing held fixed across
+%                      the sweep. When supplied, generateTargetSpace is
+%                      called with [s s zSpacing] so the in-plane grid is
+%                      swept independently of slab-layer count.
 %       tolerancePct   (optional, [] to skip) deviation tolerance (%) for
 %                      recommendSpacing pass + plot annotations
 %
@@ -33,6 +39,7 @@ function sweep = spacingSensitivityCore(opts)
             'opts.%s is required.', required{k});
     end
     if ~isfield(opts, 'tolerancePct'), opts.tolerancePct = []; end
+    if ~isfield(opts, 'zSpacing'),     opts.zSpacing     = []; end
 
     addProjectPaths();
     projectRoot = fileparts(fileparts(mfilename('fullpath')));   % .../<root>
@@ -67,7 +74,12 @@ function sweep = spacingSensitivityCore(opts)
     fprintf('Volume   : x=[%g %g], y=[%g %g], z=[%g %g] m\n', ...
         opts.volume(1,1), opts.volume(1,2), opts.volume(2,1), opts.volume(2,2), ...
         opts.volume(3,1), opts.volume(3,2));
-    fprintf('Spacings : '); fprintf('%.3g ', spacings); fprintf('m\n');
+    fprintf('Spacings : '); fprintf('%.3g ', spacings);
+    if isempty(opts.zSpacing)
+        fprintf('m (isotropic)\n');
+    else
+        fprintf('m (x-y); z held fixed at %.3g m\n', opts.zSpacing);
+    end
     fprintf('Configs  :\n');
     for c = 1:nC, fprintf('  [%d] %s\n', c, configs(c).name); end
     fprintf('Hardware : %dx%d res, focal %.1f/%.1f mm, range %.1f/%.1f m\n', ...
@@ -85,9 +97,18 @@ function sweep = spacingSensitivityCore(opts)
         for s = 1:nS
             spacing = spacings(s);
 
-            specs.Target    = generateTargetSpace(opts.volume, opts.targetMode, spacing);
+            if isempty(opts.zSpacing)
+                gridSpacing = spacing;                            % isotropic
+            else
+                gridSpacing = [spacing, spacing, opts.zSpacing];  % anisotropic
+            end
+
+            specs.Target    = generateTargetSpace(opts.volume, opts.targetMode, gridSpacing);
             specs.NumPoints = size(specs.Target, 1);
-            specs.spacing   = spacing;
+            specs.spacing   = spacing;                % scalar x-y for logging
+            if ~isempty(opts.zSpacing)
+                specs.spacingZ = opts.zSpacing;
+            end
             specs           = setupCostParams(specs);
 
             [cameras, CamCenters] = setupCameras(chrom, opts.numCams, ...
@@ -136,6 +157,7 @@ function sweep = spacingSensitivityCore(opts)
     sweep.targetMode     = opts.targetMode;
     sweep.targetType     = opts.targetType;
     sweep.numCams        = opts.numCams;
+    sweep.zSpacing       = opts.zSpacing;       % [] for isotropic sweeps
     sweep.configs        = configs;
     sweep.cfNames        = cfNames;
     sweep.cfLabels       = cfLabels;
