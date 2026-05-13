@@ -106,28 +106,32 @@ end
  
  
 %% ========== Figure Set 3: Warm-Start vs Cold-Start ==========
-%  One figure per (CostFunction x TargetType x GridMode x Spacing).
-%  Quantifies the warm-start advantage under controlled conditions.
- 
+%  One figure PER CAMERA COUNT is emitted by plotGA_WarmColdEffect
+%  internally, so the outer loop only enumerates the experimental
+%  conditions that distinguish the warm-start *story*. Restricted to
+%  GM=1 (Uniform): GM=2 (Normal) is retained only for coverage /
+%  best-configuration interest and would clutter the warm-cold result
+%  set without adding evidence for the warm-start claim.
+
 fprintf('\n===== WARM-START EFFECT =====\n');
- 
+
+warmColdGM = 1;  % only Uniform grid for this figure set
+
 for cf = costFuncs
     for tt = targetTypes
-        for gm = gridModes
-            for si = 1:length(spacings)
-                sp = spacings(si);
-                tag = sprintf('warmcold_%s_%s_%s_%s', ...
-                    cfLabels{cf}, ttLabels{tt}, gmLabels{gm}, spLabels{si});
-                try
-                    plotGA_WarmColdEffect(commonArgs{:}, ...
-                        'CostFunction', cf, ...
-                        'TargetType',   tt, ...
-                        'GridMode',     gm, ...
-                        'Spacing',      sp, ...
-                        'SaveAs', fullfile(outputDir, tag));
-                catch ME
-                    fprintf('  Skipped %s: %s\n', tag, ME.message);
-                end
+        for si = 1:length(spacings)
+            sp = spacings(si);
+            tag = sprintf('warmcold_%s_%s_%s_%s', ...
+                cfLabels{cf}, ttLabels{tt}, gmLabels{warmColdGM}, spLabels{si});
+            try
+                plotGA_WarmColdEffect(commonArgs{:}, ...
+                    'CostFunction', cf, ...
+                    'TargetType',   tt, ...
+                    'GridMode',     warmColdGM, ...
+                    'Spacing',      sp, ...
+                    'SaveAs', fullfile(outputDir, tag));
+            catch ME
+                fprintf('  Skipped %s: %s\n', tag, ME.message);
             end
         end
     end

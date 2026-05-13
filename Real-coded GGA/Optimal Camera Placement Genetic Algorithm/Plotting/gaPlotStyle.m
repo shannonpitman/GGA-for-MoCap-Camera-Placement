@@ -12,23 +12,26 @@ function s = gaPlotStyle()
 %   per-axes colour settings being preserved; the helper overrides them.
 
 %% Figure dimensions (inches — MATLAB default unit)
-s.FigWidthFull   = 6.3;   % full text width (~160 mm)
-s.FigWidthHalf   = 3.1;   % half text width (~80 mm)
-s.FigHeight      = 3.5;   % default height
-s.FigHeightTall  = 5.0;   % for 2-row subfigures
+s.FigWidthFull   = 6.3;    % full text width (~160 mm)
+s.FigWidthHalf   = 3.1;    % half text width (~80 mm)
+s.FigWidthDouble = 13.0;   % side-by-side (cold|warm subplot, full-width landscape)
+s.FigHeight      = 3.5;    % default height
+s.FigHeightTall  = 5.0;    % for 2-row subfigures
+s.FigHeightWide  = 5.0;    % for FigWidthDouble layouts
 
-%% Fonts
+%% Fonts (bumped 2026-05-13 so legends/callouts are legible at \textwidth)
 s.FontName       = 'Helvetica';  % clean sans-serif; pairs well with LaTeX body
-s.FontSizeAxis   = 9;
-s.FontSizeTick   = 8;
-s.FontSizeLegend = 8;
-s.FontSizeAnnot  = 7;           % annotations / text boxes
+s.FontSizeAxis   = 13;           % axis labels
+s.FontSizeTick   = 12;           % tick numbers
+s.FontSizeLegend = 11;           % legend entries
+s.FontSizeAnnot  = 11;           % annotations / text boxes
+s.FontSizeTitle  = 14;           % panel titles (subplot headers)
 
 %% Lines & markers
-s.LineWidth      = 1.4;
-s.LineWidthThin  = 0.8;          % individual run traces
-s.MarkerSize     = 5;
-s.MarkerSizeLg   = 7;
+s.LineWidth      = 1.6;
+s.LineWidthThin  = 0.9;          % individual run traces
+s.MarkerSize     = 6;
+s.MarkerSizeLg   = 8;
 
 %% Background and text colours (thesis lock)
 s.BackgroundColor = 'w';   % pure white
