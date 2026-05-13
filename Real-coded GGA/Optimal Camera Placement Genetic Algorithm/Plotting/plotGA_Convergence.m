@@ -1,83 +1,80 @@
 function plotGA_Convergence(varargin)
 % plotGA_Convergence  Convergence curves with median + IQR ribbon, the
-% winning run highlighted in a standout colour, and a robustness statistic
-% in the legend.
+% winning run highlighted, robustness statistic in the legend, and a
+% side-by-side Cold | Warm subplot layout (default).
 %
 % =====================================================================
 % EXAMINER REVIEW (questions an external examiner would push on)
 % =====================================================================
 % What this plot claims to show
-%   "The GA reliably converges to a low-cost solution under the filtered
-%   experimental conditions, with bounded run-to-run variance AND a
-%   stated proportion of runs that landed near the overall best. The
-%   single best run's full convergence path is shown so the reader can
-%   judge how quickly that winning trajectory dropped."
+%   "Under the filtered conditions, the GA reliably converges to a
+%   low-cost solution, with bounded run-to-run variance AND a stated
+%   proportion of runs that landed near the per-start-strategy best.
+%   The single best run's full convergence path is shown so the reader
+%   can judge how quickly that winning trajectory dropped, and the
+%   run's chronological index is annotated so the reader sees how many
+%   independent restarts were needed before the winner appeared."
 %
 % Strengths
+%   - Side-by-side Cold | Warm split avoids the false-premature-
+%     convergence reading that arises when two distinct populations are
+%     pooled (their distinct asymptotes look like stragglers).
+%   - "Within X% of best" robustness is computed *per panel* so the
+%     reader sees how stable each start strategy is on its own terms.
+%   - The best-run index (1..N within its strategy) is annotated, so the
+%     reader can judge how many GA restarts they would typically need.
 %   - Median + IQR ribbon + faint individual traces show both central
-%     tendency and spread, robust to skew and zero-bound (mean+std is
-%     pulled up by stragglers).
+%     tendency and spread, robust to skew and zero-bound.
 %   - Top-10 average sub-curve gives evidence of population-level
 %     improvement, not just elitist drift.
-%   - The full generation-by-generation trace of the winning run is
-%     highlighted in a deep red with a callout box stating its final
-%     cost; the horizontal best-cost yline acts as the asymptote.
-%   - Legend reports the % of runs that landed within a configurable
-%     tolerance of the overall best — separates true convergence from
-%     premature stagnation.
 %
-% Decisions taken to address prior examiner critiques
-%   1. MEDIAN, NOT MEAN. GA fitness distributions are skewed and bounded
-%      below by zero; the median is robust to stragglers. Mean + std can
-%      still be requested via CentralStat='mean'.
-%   2. NO NEGATIVE-CLAMP NEEDED. IQR uses Q25/Q75 percentiles, both >= 0
-%      for non-negative data; no artificial clamp hides spread.
-%   3. CONVERGENCE != OPTIMALITY. The legend now states "X% within Y%
-%      of overall best", so a flat tail no longer reads as a global
-%      optimum without evidence.
-%   4. INITIAL POPULATION COST. Generation 1 is annotated so the reader
-%      sees the GA's contribution Δ rather than just the absolute curve.
-%   5. PROCESS VS OUTCOME. This file pairs naturally with
-%      plotGA_PopulationDiversity, which traces the cost-spread proxy
-%      vs generation — together they defend the choice of GA over a
-%      hill climber.
+% Robustness against log inconsistency
+%   - Runs whose MaxIt differs from the modal MaxIt of the filtered
+%     batch are dropped with a console warning. This handles the case
+%     where a stray pilot run is mixed in with the production batch.
 % =====================================================================
 %
 %   plotGA_Convergence('Name', Value, ...)
 %
-%   Loads individual run .mat files (via RunFilename in the log) to extract
-%   generation-by-generation cost histories. Plots:
+%   Loads individual run .mat files (via RunFilename in the log) to
+%   extract generation-by-generation cost histories. Default layout is
+%   a 1x2 tiled figure: left = Cold-start runs, right = Warm-start
+%   runs. Pass 'WarmStart', true/false to force a single panel, or set
+%   'SplitWarmCold', 'off'.
+%
+%   Per panel, plots:
 %     - Faint individual best-cost traces (one per run)
-%     - Median best-cost curve with shaded Q25-Q75 IQR ribbon (default)
+%     - Median best-cost curve + shaded Q25-Q75 IQR ribbon (default)
 %       OR mean +/- 1 std envelope (CentralStat='mean')
 %     - Median (or mean) top-10-average curve across runs
-%     - Full trace of the winning run highlighted in deep red
-%     - Final-cost callout box at the winning run's last point
-%     - Horizontal dashed line at the overall best cost found
-%     - Robustness annotation in the legend: "X / N runs within Y% of best"
-%
-%   REQUIRED: all filtered runs must share the same MaxIt so the histories
-%   align. Use loadGARuns filters to ensure a homogeneous set.
+%     - Full trace of the winning run highlighted in deep red, with
+%       an inline callout next to the line's end stating final cost
+%       and the winning run's chronological index (e.g. "Run 7/10").
+%     - Horizontal dashed line at the panel's best cost
+%     - Robustness annotation in the legend: "X/N runs within Y% of best"
 %
 %   Name-Value Parameters (passed through to loadGARuns, plus):
-%     'RunDir'        - Directory containing individual run .mat files
-%                       (default: pwd)
-%     'CentralStat'   - 'median' (default) or 'mean'. Median uses IQR
-%                       ribbon, mean uses +/- 1 std.
-%     'Tolerance'     - Fractional tolerance for the "within X%"
-%                       robustness count (default: 0.05 → 5%).
-%     'ShowAvgCost'   - true to also plot population-average curve
-%                       (default: false)
-%     'ShowTopTen'    - true to also plot top-10-average curve
-%                       (default: true)
-%     'ShowIndividual'- true to show individual run traces (default: true)
-%     'ShowBestLine'  - true to show overall best cost yline (default: true)
-%     'ShowBestRun'   - true to overlay the winning run's full trace in
-%                       a standout colour with a final-cost callout
-%                       (default: true)
-%     'AnnotateInit'  - true to annotate initial-generation cost (default: true)
-%     'LogScale'      - true for semilogy (default: false)
-%     'SaveAs'        - Output filename without extension (default: auto)
+%     'RunDir'         - Directory containing run .mat files (default: pwd)
+%     'CentralStat'    - 'median' (default) or 'mean'
+%     'Tolerance'      - Fractional tolerance for the "within X%"
+%                        robustness count (default: 0.05 → 5%).
+%     'ShowAvgCost'    - true to plot population-average curve (default: false)
+%     'ShowTopTen'     - true to plot top-10-average curve (default: true)
+%     'ShowIndividual' - true to show individual run traces (default: true)
+%     'ShowBestLine'   - true to show overall best cost yline (default: true)
+%     'ShowBestRun'    - true to overlay the winning run's full trace
+%                        (default: true)
+%     'AnnotateInit'   - true to annotate initial-generation cost
+%                        (default: true)
+%     'LogScale'       - true for semilogy (default: false)
+%     'MaxIt'          - scalar MaxIt to filter to; if empty (default),
+%                        the modal MaxIt across the filtered batch is
+%                        used and runs at any other MaxIt are dropped
+%                        with a warning.
+%     'SplitWarmCold'  - 'auto' (default), 'on', or 'off'.
+%                        'auto': split into Cold | Warm panels unless
+%                        WarmStart was passed in the caller args.
+%     'SaveAs'         - Output filename without extension (default: auto)
 %     (all loadGARuns parameters are also accepted)
 
     p = inputParser;
@@ -92,6 +89,8 @@ function plotGA_Convergence(varargin)
     addParameter(p, 'ShowBestRun',    true,     @islogical);
     addParameter(p, 'AnnotateInit',   true,     @islogical);
     addParameter(p, 'LogScale',       false,    @islogical);
+    addParameter(p, 'MaxIt',          [],       @(x) isempty(x) || (isnumeric(x) && isscalar(x)));
+    addParameter(p, 'SplitWarmCold',  'auto',   @(s) ischar(s) || isstring(s));
     addParameter(p, 'SaveAs',         '',       @ischar);
     parse(p, varargin{:});
 
@@ -102,28 +101,152 @@ function plotGA_Convergence(varargin)
             'CentralStat must be ''median'' or ''mean''.');
     end
 
+    % Detect whether the caller has constrained WarmStart explicitly.
+    explicitWarm = isfield(p.Unmatched, 'WarmStart');
+
+    splitMode = lower(string(opts.SplitWarmCold));
+    switch splitMode
+        case "auto"
+            doSplit = ~explicitWarm;
+        case "on"
+            doSplit = true;
+        case "off"
+            doSplit = false;
+        otherwise
+            error('plotGA_Convergence:badSplit', ...
+                'SplitWarmCold must be ''auto'', ''on'', or ''off''.');
+    end
+
     loaderArgs = [fieldnames(p.Unmatched), struct2cell(p.Unmatched)]';
     loaderArgs = loaderArgs(:)';
 
-    %% Load filtered runs
-    [runs, filterDesc] = loadGARuns(loaderArgs{:});
-    nRuns = length(runs);
     sty = gaPlotStyle();
 
-    %% Load convergence histories from individual .mat files
-    bestHists   = [];
-    avgHists    = [];
-    topTenHists = [];
-    finalBests  = [];
+    %% Load the combined run set
+    [runs, filterDesc] = loadGARuns(loaderArgs{:});
 
-    for i = 1:nRuns
+    %% Optional: split by warm/cold
+    if doSplit
+        warmFlags = logical([runs.WarmStart]);
+        coldRuns = runs(~warmFlags);
+        warmRuns = runs( warmFlags);
+
+        if isempty(coldRuns) || isempty(warmRuns)
+            fprintf(['plotGA_Convergence: only %d cold / %d warm runs ' ...
+                     '— falling back to single panel.\n'], ...
+                     length(coldRuns), length(warmRuns));
+            doSplit = false;
+        end
+    end
+
+    %% =========================================================
+    %  Render
+    %  =========================================================
+    if doSplit
+        % --- 1x2 figure: Cold | Warm -------------------------------
+        fig = figure('Units', 'inches', ...
+            'Position', [1 1 sty.FigWidthDouble sty.FigHeightWide], ...
+            'PaperPositionMode', 'auto', ...
+            'Color', sty.BackgroundColor);
+        tl = tiledlayout(fig, 1, 2, 'Padding', 'compact', ...
+                                    'TileSpacing', 'compact');
+
+        ax1 = nexttile(tl, 1);
+        meta1 = renderConvergencePanel(ax1, coldRuns, 'Cold-start', opts, sty);
+
+        ax2 = nexttile(tl, 2);
+        meta2 = renderConvergencePanel(ax2, warmRuns, 'Warm-start', opts, sty);
+
+        % Link y-axes so the visual comparison is direct
+        if ~isempty(meta1) && ~isempty(meta2)
+            yloAll = min(meta1.ylo, meta2.ylo);
+            yhiAll = max(meta1.yhi, meta2.yhi);
+            ylim(ax1, [yloAll, yhiAll]);
+            ylim(ax2, [yloAll, yhiAll]);
+        end
+
+        % Hide y-axis label on right panel — they share the scale
+        if ~isempty(meta2)
+            ylabel(ax2, '');
+        end
+
+        % Supertitle describing the filter condition
+        title(tl, prettifyFilterDesc(filterDesc), ...
+            'FontSize', sty.FontSizeTitle + 1, ...
+            'FontName', sty.FontName, ...
+            'FontWeight', 'bold');
+
+        %% Summary print
+        fprintf('\nConvergence summary (%s):\n', filterDesc);
+        printPanelSummary('Cold-start', meta1, opts);
+        printPanelSummary('Warm-start', meta2, opts);
+
+    else
+        % --- Single panel -------------------------------------------
+        fig = figure('Units', 'inches', ...
+            'Position', [1 1 sty.FigWidthFull sty.FigHeight], ...
+            'PaperPositionMode', 'auto', ...
+            'Color', sty.BackgroundColor);
+        ax = axes(fig);
+        if explicitWarm
+            if p.Unmatched.WarmStart
+                titleStr = 'Warm-start';
+            else
+                titleStr = 'Cold-start';
+            end
+        else
+            titleStr = '';   % no split, no title
+        end
+        meta = renderConvergencePanel(ax, runs, titleStr, opts, sty);
+        if ~isempty(meta)
+            ylim(ax, [meta.ylo, meta.yhi]);
+        end
+        fprintf('\nConvergence summary (%s):\n', filterDesc);
+        printPanelSummary(titleStr, meta, opts);
+    end
+
+    %% Lock thesis style (white bg, black text) and export
+    applyThesisStyle(fig);
+
+    if isempty(opts.SaveAs)
+        outName = sprintf('GA_Convergence_%s', filterDesc);
+    else
+        outName = opts.SaveAs;
+    end
+    exportgraphics(fig, [outName '.pdf'], ...
+        'ContentType',     'vector', ...
+        'BackgroundColor', sty.ExportBgColor);
+    fprintf('Saved: %s.pdf\n', outName);
+end
+
+
+% =========================================================================
+% renderConvergencePanel — Plot a single panel on the supplied axes.
+% =========================================================================
+function meta = renderConvergencePanel(ax, runs, titleStr, opts, sty)
+% Returns meta with fields: nValid, ylo, yhi, finalCentral, finalBest,
+% nWithin, pctWithin, bestRunIdx, droppedMaxIt.
+%
+% Loads per-run convergence histories, filters out runs whose MaxIt
+% deviates from the modal MaxIt (with a warning), and plots all curves
+% on the given axes.
+
+    meta = [];
+    nIn  = length(runs);
+
+    %% Discover modal MaxIt and load histories
+    matPaths  = strings(nIn, 1);
+    runMaxIt  = nan(nIn, 1);
+    runHists  = cell(nIn, 1);
+    runAvgs   = cell(nIn, 1);
+    runTops   = cell(nIn, 1);
+    runIdxs   = nan(nIn, 1);   % chronological index in the *input* set
+
+    for i = 1:nIn
         if ~isfield(runs(i), 'RunFilename') || isempty(runs(i).RunFilename)
             warning('Run %d has no RunFilename — skipping.', i);
             continue;
         end
-
-        % After restructure, run .mat files live in Results/<N>Cams/.
-        % resolveRunPath finds them by basename + camera count.
         if isfield(runs(i), 'NumCameras')
             matPath = resolveRunPath(runs(i).RunFilename, runs(i).NumCameras, opts.RunDir);
         else
@@ -133,37 +256,67 @@ function plotGA_Convergence(varargin)
             warning('File not found: %s — skipping.', matPath);
             continue;
         end
-
-        data = load(matPath, 'saveData');
-        if ~isfield(data, 'saveData')
-            warning('No saveData in %s — skipping.', matPath);
+        d = load(matPath, 'saveData');
+        if ~isfield(d, 'saveData')
             continue;
         end
-
-        sd = data.saveData;
-
-        bestHists(end+1, :) = sd.ConvergenceHistory(:)';       %#ok<AGROW>
-        finalBests(end+1)   = sd.ConvergenceHistory(end);       %#ok<AGROW>
-
-        if isfield(sd, 'AvgCostHistory')
-            avgHists(end+1, :) = sd.AvgCostHistory(:)';         %#ok<AGROW>
-        end
-        if isfield(sd, 'TopTenAvgCostHistory')
-            topTenHists(end+1, :) = sd.TopTenAvgCostHistory(:)'; %#ok<AGROW>
-        end
+        sd = d.saveData;
+        runHists{i} = sd.ConvergenceHistory(:)';
+        if isfield(sd, 'AvgCostHistory'),       runAvgs{i} = sd.AvgCostHistory(:)';       end
+        if isfield(sd, 'TopTenAvgCostHistory'), runTops{i} = sd.TopTenAvgCostHistory(:)'; end
+        runMaxIt(i) = length(runHists{i});
+        runIdxs(i)  = i;
+        matPaths(i) = matPath;
     end
 
-    nValid = size(bestHists, 1);
+    %% Pick MaxIt (user-supplied wins; else modal across batch)
+    haveData = ~cellfun(@isempty, runHists);
+    if ~any(haveData)
+        warning('No usable runs in this panel.');
+        return;
+    end
+
+    if ~isempty(opts.MaxIt)
+        targetMaxIt = opts.MaxIt;
+    else
+        targetMaxIt = mode(runMaxIt(haveData));
+    end
+
+    keepMask = haveData & (runMaxIt == targetMaxIt);
+    nDropped = sum(haveData & ~keepMask);
+    if nDropped > 0
+        fprintf(['  [%s] Dropped %d run(s) whose MaxIt != %d (the modal ' ...
+                 'value). MaxIt values present: %s\n'], ...
+                 titleStr, nDropped, targetMaxIt, ...
+                 mat2str(unique(runMaxIt(haveData))'));
+    end
+
+    keepIdx = find(keepMask);
+    nValid  = numel(keepIdx);
     if nValid == 0
-        error('plotGA_Convergence:noData', ...
-            'No valid convergence histories found. Check RunDir and RunFilename.');
+        warning('Panel %s has 0 valid runs after MaxIt filter.', titleStr);
+        return;
     end
-    fprintf('Loaded convergence data from %d / %d runs.\n', nValid, nRuns);
 
-    nGen = size(bestHists, 2);
+    nGen = targetMaxIt;
     gens = 1:nGen;
+    bestHists   = zeros(nValid, nGen);
+    avgHists    = [];
+    topTenHists = [];
+    for j = 1:nValid
+        k = keepIdx(j);
+        bestHists(j, :) = runHists{k};
+        if ~isempty(runAvgs{k})
+            avgHists(end+1, :) = runAvgs{k};         %#ok<AGROW>
+        end
+        if ~isempty(runTops{k})
+            topTenHists(end+1, :) = runTops{k};     %#ok<AGROW>
+        end
+    end
+    finalBests = bestHists(:, end);
 
-    %% Compute summary curves
+    %% Stats
+    centralStat = lower(string(opts.CentralStat));
     if centralStat == "median"
         bestCentral = median(bestHists, 1);
         bestUpper   = quantile(bestHists, 0.75, 1);
@@ -174,15 +327,15 @@ function plotGA_Convergence(varargin)
         bestCentral = mean(bestHists, 1);
         bestStd     = std(bestHists, 0, 1);
         bestUpper   = bestCentral + bestStd;
-        bestLower   = max(bestCentral - bestStd, 0);   % clamp for non-neg cost
+        bestLower   = max(bestCentral - bestStd, 0);
         envLabel    = '\pm1 std';
         centralLbl  = 'mean';
     end
 
     overallBest    = min(finalBests);
-    overallBestIdx = find(finalBests == overallBest, 1);
+    overallBestRow = find(finalBests == overallBest, 1);
+    overallBestRunIdx = keepIdx(overallBestRow);
 
-    % Robustness: % of runs whose final cost is within `Tolerance` of best
     tol = opts.Tolerance;
     if overallBest > 0
         thresh = overallBest * (1 + tol);
@@ -192,20 +345,14 @@ function plotGA_Convergence(varargin)
     nWithin   = sum(finalBests <= thresh);
     pctWithin = 100 * nWithin / nValid;
 
-    %% Create figure (white background)
-    fig = figure('Units', 'inches', ...
-        'Position', [1 1 sty.FigWidthFull sty.FigHeight], ...
-        'PaperPositionMode', 'auto', ...
-        'Color', sty.BackgroundColor);
-    ax = axes(fig);
+    %% Plot
     hold(ax, 'on');
-
     plotFn = @plot;
     if opts.LogScale
         plotFn = @semilogy;
     end
 
-    % --- Individual run traces (faint) ---
+    % Individual traces
     if opts.ShowIndividual
         for i = 1:nValid
             plotFn(ax, gens, bestHists(i,:), ...
@@ -215,7 +362,7 @@ function plotGA_Convergence(varargin)
         end
     end
 
-    % --- Envelope (shaded) ---
+    % Envelope ribbon
     fillX = [gens, fliplr(gens)];
     fillY = [bestUpper, fliplr(bestLower)];
     if opts.LogScale
@@ -225,15 +372,14 @@ function plotGA_Convergence(varargin)
         'FaceAlpha', 0.18, 'EdgeColor', 'none', ...
         'HandleVisibility', 'off');
 
-    % --- Central-tendency line ---
+    % Central tendency line
     hCentral = plotFn(ax, gens, bestCentral, '-', ...
         'Color', sty.CostFuncColors(3,:), 'LineWidth', sty.LineWidth + 0.4);
-
     legendHandles = hCentral;
     legendLabels  = {sprintf('Best cost %s (%s, n = %d)', ...
                               centralLbl, envLabel, nValid)};
 
-    % --- Envelope boundary lines (thin, same colour) ---
+    % Envelope boundary lines
     plotFn(ax, gens, bestUpper, '-', ...
         'Color', [sty.CostFuncColors(3,:) 0.4], ...
         'LineWidth', sty.LineWidthThin, 'HandleVisibility', 'off');
@@ -241,7 +387,7 @@ function plotGA_Convergence(varargin)
         'Color', [sty.CostFuncColors(3,:) 0.4], ...
         'LineWidth', sty.LineWidthThin, 'HandleVisibility', 'off');
 
-    % --- Top-10 average ---
+    % Top-10 avg
     if opts.ShowTopTen && ~isempty(topTenHists)
         if centralStat == "median"
             topTenCentral = median(topTenHists, 1);
@@ -255,7 +401,7 @@ function plotGA_Convergence(varargin)
                                         centralLbl, size(topTenHists,1));
     end
 
-    % --- Population average (optional) ---
+    % Population average (optional)
     if opts.ShowAvgCost && ~isempty(avgHists)
         if centralStat == "median"
             avgCentral = median(avgHists, 1);
@@ -269,53 +415,68 @@ function plotGA_Convergence(varargin)
                                         centralLbl, size(avgHists,1));
     end
 
-    % --- Overall best cost line (horizontal asymptote reference) ---
+    % --- Panel-strategy label used in legend captions ---------------
+    % Anchor every "best" / "robustness" string to the strategy this
+    % panel is showing, so the reader can see at a glance that the
+    % 5% reference is the cold-start best vs the warm-start best.
+    if ~isempty(titleStr)
+        strategyLbl = lower(titleStr);   % e.g. 'cold-start'
+        bestRefLbl  = sprintf('%s best', strategyLbl);
+    else
+        strategyLbl = '';
+        bestRefLbl  = 'overall best';
+    end
+
+    % Overall best yline
     if opts.ShowBestLine
         hBest = yline(ax, overallBest, '-.', ...
             'Color', [0.7 0.15 0.15], 'LineWidth', sty.LineWidth, ...
             'Alpha', 0.8);
         legendHandles(end+1) = hBest;
-        legendLabels{end+1}  = sprintf('Overall best = %.4f', overallBest);
+        legendLabels{end+1}  = sprintf('%s = %.4f', ...
+                                        capitalise(bestRefLbl), overallBest);
     end
 
-    % --- Best run's full convergence trace (standout colour + callout) ---
+    % Best-run trace (red)
     if opts.ShowBestRun
-        bestRunCol = [0.70 0.15 0.15];   % deep red — same family as best yline
-        bestTrace  = bestHists(overallBestIdx, :);
+        bestRunCol = [0.70 0.15 0.15];
+        bestTrace  = bestHists(overallBestRow, :);
         hBestRun = plotFn(ax, gens, bestTrace, '-', ...
             'Color', bestRunCol, 'LineWidth', sty.LineWidth + 0.6);
         legendHandles(end+1) = hBestRun;
-        legendLabels{end+1}  = sprintf('Best run trace (final = %.4f)', overallBest);
+        legendLabels{end+1}  = sprintf('Best run trace: run %d/%d (final = %.4f)', ...
+                                        overallBestRunIdx, nValid, bestTrace(end));
 
-        % Marker at the final point
+        % Endpoint marker
         plot(ax, nGen, bestTrace(end), 'o', ...
             'MarkerFaceColor', bestRunCol, 'MarkerEdgeColor', 'k', ...
-            'MarkerSize', 7, 'HandleVisibility', 'off');
+            'MarkerSize', sty.MarkerSizeLg, 'HandleVisibility', 'off');
 
-        % Callout box stating the final cost
-        calloutText = sprintf('Final cost = %.4f', bestTrace(end));
-        xCallout = nGen - 0.04*nGen;
-        if opts.LogScale
-            yCallout = bestTrace(end) * 1.18;
-        else
-            yRangeApprox = max(bestUpper) - min(bestLower);
-            yCallout = bestTrace(end) + 0.06 * max(yRangeApprox, eps);
-        end
+        % Inline callout *next to the line end*. Extend the x-axis so
+        % the box sits to the right of the endpoint with a short
+        % leader, rather than overlapping the trace.
+        calloutText = sprintf(' Run %d/%d\n Final = %.4f', ...
+                              overallBestRunIdx, nValid, bestTrace(end));
+        % Place to the right of the endpoint; alignment LEFT
+        xCallout = nGen + 0.015 * nGen;
+        yCallout = bestTrace(end);
         text(ax, xCallout, yCallout, calloutText, ...
-            'HorizontalAlignment', 'right', ...
-            'VerticalAlignment',   'bottom', ...
+            'HorizontalAlignment', 'left', ...
+            'VerticalAlignment',   'middle', ...
             'FontSize', sty.FontSizeAnnot, 'FontName', sty.FontName, ...
             'BackgroundColor', 'w', 'EdgeColor', bestRunCol, ...
-            'Color', 'k', 'Margin', 3);
+            'Color', 'k', 'Margin', 4);
     end
 
-    % --- Robustness entry (NaN-data line so legend shows the text only) ---
+    % Robustness as a no-line legend entry — name the strategy so
+    % the comparison reference is unambiguous (cold-vs-cold, warm-vs-warm).
     hRob = plot(ax, NaN, NaN, 'LineStyle', 'none', 'Marker', 'none');
     legendHandles(end+1) = hRob;
-    legendLabels{end+1}  = sprintf('Within %.0f%% of best: %d/%d runs (%.0f%%)', ...
-                                    100*tol, nWithin, nValid, pctWithin);
+    legendLabels{end+1}  = sprintf('Within %.0f%% of %s: %d/%d (%.0f%%)', ...
+                                    100*tol, bestRefLbl, ...
+                                    nWithin, nValid, pctWithin);
 
-    % --- Initial-population cost annotation ---
+    % Initial-population marker
     if opts.AnnotateInit
         if centralStat == "median"
             initCentral = median(bestHists(:,1));
@@ -324,7 +485,7 @@ function plotGA_Convergence(varargin)
         end
         plot(ax, 1, initCentral, 'kv', ...
             'MarkerFaceColor', [0.4 0.4 0.4], 'MarkerEdgeColor', 'k', ...
-            'MarkerSize', 6, 'HandleVisibility', 'off');
+            'MarkerSize', sty.MarkerSize, 'HandleVisibility', 'off');
         text(ax, 1 + 0.02*nGen, initCentral, ...
             sprintf('init %s = %.3f', centralLbl, initCentral), ...
             'FontSize', sty.FontSizeAnnot, 'FontName', sty.FontName, ...
@@ -338,10 +499,17 @@ function plotGA_Convergence(varargin)
     hold(ax, 'off');
 
     %% Formatting
-    xlabel(ax, 'Generation', 'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
-    ylabel(ax, 'Cost', 'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
+    xlabel(ax, 'Generation', 'FontSize', sty.FontSizeAxis, ...
+                              'FontName', sty.FontName);
+    ylabel(ax, 'Cost', 'FontSize', sty.FontSizeAxis, ...
+                       'FontName', sty.FontName);
+    if ~isempty(titleStr)
+        title(ax, titleStr, 'FontSize', sty.FontSizeTitle, ...
+                            'FontName', sty.FontName, ...
+                            'FontWeight', 'normal');
+    end
     set(ax, 'FontSize', sty.FontSizeTick, 'FontName', sty.FontName, ...
-        'Box', 'on', 'TickDir', 'out');
+            'Box', 'on', 'TickDir', 'out');
     grid(ax, 'on');
 
     yLo = max(0, min(bestLower) * 0.9);
@@ -349,38 +517,102 @@ function plotGA_Convergence(varargin)
     if opts.LogScale
         yLo = max(1e-6, yLo);
     end
-    if isfinite(yLo) && isfinite(yHi) && yHi > yLo
-        ylim(ax, [yLo, yHi]);
+    if ~isfinite(yLo) || ~isfinite(yHi) || yHi <= yLo
+        yLo = 0; yHi = 1;
     end
 
-    legend(legendHandles, legendLabels, ...
+    % Extend x-axis to give the callout room to breathe
+    xlim(ax, [1, nGen * 1.18]);
+
+    legend(ax, legendHandles, legendLabels, ...
         'Location', 'northeast', 'FontSize', sty.FontSizeLegend);
 
-    % --- Apply thesis style: white bg, black text/axes/ticks/legend ---
-    applyThesisStyle(fig);
+    %% Pack metadata
+    meta.nValid       = nValid;
+    meta.ylo          = yLo;
+    meta.yhi          = yHi;
+    meta.finalCentral = bestCentral(end);
+    meta.finalIQRLo   = bestLower(end);
+    meta.finalIQRHi   = bestUpper(end);
+    meta.finalBest    = overallBest;
+    meta.bestRunIdx   = overallBestRunIdx;
+    meta.nWithin      = nWithin;
+    meta.pctWithin    = pctWithin;
+    meta.nDropped     = nDropped;
+    meta.maxIt        = targetMaxIt;
+end
 
-    %% Print summary
-    fprintf('\nConvergence summary (%s):\n', filterDesc);
-    fprintf('  Runs:                   %d\n', nValid);
-    fprintf('  Generations:            %d\n', nGen);
-    fprintf('  Central statistic:      %s\n', centralLbl);
-    fprintf('  Final %s cost:          %.6f\n', centralLbl, bestCentral(end));
-    fprintf('  Final IQR/std envelope: [%.6f, %.6f]\n', bestLower(end), bestUpper(end));
-    fprintf('  Overall best:           %.6f (run %d)\n', overallBest, overallBestIdx);
-    fprintf('  Robustness:             %d/%d runs (%.1f%%) within %.0f%% of best\n', ...
-            nWithin, nValid, pctWithin, 100*tol);
-    if opts.ShowTopTen && ~isempty(topTenHists)
-        fprintf('  Top-10 avg final %s:    %.6f\n', centralLbl, topTenCentral(end));
-    end
 
-    %% Export — vector PDF with explicit white background
-    if isempty(opts.SaveAs)
-        outName = sprintf('GA_Convergence_%s', filterDesc);
-    else
-        outName = opts.SaveAs;
+% =========================================================================
+function s = capitalise(s)
+% Lightweight title-case for legend strings.
+    if isempty(s), return; end
+    s(1) = upper(s(1));
+end
+
+
+% =========================================================================
+function pretty = prettifyFilterDesc(desc)
+% Convert e.g. "7C_CF3_TT1_GM1_sp100cm" into a human-readable supertitle.
+    tokens = strsplit(desc, '_');
+    parts  = strings(1, 0);
+    cfNames = {'Resolution Uncertainty', 'Dynamic Occlusion', 'Combined'};
+    ttNames = {'UAV', 'UGV'};
+    gmNames = {'Uniform grid', 'Normal grid'};
+    for k = 1:numel(tokens)
+        t = tokens{k};
+        if endsWith(t, 'C') && all(isstrprop(t(1:end-1), 'digit'))
+            n = str2double(t(1:end-1));
+            parts(end+1) = sprintf('%d cameras', n);                         %#ok<AGROW>
+        elseif startsWith(t, 'CF')
+            n = str2double(t(3:end));
+            if n>=1 && n<=numel(cfNames)
+                parts(end+1) = sprintf('CF%d (%s)', n, cfNames{n});          %#ok<AGROW>
+            else
+                parts(end+1) = t;                                           %#ok<AGROW>
+            end
+        elseif startsWith(t, 'TT')
+            n = str2double(t(3:end));
+            if n>=1 && n<=numel(ttNames)
+                parts(end+1) = ttNames{n};                                  %#ok<AGROW>
+            else
+                parts(end+1) = t;                                           %#ok<AGROW>
+            end
+        elseif startsWith(t, 'GM')
+            n = str2double(t(3:end));
+            if n>=1 && n<=numel(gmNames)
+                parts(end+1) = gmNames{n};                                  %#ok<AGROW>
+            else
+                parts(end+1) = t;                                           %#ok<AGROW>
+            end
+        elseif startsWith(t, 'sp') && endsWith(t, 'cm')
+            num = str2double(t(3:end-2));
+            parts(end+1) = sprintf('%.2f m spacing', num/100);              %#ok<AGROW>
+        else
+            parts(end+1) = string(t);                                       %#ok<AGROW>
+        end
     end
-    exportgraphics(fig, [outName '.pdf'], ...
-        'ContentType',     'vector', ...
-        'BackgroundColor', sty.ExportBgColor);
-    fprintf('Saved: %s.pdf\n', outName);
+    pretty = char(strjoin(parts, '  ·  '));
+end
+
+
+% =========================================================================
+function printPanelSummary(label, meta, opts)
+    if isempty(meta)
+        fprintf('  [%s] no data\n', label);
+        return;
+    end
+    fprintf('  [%s]\n', label);
+    fprintf('    Runs:                   %d (dropped %d for MaxIt mismatch)\n', ...
+                                          meta.nValid, meta.nDropped);
+    fprintf('    Generations:            %d\n', meta.maxIt);
+    fprintf('    Final central cost:     %.6f\n', meta.finalCentral);
+    fprintf('    Final envelope:         [%.6f, %.6f]\n', ...
+                                          meta.finalIQRLo, meta.finalIQRHi);
+    fprintf('    Panel best:             %.6f (run %d/%d)\n', ...
+                                          meta.finalBest, ...
+                                          meta.bestRunIdx, meta.nValid);
+    fprintf('    Robustness:             %d/%d (%.1f%%) within %.0f%% of best\n', ...
+                                          meta.nWithin, meta.nValid, ...
+                                          meta.pctWithin, 100*opts.Tolerance);
 end

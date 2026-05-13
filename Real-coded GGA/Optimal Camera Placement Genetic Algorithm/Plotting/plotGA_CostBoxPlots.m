@@ -1,58 +1,76 @@
 function plotGA_CostBoxPlots(varargin)
 % plotGA_CostBoxPlots  Box plots of best cost grouped by camera count,
-% annotated with sample size and Mann-Whitney significance brackets
-% between split groups.
+% with optional Mann-Whitney significance brackets, optional OptiTrack
+% baseline overlay, and optional sample-size matching.
 %
 % =====================================================================
 % EXAMINER REVIEW
 % =====================================================================
 % What this plot claims to show
 %   "Best cost decreases with the number of cameras, and the chosen
-%   split factor (target type / grid mode / warm vs cold) shifts the
-%   cost level. Differences between split groups are flagged as
-%   significant or not via a non-parametric test."
+%   split factor (warm vs cold, grid uniform vs normal) shifts the
+%   cost level within the same problem. A red point + red star at the
+%   7-cam cluster pin the ad-hoc OptiTrack baseline cost so the reader
+%   can see the GA's improvement over the as-built lab rig."
 %
 % Strengths
 %   - Box-plot is a defensible summary for small-n stochastic results.
 %   - Outliers are explicitly drawn so the reader sees stragglers.
-%   - Sample size is annotated above each box (n=…), so the reader can
-%     judge the IQR's reliability.
-%   - When a split factor with two levels is active, a Mann-Whitney
-%     U-test p-value is printed above each camera-count cluster with
-%     APA-style stars (n.s./*/**/***).
+%   - Sample size is annotated above each box.
+%   - When a split factor with two LEVELS THAT REPRESENT THE SAME
+%     UNDERLYING PROBLEM is active (cold/warm, uniform/normal grid),
+%     a Mann-Whitney U-test p-value is reported. The test is NOT
+%     applied between target types (UAV vs UGV), because UAV and UGV
+%     are different problems — their costs are not commensurable, and
+%     a significant difference there only confirms "different
+%     volumes give different costs", which is trivial. See the
+%     'ShowStats' parameter to override.
+%   - OptiTrack overlay quantifies the engineering improvement.
 %
 % Decisions taken to address prior examiner critiques
-%   1. n= NOW VISIBLE per box.
-%   2. SIGNIFICANCE TESTING added (Mann-Whitney U) for two-level splits.
-%      For 3+ levels (e.g. cost-function), pairwise tests are skipped
-%      to avoid multi-comparison clutter; report ANOVA in the caption.
-%   3. Y-AXIS LABEL still states "Best Cost" — caption must define the
-%      cost-function weights so units are interpretable.
-%   4. CATEGORICAL X-TICKS only at integer camera counts; the in-between
-%      space is unused.
+%   1. n= is annotated above every box.
+%   2. p-values printed with three decimals; if rounded value would be
+%      0.000 the bracket reads "p < 0.001" instead.
+%   3. CATEGORICAL X-TICKS only at integer camera counts.
+%   4. Cross-target-type brackets removed by default (see above).
+%   5. OptiTrack ad-hoc baseline overlaid at the 7-cam position when
+%      SplitBy='TargetType' and the data set has a single (GridMode,
+%      Spacing), letting the reader judge the GA's headroom.
 % =====================================================================
 %
 %   plotGA_CostBoxPlots('Name', Value, ...)
 %
-%   Produces one figure per cost function (or a single figure if
-%   CostFunction is specified). Within each figure, the x-axis groups by
-%   camera count and separate box groups distinguish target type, grid
-%   mode, or warm-start status.
-%
 %   Name-Value Parameters (passed through to loadGARuns, plus):
-%     'SplitBy'    - 'TargetType' (default), 'GridMode', 'WarmStart', or
-%                    'none' to disable grouping
-%     'ShowStats'  - true to overlay Mann-Whitney significance brackets
-%                    when the split factor has exactly two levels.
-%                    (default: true)
-%     'SaveAs'     - Output filename prefix (default: auto)
+%     'SplitBy'           - 'TargetType' (default), 'GridMode',
+%                           'WarmStart', or 'none'
+%     'ShowStats'         - 'auto' (default) — show brackets only for
+%                           splits that compare the same problem
+%                           (GridMode / WarmStart); 'on' to force
+%                           brackets even for TargetType; 'off' to
+%                           disable entirely.
+%     'OptiTrackOverlay'  - true (default) to overlay the OptiTrack
+%                           ad-hoc baseline at the 7-cam position
+%                           (red filled circle for UAV, red 5-point
+%                           star for UGV). Auto-skipped if SplitBy is
+%                           not 'TargetType' or the loaded runs span
+%                           multiple grid modes / spacings.
+%     'OptiTrackWeights'  - [wUnc wOcc] for CF3 weights when
+%                           evaluating the OptiTrack baseline.
+%                           Default: [0.5 0.5].
+%     'MatchSampleSize'   - true to random-subsample each group to
+%                           min(n) for visual comparability. Default:
+%                           false. Reports n actually plotted.
+%     'SaveAs'            - Output filename prefix (default: auto)
 %     (all loadGARuns parameters are also accepted)
 
     p = inputParser;
     p.KeepUnmatched = true;
-    addParameter(p, 'SplitBy',   'TargetType', @ischar);
-    addParameter(p, 'ShowStats', true,         @islogical);
-    addParameter(p, 'SaveAs',    '',           @ischar);
+    addParameter(p, 'SplitBy',          'TargetType', @ischar);
+    addParameter(p, 'ShowStats',        'auto',       @(s) ischar(s) || isstring(s) || islogical(s));
+    addParameter(p, 'OptiTrackOverlay', true,         @islogical);
+    addParameter(p, 'OptiTrackWeights', [0.5 0.5],    @(v) isnumeric(v) && numel(v)==2);
+    addParameter(p, 'MatchSampleSize',  false,        @islogical);
+    addParameter(p, 'SaveAs',           '',           @ischar);
     parse(p, varargin{:});
 
     opts   = p.Results;
@@ -65,6 +83,14 @@ function plotGA_CostBoxPlots(varargin)
 
     %% Determine which cost functions are present
     allCF = unique([runs.CostFunctionType]);
+
+    % Normalise ShowStats setting
+    [statsMode, ~] = canonicaliseStats(opts.ShowStats);
+
+    % Decide if OptiTrack overlay is feasible for this data set
+    [overlayEnabled, overlayGM, overlaySpacing] = ...
+        decideOptiTrackOverlay(runs, opts);
+    overlayCosts = struct();  % populated lazily inside the cf loop
 
     for cf = allCF
         cfRuns = runs([runs.CostFunctionType] == cf);
@@ -107,6 +133,18 @@ function plotGA_CostBoxPlots(varargin)
         end
         nGroups = length(splitVals);
 
+        % Should this plot show inferential brackets?
+        if strcmp(statsMode, 'on')
+            doStats = (nGroups == 2 && ~isempty(splitField));
+        elseif strcmp(statsMode, 'off')
+            doStats = false;
+        else   % auto
+            % Skip brackets between different problems (UAV vs UGV)
+            % because cost magnitudes are not commensurable.
+            doStats = (nGroups == 2 && ~isempty(splitField)) && ...
+                      ~strcmpi(splitField, 'TargetType');
+        end
+
         %% Build grouped box-plot data structures and store raw points
         boxWidth   = 0.35;
         camSpacing = 1.0;
@@ -131,6 +169,34 @@ function plotGA_CostBoxPlots(varargin)
                 end
                 cellData{c,g} = [cfRuns(mask).BestCost];
             end
+        end
+
+        %% Optional: match sample size across groups (random subsample)
+        if opts.MatchSampleSize
+            % Per-camera-count smallest n (across groups). Subsample
+            % each group down to that n with a deterministic seed so
+            % the result is reproducible across runs.
+            seed = 20260513;
+            rngState = rng(seed, 'twister');
+            cleanup = onCleanup(@() rng(rngState));
+
+            for c = 1:nCams
+                nz = cellfun(@numel, cellData(c,:));
+                nz = nz(nz>0);
+                if numel(nz) < 2, continue; end
+                nMin = min(nz);
+                for g = 1:nGroups
+                    d = cellData{c,g};
+                    if numel(d) > nMin
+                        idx = randperm(numel(d), nMin);
+                        cellData{c,g} = d(idx);
+                    end
+                end
+            end
+            clear cleanup;
+            fprintf(['plotGA_CostBoxPlots[%s]: subsampled each group ' ...
+                     'down to min(n) per camera count.\n'], ...
+                     sty.CostFuncShort{cf});
         end
 
         %% Draw boxes
@@ -185,14 +251,15 @@ function plotGA_CostBoxPlots(varargin)
             end
         end
 
-        %% Mann-Whitney brackets between two-level splits
-        if opts.ShowStats && nGroups == 2 && ~isempty(splitField)
+        %% Mann-Whitney brackets (only when commensurable)
+        if doStats
             for c = 1:nCams
                 d1 = cellData{c,1};
                 d2 = cellData{c,2};
                 if isempty(d1) || isempty(d2), continue; end
                 pVal = stats.mannWhitney(d1, d2);
-                lbl  = sprintf('%s (p=%.3f)', stats.sigStars(pVal), pVal);
+                lbl  = sprintf('%s (%s)', stats.sigStars(pVal), ...
+                                          formatPValue(pVal));
 
                 centre = tickPos(c);
                 x1 = centre + grpOffset(1);
@@ -202,28 +269,97 @@ function plotGA_CostBoxPlots(varargin)
             end
         end
 
+        %% OptiTrack overlay (red dot UAV, red star UGV) ---------------
+        overlayHandles = gobjects(0);
+        overlayLabels  = {};
+        if overlayEnabled && strcmpi(opts.SplitBy, 'TargetType')
+            cam7Idx = find(uniqueCams == 7, 1);
+            if ~isempty(cam7Idx)
+                % Lazy-eval per-target OptiTrack costs once and re-use
+                if ~isfield(overlayCosts, 'UAV')
+                    overlayCosts.UAV = evaluateOptiTrackCost( ...
+                        'TargetType', 1, 'GridMode', overlayGM, ...
+                        'Spacing',    overlaySpacing, ...
+                        'WeightUnc',  opts.OptiTrackWeights(1), ...
+                        'WeightOcc',  opts.OptiTrackWeights(2));
+                    overlayCosts.UGV = evaluateOptiTrackCost( ...
+                        'TargetType', 2, 'GridMode', overlayGM, ...
+                        'Spacing',    overlaySpacing, ...
+                        'WeightUnc',  opts.OptiTrackWeights(1), ...
+                        'WeightOcc',  opts.OptiTrackWeights(2));
+                end
+
+                cfField = sprintf('CF%d', cf);
+
+                % UAV (TargetType==1) — red filled circle
+                gU = find(splitVals == 1, 1);
+                if ~isempty(gU) && isfield(overlayCosts.UAV, cfField)
+                    xPos = tickPos(cam7Idx) + grpOffset(gU);
+                    yVal = overlayCosts.UAV.(cfField);
+                    hUAV = plot(ax, xPos, yVal, 'o', ...
+                        'MarkerFaceColor', [0.85 0.10 0.10], ...
+                        'MarkerEdgeColor', 'k', ...
+                        'MarkerSize',      sty.MarkerSizeLg + 1, ...
+                        'LineStyle',       'none');
+                    overlayHandles(end+1) = hUAV;                  %#ok<AGROW>
+                    overlayLabels{end+1}  = sprintf( ...
+                        'OptiTrack ad-hoc UAV (%.4f)', yVal);
+                end
+
+                % UGV (TargetType==2) — red filled 5-point star
+                gG = find(splitVals == 2, 1);
+                if ~isempty(gG) && isfield(overlayCosts.UGV, cfField)
+                    xPos = tickPos(cam7Idx) + grpOffset(gG);
+                    yVal = overlayCosts.UGV.(cfField);
+                    hUGV = plot(ax, xPos, yVal, 'pentagram', ...
+                        'MarkerFaceColor', [0.85 0.10 0.10], ...
+                        'MarkerEdgeColor', 'k', ...
+                        'MarkerSize',      sty.MarkerSizeLg + 4, ...
+                        'LineStyle',       'none');
+                    overlayHandles(end+1) = hUGV;                  %#ok<AGROW>
+                    overlayLabels{end+1}  = sprintf( ...
+                        'OptiTrack ad-hoc UGV (%.4f)', yVal);
+                end
+            end
+        end
+
         % Make room for the annotations on top
         ylim(ax, [yLim(1), yLim(2) + 0.20*yRange]);
 
         hold(ax, 'off');
 
         %% Legend
+        legendH = [];
+        legendL = {};
         if nGroups > 1 && ~isempty(splitField)
             validH = legendHandles(isgraphics(legendHandles));
             validN = splitNames(isgraphics(legendHandles));
             if ~isempty(validH)
-                legend(validH, validN, 'Location', 'best', ...
-                    'FontSize', sty.FontSizeLegend);
+                legendH = [legendH; validH(:)];
+                legendL = [legendL, validN(:)'];
             end
         end
-
-        % Title noting the test (if any)
-        if opts.ShowStats && nGroups == 2 && ~isempty(splitField)
-            title(ax, sprintf('%s — significance: Mann–Whitney U (*<0.05, **<0.01, ***<0.001)', ...
-                                sty.CostFuncNames{cf}), ...
-                'FontWeight', 'normal', ...
-                'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
+        if ~isempty(overlayHandles)
+            legendH = [legendH; overlayHandles(:)];
+            legendL = [legendL, overlayLabels(:)'];
         end
+        if ~isempty(legendH)
+            legend(legendH, legendL, 'Location', 'best', ...
+                'FontSize', sty.FontSizeLegend);
+        end
+
+        % Title — describe the test only if it was actually run
+        cfNameStr = sty.CostFuncNames{cf};
+        if doStats
+            titleStr = sprintf( ...
+                '%s — significance: Mann–Whitney U (* p<0.05, ** p<0.01, *** p<0.001)', ...
+                cfNameStr);
+        else
+            titleStr = cfNameStr;
+        end
+        title(ax, titleStr, ...
+            'FontWeight', 'normal', ...
+            'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
 
         % --- Apply thesis style: white bg, black text/axes/ticks/legend ---
         applyThesisStyle(fig);
@@ -237,12 +373,79 @@ function plotGA_CostBoxPlots(varargin)
         exportgraphics(fig, [outName '.pdf'], ...
             'ContentType',     'vector', ...
             'BackgroundColor', sty.ExportBgColor);
-        fprintf('Saved: %s.pdf  [%s]\n', outName, sty.CostFuncNames{cf});
+        fprintf('Saved: %s.pdf  [%s]\n', outName, cfNameStr);
     end
 end
 
 
-%% ---- Local helper ----
+%% ---- Local helpers ------------------------------------------------------
+
+function [mode, isLogical] = canonicaliseStats(arg)
+% Map ShowStats argument to one of 'on' | 'off' | 'auto'.
+    isLogical = false;
+    if islogical(arg)
+        isLogical = true;
+        if arg, mode = 'on'; else, mode = 'off'; end
+        return;
+    end
+    arg = lower(string(arg));
+    switch arg
+        case "auto",  mode = 'auto';
+        case "on",    mode = 'on';
+        case "off",   mode = 'off';
+        case "true",  mode = 'on';
+        case "false", mode = 'off';
+        otherwise
+            error('plotGA_CostBoxPlots:badShowStats', ...
+                  'ShowStats must be ''auto'', ''on'', or ''off''.');
+    end
+end
+
+
+function [enabled, gm, sp] = decideOptiTrackOverlay(runs, opts)
+% Decide whether the OptiTrack overlay can be applied to this dataset.
+%
+% Requires: OptiTrackOverlay=true, SplitBy='TargetType', and the
+% loaded runs share a single (GridMode, Spacing).
+    enabled = false;
+    gm = NaN;
+    sp = NaN;
+    if ~opts.OptiTrackOverlay, return; end
+    if ~strcmpi(opts.SplitBy, 'TargetType'), return; end
+    if isempty(runs), return; end
+
+    gms = unique([runs.GridMode]);
+    gms = gms(~isnan(gms));
+    sps = unique([runs.Spacing]);
+    sps = sps(~isnan(sps));
+
+    if numel(gms) ~= 1 || numel(sps) ~= 1
+        fprintf(['plotGA_CostBoxPlots: OptiTrack overlay skipped — ' ...
+                 'loaded set spans %d GridMode(s) and %d Spacing(s); ' ...
+                 'overlay requires a single (GridMode, Spacing).\n'], ...
+                 numel(gms), numel(sps));
+        return;
+    end
+
+    enabled = true;
+    gm = gms;
+    sp = sps;
+end
+
+
+function s = formatPValue(p)
+% Render a p-value safely so very-small values do not display as
+% the misleading "p=0.000".
+    if isnan(p)
+        s = 'p=NA';
+    elseif p < 0.001
+        s = 'p<0.001';
+    else
+        s = sprintf('p=%.3f', p);
+    end
+end
+
+
 function hBox = drawBoxPlotLocal(ax, xc, data, col, hw)
     hBox = gobjects(0);
     data = data(~isnan(data));
