@@ -245,8 +245,30 @@ end
 %% ---- Local helpers ------------------------------------------------------
 
 function [cov, numCams] = perPointVisibility(chromosome, specs)
-% Count cameras whose image plane the point projects into.
-% Mirrors plotCoverageHeatmap's inner loop, but factored for reuse.
+% Count cameras that can actually see each target point.
+%
+% A camera "sees" the point iff ALL THREE of the following hold:
+%   (a) FOV check          — the perspective projection of the point
+%                            lands inside the image plane bounds
+%                            [1, W] x [1, H].
+%   (b) Range check        — the point is within the camera's effective
+%                            range (maxCameraRange for narrow-lens,
+%                            maxCameraRangeWide for wide-lens). This
+%                            matches what findVisibleCameras.m enforces
+%                            and what dynamicOcclusion uses.
+%   (c) In-front check     — the point's depth in the camera frame is
+%                            positive (z_cam > 0). The Peter Corke
+%                            CentralCamera.project() can return finite,
+%                            in-bounds uv coordinates for points BEHIND
+%                            the camera (perspective division by
+%                            negative depth flips signs); without this
+%                            check the count is over-stated.
+%
+% NOTE: the older plotCoverageHeatmap.m and computePointUncertainty.m
+% only apply check (a). Their visibility counts are therefore
+% optimistic. Use this helper (or the version inside findVisibleCameras)
+% as the trustworthy source.
+
     numCams         = specs.Cams;
     resolution      = specs.Resolution;
     focalLength     = specs.Focal;
@@ -255,19 +277,53 @@ function [cov, numCams] = perPointVisibility(chromosome, specs)
     T               = specs.Target;
     nPts            = size(T, 1);
 
-    [cameras, ~] = setupCameras(chromosome, numCams, resolution, ...
+    maxRange     = specs.PreComputed.maxCameraRange;
+    maxRangeWide = specs.PreComputed.maxCameraRangeWide;
+    focalWide    = specs.FocalWide;
+
+    [cameras, camCenters] = setupCameras(chromosome, numCams, resolution, ...
         focalLength, focalLengthWide, principalPoint);
+
+    % Pre-compute each camera's world-frame optical axis (the +Z column
+    % of its rotation matrix). For in-front check we test the sign of
+    % (point - camCenter) . opticalAxis.
+    opticAxes = zeros(3, numCams);
+    for c = 1:numCams
+        Rcw = cameras{c}.T.rotm;          % camera-to-world rotation
+        opticAxes(:, c) = Rcw(:, 3);
+    end
 
     cov = zeros(nPts, 1);
     for pt = 1:nPts
         point    = T(pt, :);
         visCount = 0;
         for c = 1:numCams
-            uv = cameras{c}.project(point);
-            if (uv(1) >= 1 && uv(1) <= resolution(1) && ...
-                uv(2) >= 1 && uv(2) <= resolution(2))
-                visCount = visCount + 1;
+            % --- (c) In-front-of-camera ---
+            viewVec = point(:) - camCenters(:, c);   % 3x1, world frame
+            depth   = dot(viewVec, opticAxes(:, c)); % z in camera frame
+            if depth <= 0
+                continue;
             end
+
+            % --- (a) FOV (projection inside image plane) ---
+            uv = cameras{c}.project(point);
+            if ~(uv(1) >= 1 && uv(1) <= resolution(1) && ...
+                 uv(2) >= 1 && uv(2) <= resolution(2))
+                continue;
+            end
+
+            % --- (b) Within effective range ---
+            distance = norm(viewVec);
+            if cameras{c}.f == focalWide
+                effRange = maxRangeWide;
+            else
+                effRange = maxRange;
+            end
+            if distance > effRange || distance <= 0
+                continue;
+            end
+
+            visCount = visCount + 1;
         end
         cov(pt) = visCount;
     end
