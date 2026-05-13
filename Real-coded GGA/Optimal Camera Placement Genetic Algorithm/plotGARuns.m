@@ -105,37 +105,35 @@ for cf = costFuncs
 end
  
  
-%% ========== Figure Set 3: Warm-Start vs Cold-Start ==========
-%  One figure PER CAMERA COUNT is emitted by plotGA_WarmColdEffect
-%  internally, so the outer loop only enumerates the experimental
-%  conditions that distinguish the warm-start *story*. Restricted to
-%  GM=1 (Uniform): GM=2 (Normal) is retained only for coverage /
-%  best-configuration interest and would clutter the warm-cold result
-%  set without adding evidence for the warm-start claim.
-
-fprintf('\n===== WARM-START EFFECT =====\n');
-
-warmColdGM = 1;  % only Uniform grid for this figure set
-
-for cf = costFuncs
-    for tt = targetTypes
-        for si = 1:length(spacings)
-            sp = spacings(si);
-            tag = sprintf('warmcold_%s_%s_%s_%s', ...
-                cfLabels{cf}, ttLabels{tt}, gmLabels{warmColdGM}, spLabels{si});
-            try
-                plotGA_WarmColdEffect(commonArgs{:}, ...
-                    'CostFunction', cf, ...
-                    'TargetType',   tt, ...
-                    'GridMode',     warmColdGM, ...
-                    'Spacing',      sp, ...
-                    'SaveAs', fullfile(outputDir, tag));
-            catch ME
-                fprintf('  Skipped %s: %s\n', tag, ME.message);
-            end
-        end
-    end
-end
+%% ========== Figure Set 3: Warm-Start vs Cold-Start [DISABLED] ==========
+%  Disabled 2026-05-13 per user request: the warm-vs-cold comparison no
+%  longer needs to be part of the standard batch output. The
+%  plotGA_WarmColdEffect function is retained in Plotting/ for ad-hoc
+%  use; re-enable this block if it's needed again.
+%
+% fprintf('\n===== WARM-START EFFECT =====\n');
+%
+% warmColdGM = 1;  % only Uniform grid for this figure set
+%
+% for cf = costFuncs
+%     for tt = targetTypes
+%         for si = 1:length(spacings)
+%             sp = spacings(si);
+%             tag = sprintf('warmcold_%s_%s_%s_%s', ...
+%                 cfLabels{cf}, ttLabels{tt}, gmLabels{warmColdGM}, spLabels{si});
+%             try
+%                 plotGA_WarmColdEffect(commonArgs{:}, ...
+%                     'CostFunction', cf, ...
+%                     'TargetType',   tt, ...
+%                     'GridMode',     warmColdGM, ...
+%                     'Spacing',      sp, ...
+%                     'SaveAs', fullfile(outputDir, tag));
+%             catch ME
+%                 fprintf('  Skipped %s: %s\n', tag, ME.message);
+%             end
+%         end
+%     end
+% end
  
  
 %% ========== Figure Set 4: Computation Time ==========

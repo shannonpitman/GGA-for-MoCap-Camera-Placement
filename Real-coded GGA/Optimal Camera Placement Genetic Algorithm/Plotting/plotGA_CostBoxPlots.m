@@ -323,8 +323,29 @@ function plotGA_CostBoxPlots(varargin)
             end
         end
 
-        % Make room for the annotations on top
-        ylim(ax, [yLim(1), yLim(2) + 0.20*yRange]);
+        % Final y-axis: auto-expand to include OptiTrack overlay (which
+        % typically sits well above the box data) and then add a small
+        % headroom pad. The earlier yLim/yRange captured the box-only
+        % range and is used purely for placing the n= annotations and
+        % significance brackets just above the IQR boxes.
+        ylim(ax, 'auto');
+        yLimFinal = ylim(ax);
+        yPadFinal = 0.08 * (yLimFinal(2) - yLimFinal(1));
+        ylim(ax, [yLimFinal(1), yLimFinal(2) + yPadFinal]);
+
+        % --- Cam-block dividers ----------------------------------------
+        % Faint vertical line at the midpoint between adjacent camera-
+        % count clusters so the reader sees the 6-cam vs 7-cam blocks as
+        % distinct groups. Drawn after ylim is finalised so the line
+        % spans the full vertical extent.
+        yLimDraw = ylim(ax);
+        for c = 1:(nCams-1)
+            xDiv = 0.5 * (tickPos(c) + tickPos(c+1));
+            plot(ax, [xDiv xDiv], yLimDraw, '-', ...
+                'Color', [0.55 0.55 0.55 0.45], ...
+                'LineWidth', 0.6, ...
+                'HandleVisibility', 'off');
+        end
 
         hold(ax, 'off');
 
