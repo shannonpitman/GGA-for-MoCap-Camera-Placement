@@ -63,6 +63,7 @@ function plotGA_PopulationDiversity(varargin)
     addParameter(p, 'RunDir',      pwd,   @ischar);
     addParameter(p, 'OverlayCost', true,  @islogical);
     addParameter(p, 'LogScale',    false, @islogical);
+    addParameter(p, 'MaxIt',       [],    @(x) isempty(x) || (isnumeric(x) && isscalar(x)));
     addParameter(p, 'SaveAs',      '',    @ischar);
     parse(p, varargin{:});
 
@@ -74,16 +75,16 @@ function plotGA_PopulationDiversity(varargin)
     nRuns = length(runs);
     sty = gaPlotStyle();
 
-    %% Load convergence/diversity histories from individual .mat files
-    divHists  = [];
-    bestHists = [];
-    proxyUsed = false(1, nRuns);
+    %% Pass 1 — load every usable run, regardless of MaxIt -------------
+    runDiv   = cell(nRuns, 1);
+    runBest  = cell(nRuns, 1);
+    runMaxIt = nan(nRuns, 1);
+    proxyTmp = false(nRuns, 1);
 
     for i = 1:nRuns
         if ~isfield(runs(i), 'RunFilename') || isempty(runs(i).RunFilename)
             continue;
         end
-        % Resolve location under Results/<N>Cams/ (post-restructure layout)
         if isfield(runs(i), 'NumCameras')
             matPath = resolveRunPath(runs(i).RunFilename, runs(i).NumCameras, opts.RunDir);
         else
@@ -95,7 +96,6 @@ function plotGA_PopulationDiversity(varargin)
         if ~isfield(data, 'saveData'), continue; end
         sd = data.saveData;
 
-        % Diversity history (priority: precomputed > population std > proxy)
         thisDiv = [];
         if isfield(sd, 'PopulationDiversityHistory') && ~isempty(sd.PopulationDiversityHistory)
             thisDiv = sd.PopulationDiversityHistory(:)';
@@ -106,21 +106,51 @@ function plotGA_PopulationDiversity(varargin)
             avgC = sd.AvgCostHistory(:)';
             bC   = sd.ConvergenceHistory(:)';
             thisDiv = (avgC - bC) ./ max(avgC, eps);
-            proxyUsed(i) = true;
+            proxyTmp(i) = true;
         end
-
         if isempty(thisDiv), continue; end
 
-        divHists(end+1, :)  = thisDiv;                                  %#ok<AGROW>
-        bestHists(end+1, :) = sd.ConvergenceHistory(:)';                %#ok<AGROW>
+        runDiv{i}   = thisDiv;
+        runBest{i}  = sd.ConvergenceHistory(:)';
+        runMaxIt(i) = numel(thisDiv);
     end
 
-    nValid = size(divHists, 1);
-    if nValid == 0
+    %% Pass 2 — pick the modal MaxIt and drop the rest -----------------
+    haveData = ~cellfun(@isempty, runDiv);
+    if ~any(haveData)
         warning(['plotGA_PopulationDiversity: no diversity history found in ' ...
                  'any run (need PopulationDiversityHistory, PopulationStdHistory, ' ...
                  'or AvgCostHistory + ConvergenceHistory). Skipping.']);
         return;
+    end
+    if ~isempty(opts.MaxIt)
+        targetMaxIt = opts.MaxIt;
+    else
+        targetMaxIt = mode(runMaxIt(haveData));
+    end
+    keepMask = haveData & (runMaxIt == targetMaxIt);
+    nDropped = sum(haveData & ~keepMask);
+    if nDropped > 0
+        fprintf(['plotGA_PopulationDiversity: dropped %d run(s) whose MaxIt ' ...
+                 '!= %d (the modal value). MaxIt values present: %s\n'], ...
+                 nDropped, targetMaxIt, mat2str(unique(runMaxIt(haveData))'));
+    end
+
+    keepIdx = find(keepMask);
+    nValid  = numel(keepIdx);
+    if nValid == 0
+        warning('plotGA_PopulationDiversity: no runs left after MaxIt filter.');
+        return;
+    end
+
+    divHists  = zeros(nValid, targetMaxIt);
+    bestHists = zeros(nValid, targetMaxIt);
+    proxyUsed = false(1, nValid);
+    for j = 1:nValid
+        k = keepIdx(j);
+        divHists(j,:)  = runDiv{k};
+        bestHists(j,:) = runBest{k};
+        proxyUsed(j)   = proxyTmp(k);
     end
 
     nGen = size(divHists, 2);

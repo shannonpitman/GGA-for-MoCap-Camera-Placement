@@ -1,26 +1,30 @@
 function plotGA_ComputationTime(varargin)
-% plotGA_ComputationTime  Computation time grouped by camera count using
-% box-and-jitter plots (no bars).
+% plotGA_ComputationTime  Computation-time box plot per camera count.
 %
 % =====================================================================
 % EXAMINER REVIEW
 % =====================================================================
 % What this plot claims to show
-%   "GA wall-clock time scales with camera count and target type / cost
-%   function, demonstrating practical tractability."
+%   "GA wall-clock time scales with camera count and the chosen
+%   split factor (target type or cost function), demonstrating
+%   practical tractability of the search."
 %
 % Strengths
 %   - Wall-clock time in hours is the metric that matters for an
 %     engineering reader who wants to reproduce.
-%   - Box-and-jitter exposes both spread and the actual sample points.
-%   - Sample size n is annotated under each box.
+%   - Box-only display (no scatter clutter); outliers from the IQR
+%     rule still drawn so stragglers are visible.
+%   - Sample size n is annotated under each box AND matched across
+%     groups within each camera count (top-N by BestCost) so the
+%     comparison is honest — the larger group cannot win on
+%     summary statistics simply by having more samples.
 %
 % Decisions taken to address prior examiner critiques
-%   1. BARS REPLACED WITH BOXES. Mean ± std bars assumed normality;
-%      boxes show median, IQR and whiskers — with no hidden assumption.
-%   2. SAMPLE SIZE VISIBLE. n is annotated under every box.
-%   3. AUTO LOG SCALE. If max/min of any group exceeds 5×, the y-axis
-%      switches to log so small bars are not crushed.
+%   1. BARS REPLACED WITH BOXES (no normality assumption).
+%   2. SAMPLE SIZE VISIBLE & EQUALISED across groups at each cam.
+%   3. AUTO LOG SCALE if max/min ratio across groups > 5.
+%   4. SCATTER OVERLAY REMOVED. Outliers still drawn — they are part
+%      of the box plot, not jitter clutter.
 % Notes still to address in caption text
 %   - State whether the time is total / per-generation / per-evaluation.
 %   - State the hardware (CPU, RAM, MATLAB version, parallel pool).
@@ -30,21 +34,21 @@ function plotGA_ComputationTime(varargin)
 %
 %   plotGA_ComputationTime('Name', Value, ...)
 %
-%   Box-and-jitter plot of computation time (in hours) per camera count,
-%   split by target type or cost function. Sample size annotated under
-%   each box.
-%
 %   Name-Value Parameters (passed through to loadGARuns, plus):
-%     'SplitBy'  - 'TargetType' (default), 'CostFunction', or 'none'
-%     'LogScale' - 'auto' (default), true, or false. 'auto' switches to
-%                  log y when max/min ratio across groups > 5.
-%     'SaveAs'   - Output filename without extension (default: auto)
+%     'SplitBy'         - 'TargetType' (default), 'CostFunction', or 'none'
+%     'LogScale'        - 'auto' (default), true, or false
+%     'MatchSampleSize' - 'top' (default) trim each group at each
+%                         camera count to min(n) using the top-N
+%                         lowest-BestCost runs; 'random' random
+%                         subsample (deterministic); 'off' to disable.
+%     'SaveAs'          - Output filename without extension (default: auto)
 
     p = inputParser;
     p.KeepUnmatched = true;
-    addParameter(p, 'SplitBy',  'TargetType', @ischar);
-    addParameter(p, 'LogScale', 'auto', @(x) (ischar(x) && strcmpi(x,'auto')) || islogical(x));
-    addParameter(p, 'SaveAs',   '',           @ischar);
+    addParameter(p, 'SplitBy',          'TargetType', @ischar);
+    addParameter(p, 'LogScale',         'auto',       @(x) (ischar(x) && strcmpi(x,'auto')) || islogical(x));
+    addParameter(p, 'MatchSampleSize',  'top',        @(s) ischar(s) || isstring(s));
+    addParameter(p, 'SaveAs',           '',           @ischar);
     parse(p, varargin{:});
 
     opts = p.Results;
@@ -57,7 +61,7 @@ function plotGA_ComputationTime(varargin)
     uniqueCams = sort(unique([runs.NumCameras]));
     nCams = length(uniqueCams);
 
-    %% Determine split groups
+    %% Split groups
     switch lower(opts.SplitBy)
         case 'targettype'
             splitField = 'TargetType';
@@ -78,8 +82,15 @@ function plotGA_ComputationTime(varargin)
     end
     nGroups = length(splitVals);
 
-    %% Build raw data cell array {nCams x nGroups}
+    matchMode = lower(string(opts.MatchSampleSize));
+    if ~ismember(matchMode, ["top", "random", "off"])
+        error('plotGA_ComputationTime:badMatchMode', ...
+            'MatchSampleSize must be ''top'', ''random'', or ''off''.');
+    end
+
+    %% Build raw (time, cost) cells {nCams x nGroups}
     rawTimes  = cell(nCams, nGroups);
+    rawCosts  = cell(nCams, nGroups);
     for c = 1:nCams
         cam = uniqueCams(c);
         for g = 1:nGroups
@@ -88,7 +99,37 @@ function plotGA_ComputationTime(varargin)
             else
                 mask = ([runs.NumCameras] == cam) & ([runs.(splitField)] == splitVals(g));
             end
-            rawTimes{c,g} = [runs(mask).ElapsedTime] / 3600;  % seconds → hours
+            rawTimes{c,g} = [runs(mask).ElapsedTime] / 3600;   % s → h
+            rawCosts{c,g} = [runs(mask).BestCost];
+        end
+    end
+
+    %% Equalise n across groups within each camera count
+    if matchMode ~= "off"
+        for c = 1:nCams
+            present = find(cellfun(@(d) ~isempty(d), rawTimes(c,:)));
+            if numel(present) < 2, continue; end
+            nMin = min(cellfun(@numel, rawTimes(c,present)));
+            for gi = present
+                t = rawTimes{c,gi};
+                k = rawCosts{c,gi};
+                if numel(t) <= nMin, continue; end
+                switch matchMode
+                    case "top"
+                        % Keep the rows whose BestCost is lowest
+                        [~, ord] = sort(k);
+                        keepIdx  = ord(1:nMin);
+                    case "random"
+                        seed = 20260513;
+                        rngState = rng(seed, 'twister');
+                        cleanup  = onCleanup(@() rng(rngState));        %#ok<NASGU>
+                        keepIdx  = randperm(numel(t), nMin);
+                end
+                rawTimes{c,gi} = t(keepIdx);
+                rawCosts{c,gi} = k(keepIdx);
+            end
+            fprintf(['plotGA_ComputationTime: %dC trimmed each group to ' ...
+                     'n=%d (%s by BestCost).\n'], uniqueCams(c), nMin, matchMode);
         end
     end
 
@@ -107,8 +148,7 @@ function plotGA_ComputationTime(varargin)
     else
         offsets = 0;
     end
-    boxHW     = 0.9 * (totalSpan / max(nGroups, 1)) / 2;
-    jitterAmp = 0.45 * boxHW;
+    boxHW = 0.9 * (totalSpan / max(nGroups, 1)) / 2;
 
     legendHandles = gobjects(nGroups, 1);
 
@@ -117,18 +157,7 @@ function plotGA_ComputationTime(varargin)
         for c = 1:nCams
             xc = xPos(c) + offsets(g);
             data = rawTimes{c,g};
-
             hBox = drawBoxPlot(ax, xc, data, col, boxHW);
-
-            % Jittered points
-            if ~isempty(data)
-                xj = xc + jitterAmp*(rand(1,numel(data))-0.5);
-                plot(ax, xj, data, 'o', ...
-                    'MarkerSize', 2.5, ...
-                    'MarkerEdgeColor', col*0.5, 'MarkerFaceColor', col*0.5, ...
-                    'HandleVisibility', 'off');
-            end
-
             if isgraphics(hBox) && ~isgraphics(legendHandles(g))
                 legendHandles(g) = hBox;
             end
@@ -146,12 +175,11 @@ function plotGA_ComputationTime(varargin)
     elseif islogical(opts.LogScale)
         useLog = opts.LogScale;
     end
-
     if useLog
         set(ax, 'YScale', 'log');
     end
 
-    %% Sample-size annotations (n=) under each box
+    %% n= annotations under each box
     yLim = ylim(ax);
     if useLog
         yN = yLim(1) * 0.85;
@@ -191,12 +219,11 @@ function plotGA_ComputationTime(varargin)
         validH = legendHandles(isgraphics(legendHandles));
         validN = splitNames(isgraphics(legendHandles));
         if ~isempty(validH)
-            legend(validH, validN, 'Location', 'northwest', ...
+            legend(validH, validN, 'Location', 'northeast', ...
                 'FontSize', sty.FontSizeLegend);
         end
     end
 
-    % --- Apply thesis style: white bg, black text/axes/ticks/legend ---
     applyThesisStyle(fig);
 
     %% Print summary
@@ -230,7 +257,8 @@ end
 
 %% ---- Local helper ----
 function hBox = drawBoxPlot(ax, xc, data, col, hw)
-% Draw a single box-and-whisker at horizontal position xc.
+% Box-and-whisker (no jitter overlay; outliers from the 1.5×IQR rule
+% are kept because they describe the data, not annotation).
     hBox = gobjects(0);
     data = data(~isnan(data));
     if isempty(data), return; end
@@ -257,6 +285,7 @@ function hBox = drawBoxPlot(ax, xc, data, col, hw)
     plot(ax, [xc-hw*0.5, xc+hw*0.5], [wHi, wHi], 'Color', col, 'LineWidth', 0.8);
     if ~isempty(outliers)
         plot(ax, repmat(xc, size(outliers)), outliers, ...
-            'o', 'MarkerSize', 3, 'MarkerEdgeColor', col, 'HandleVisibility', 'off');
+            'o', 'MarkerSize', 3, 'MarkerEdgeColor', col, ...
+            'MarkerFaceColor', 'none', 'HandleVisibility', 'off');
     end
 end
