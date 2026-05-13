@@ -175,27 +175,44 @@ for gm = gridModes
 end
  
  
-%% ========== Figure Set 5: Factor Effects (Grid Mode comparison) ==========
-%  Side-by-side: TargetType effect (left) + GridMode effect (right).
-%  One per (CostFunction x Spacing). This is the ONE figure set that
-%  deliberately compares across grid modes, so spacing must still match.
- 
-fprintf('\n===== FACTOR EFFECTS =====\n');
- 
+%% ========== Figure Set 5: Population Diversity ==========
+%  Process-side companion to Convergence: how the GA's intra-population
+%  spread collapses across generations. One per (CF x TT x GM x spacing)
+%  at the representative camera count, matching the Convergence layout.
+%  This is what defends the GA over a deterministic hill climber.
+
+fprintf('\n===== POPULATION DIVERSITY =====\n');
+
 for cf = costFuncs
-    for si = 1:length(spacings)
-        sp = spacings(si);
-        tag = sprintf('factors_%s_%s', cfLabels{cf}, spLabels{si});
-        try
-            plotGA_FactorEffects(commonArgs{:}, ...
-                'CostFunction', cf, ...
-                'Spacing',      sp, ...
-                'SaveAs', fullfile(outputDir, tag));
-        catch ME
-            fprintf('  Skipped %s: %s\n', tag, ME.message);
+    for tt = targetTypes
+        for gm = gridModes
+            for si = 1:length(spacings)
+                sp = spacings(si);
+                tag = sprintf('diversity_%s_%s_%s_%s_%dC', ...
+                    cfLabels{cf}, ttLabels{tt}, gmLabels{gm}, spLabels{si}, repCams);
+                try
+                    plotGA_PopulationDiversity(commonArgs{:}, ...
+                        'CostFunction', cf, ...
+                        'TargetType',   tt, ...
+                        'GridMode',     gm, ...
+                        'Spacing',      sp, ...
+                        'NumCameras',   repCams, ...
+                        'RunDir',       runDir, ...
+                        'OverlayCost',  true, ...
+                        'SaveAs', fullfile(outputDir, tag));
+                catch ME
+                    fprintf('  Skipped %s: %s\n', tag, ME.message);
+                end
+            end
         end
     end
 end
+
+% Factor-effects figure set was removed per user request (2026-05-13):
+% the side-by-side TT × GM panels duplicated information already shown
+% by the box plots and the convergence panels. The plotGA_FactorEffects
+% function is retained in Plotting/ for ad-hoc use but is not invoked
+% by this batch driver.
  
  
 %% ========== Summary ==========
