@@ -62,11 +62,18 @@ function out = RunGA(problem, params, specs)
         bestsol = pop(minIdx);
     end 
 
-    % Best Cost of Iterations -> record of best cost after each generation 
+    % Best Cost of Iterations -> record of best cost after each generation
     bestcost = nan(MaxIt,1);
     bestChromosomes = nan(MaxIt, nVar);
-    avgcost = nan(MaxIt,1); % average cost of the entire population 
-    topTenAvgCost = nan(MaxIt,1); % average cost of the top 10 solutions 
+    avgcost = nan(MaxIt,1); % average cost of the entire population
+    topTenAvgCost = nan(MaxIt,1); % average cost of the top 10 solutions
+
+    % Per-locus genotype diversity per generation. At each generation we
+    % stack the population's chromosomes (nPop x nVar), take std across
+    % the population for every locus, and average to a scalar. Saved out
+    % as PopulationStdHistory so plotGA_PopulationDiversity can use a
+    % real diversity metric instead of the cost-spread proxy.
+    popDiversity = nan(MaxIt, 1);
 
     % Main Loop
     for it = 1:MaxIt
@@ -152,10 +159,16 @@ function out = RunGA(problem, params, specs)
         allCosts = [pop.Cost];
         avgcost(it) = mean(allCosts);
         topTenAvgCost(it) = mean(allCosts(1:10));
-        
+
+        % Per-locus genotype diversity (std across population, averaged
+        % over loci). Built from the full nPop x nVar chromosome matrix.
+        popChroms = vertcat(pop.Chromosome);
+        popDiversity(it) = mean(std(popChroms, 0, 1));
+
         % Display Iteration Information
         if mod(it, 5) == 0 || it == 1
-            fprintf('Iteration %3d: Best = %.6f, Avg = %.6f, Top10 = %.6f\n', it, bestcost(it), avgcost(it), topTenAvgCost(it));
+            fprintf('Iteration %3d: Best = %.6f, Avg = %.6f, Top10 = %.6f, Div = %.4f\n', ...
+                it, bestcost(it), avgcost(it), topTenAvgCost(it), popDiversity(it));
         end
 
     end
@@ -167,4 +180,5 @@ function out = RunGA(problem, params, specs)
     out.bestChromosomes = bestChromosomes;
     out.avgcost = avgcost;
     out.topTenAvgCost = topTenAvgCost;
-end 
+    out.popDiversity = popDiversity;
+end
