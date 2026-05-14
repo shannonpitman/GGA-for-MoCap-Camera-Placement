@@ -14,6 +14,12 @@ currentDateTime = datetime('now');
     saveData.ConvergenceHistory = out.bestcost;
     saveData.AvgCostHistory = out.avgcost;
     saveData.TopTenAvgCostHistory = out.topTenAvgCost;
+    if isfield(out, 'popDiversity')
+        % Per-locus genotype diversity (std across population, averaged
+        % over loci) — recorded so plotGA_PopulationDiversity can use a
+        % real diversity metric instead of the cost-spread proxy.
+        saveData.PopulationStdHistory = out.popDiversity;
+    end
     saveData.ElapsedTime = elapsedTime;
     saveData.Timestamp = currentDateTime;
     saveData.CoverageStats = coverageStats;
