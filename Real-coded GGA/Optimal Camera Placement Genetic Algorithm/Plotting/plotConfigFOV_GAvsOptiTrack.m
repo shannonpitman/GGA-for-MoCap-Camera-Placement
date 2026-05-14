@@ -163,18 +163,12 @@ function drawCamerasAndVolume(ax, chrom, specs, opts)
     end
 
     % --- FOV pyramids ---
-    % Cap the drawn pyramid length to the room's diagonal so frustums
-    % don't extend past the scene. The actual effectiveRange (16 m
-    % narrow, 9 m wide) is preserved for the cost calculation.
-    if isfield(specs, 'Target') && ~isempty(specs.Target)
-        T  = specs.Target;
-        bb = [min(T,[],1); max(T,[],1)];
-        roomDiag = norm(bb(2,:) - bb(1,:));
-    else
-        roomDiag = 12;
-    end
-    visRange = roomDiag;   % stop the pyramid at the far wall
-
+    % Draw each pyramid at its FULL effective range (16 m narrow, 9 m
+    % wide). Capping the visual range was misleading: the clipped frustum
+    % made it look as though room corners weren't covered when in fact
+    % the camera could see them but the drawing stopped short. Letting
+    % the pyramids extend past the room is more honest, even if the
+    % figure is busier.
     for i = 1:numCams
         if cameras{i}.f == focalWide
             rng_i = maxRangeWide;
@@ -184,10 +178,9 @@ function drawCamerasAndVolume(ax, chrom, specs, opts)
             col_i = [0.10 0.45 0.75];   % narrow lens — blue
         end
         plotCameraFOV(cameras{i}, camCenters(:,i), rng_i, ...
-            'Color',       col_i, ...
-            'Label',       sprintf('cam%d', i), ...
-            'BodyScale',   0.30, ...
-            'VisualRange', visRange);
+            'Color',     col_i, ...
+            'Label',     sprintf('cam%d', i), ...
+            'BodyScale', 0.30);
     end
 
     if opts.ShowTarget && isfield(specs, 'Target')
