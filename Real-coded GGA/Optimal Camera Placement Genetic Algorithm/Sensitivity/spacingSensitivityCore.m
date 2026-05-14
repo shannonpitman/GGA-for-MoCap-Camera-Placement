@@ -112,7 +112,7 @@ function sweep = spacingSensitivityCore(opts)
             specs           = setupCostParams(specs);
 
             [cameras, CamCenters] = setupCameras(chrom, opts.numCams, ...
-                specs.Resolution, specs.Focal, specs.FocalWide, specs.PrincipalPoint);
+                specs.Resolution, specs.Focal, specs.FocalWide, specs.PrincipalPoint, specs.PixelSize);
 
             fprintf('  spacing=%.3g m  | N=%6d pts  | ', spacing, specs.NumPoints);
 

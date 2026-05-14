@@ -68,7 +68,7 @@ function stats = sanityCheckCoverage(varargin)
     numPoints   = size(targetSpace, 1);
 
     [cameras, camCenters] = setupCameras(chrom, numCams, specs.Resolution, ...
-        specs.Focal, specs.FocalWide, specs.PrincipalPoint);
+        specs.Focal, specs.FocalWide, specs.PrincipalPoint, specs.PixelSize);
 
     maxRange     = specs.PreComputed.maxCameraRange;
     maxRangeWide = specs.PreComputed.maxCameraRangeWide;

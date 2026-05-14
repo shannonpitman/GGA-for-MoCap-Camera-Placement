@@ -131,7 +131,7 @@ fprintf('Convergence plot saved to: %s.pdf\n', plotFilename);
 % setupCameras / the cost function use, so the plotted frustum reflects
 % the FOV that actually drives visibility checks.
 [cameras, camCenters] = setupCameras(out.bestsol.Chromosome, specs.Cams, ...
-    specs.Resolution, specs.Focal, specs.FocalWide, specs.PrincipalPoint);
+    specs.Resolution, specs.Focal, specs.FocalWide, specs.PrincipalPoint, specs.PixelSize);
 
 % Effective range per lens type (matches findVisibleCameras post-fix)
 maxRange     = specs.PreComputed.maxCameraRange;

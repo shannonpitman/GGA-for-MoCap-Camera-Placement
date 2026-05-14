@@ -125,7 +125,7 @@ function summary = reEvaluateSavedRuns(varargin)
 
         %% Step 4 — recompute coverage stats with corrected findVisibleCameras
         [cameras, camCenters] = setupCameras(chrom, specs.Cams, ...
-            specs.Resolution, specs.Focal, specs.FocalWide, specs.PrincipalPoint);
+            specs.Resolution, specs.Focal, specs.FocalWide, specs.PrincipalPoint, specs.PixelSize);
         T = specs.Target;
         nP = size(T,1);
         cov = zeros(nP,1);

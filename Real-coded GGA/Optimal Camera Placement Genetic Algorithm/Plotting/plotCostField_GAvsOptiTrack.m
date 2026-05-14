@@ -158,7 +158,7 @@ function [unc, occ] = perPointCosts(chrom, specs)
 % Evaluate uncertainty and occlusion at every target point.
     numCams = specs.Cams;
     [cameras, camCenters] = setupCameras(chrom, numCams, ...
-        specs.Resolution, specs.Focal, specs.FocalWide, specs.PrincipalPoint);
+        specs.Resolution, specs.Focal, specs.FocalWide, specs.PrincipalPoint, specs.PixelSize);
 
     resolution         = specs.Resolution;
     TargetSpace        = specs.Target;

@@ -69,7 +69,7 @@ function saveOptiTrackAsRun(varargin)
 
     %% Evaluate cost components
     [cameras, CamCenters] = setupCameras(chrom, numCams, ...
-        specs.Resolution, specs.Focal, specs.FocalWide, specs.PrincipalPoint);
+        specs.Resolution, specs.Focal, specs.FocalWide, specs.PrincipalPoint, specs.PixelSize);
 
     fprintf('\nEvaluating OptiTrack ad-hoc rig (N=%d points)...\n', specs.NumPoints);
     tStart = tic;

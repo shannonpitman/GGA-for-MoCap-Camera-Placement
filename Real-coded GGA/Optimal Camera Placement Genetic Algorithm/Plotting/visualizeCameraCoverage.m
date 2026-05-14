@@ -82,7 +82,7 @@ function [coverageStats]= visualizeCameraCoverage(out, specs, varargin)
     maxRange = specs.PreComputed.maxCameraRange;
     maxRangeWide = specs.PreComputed.maxCameraRangeWide;
 
-    [cameras, camCenters] = setupCameras(cameraChromosome, numCams, resolution, focalLength, focalLengthWide, PrincipalPoint);
+    [cameras, camCenters] = setupCameras(cameraChromosome, numCams, resolution, focalLength, focalLengthWide, PrincipalPoint, specs.PixelSize);
 
     numPoints = size(TargetSpace,1);
     cameraCoverage = zeros(numPoints,1);
