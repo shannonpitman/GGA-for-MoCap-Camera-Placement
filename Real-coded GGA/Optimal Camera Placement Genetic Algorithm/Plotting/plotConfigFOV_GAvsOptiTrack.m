@@ -147,7 +147,7 @@ function drawCamerasAndVolume(ax, chrom, specs, opts)
 % target point cloud.
     numCams = specs.Cams;
     [cameras, camCenters] = setupCameras(chrom, numCams, ...
-        specs.Resolution, specs.Focal, specs.FocalWide, specs.PrincipalPoint);
+        specs.Resolution, specs.Focal, specs.FocalWide, specs.PrincipalPoint, specs.PixelSize);
 
     maxRange     = specs.PreComputed.maxCameraRange;
     maxRangeWide = specs.PreComputed.maxCameraRangeWide;
@@ -163,6 +163,18 @@ function drawCamerasAndVolume(ax, chrom, specs, opts)
     end
 
     % --- FOV pyramids ---
+    % Cap the drawn pyramid length to the room's diagonal so frustums
+    % don't extend past the scene. The actual effectiveRange (16 m
+    % narrow, 9 m wide) is preserved for the cost calculation.
+    if isfield(specs, 'Target') && ~isempty(specs.Target)
+        T  = specs.Target;
+        bb = [min(T,[],1); max(T,[],1)];
+        roomDiag = norm(bb(2,:) - bb(1,:));
+    else
+        roomDiag = 12;
+    end
+    visRange = roomDiag;   % stop the pyramid at the far wall
+
     for i = 1:numCams
         if cameras{i}.f == focalWide
             rng_i = maxRangeWide;
@@ -172,9 +184,10 @@ function drawCamerasAndVolume(ax, chrom, specs, opts)
             col_i = [0.10 0.45 0.75];   % narrow lens — blue
         end
         plotCameraFOV(cameras{i}, camCenters(:,i), rng_i, ...
-            'Color',     col_i, ...
-            'Label',     sprintf('cam%d', i), ...
-            'BodyScale', 0.30);
+            'Color',       col_i, ...
+            'Label',       sprintf('cam%d', i), ...
+            'BodyScale',   0.30, ...
+            'VisualRange', visRange);
     end
 
     if opts.ShowTarget && isfield(specs, 'Target')

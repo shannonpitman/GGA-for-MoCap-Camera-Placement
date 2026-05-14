@@ -88,7 +88,7 @@ function out = evaluateOptiTrackCost(varargin)
     %% Chromosome + cameras ------------------------------------------
     chrom = buildOptiTrackChromosome();
     [cameras, CamCenters] = setupCameras(chrom, numCams, ...
-        specs.Resolution, specs.Focal, specs.FocalWide, specs.PrincipalPoint);
+        specs.Resolution, specs.Focal, specs.FocalWide, specs.PrincipalPoint, specs.PixelSize);
 
     %% Evaluate -------------------------------------------------------
     tStart = tic;

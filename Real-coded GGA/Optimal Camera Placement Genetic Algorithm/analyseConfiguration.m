@@ -357,7 +357,7 @@ function plotCameraConfig(chrom, specs, cost, label)
     % point that the cost function uses, so the drawn FOV matches the FOV
     % seen by findVisibleCameras / computePointUncertainty.
     [cameras, camCenters] = setupCameras(chrom, numCams, specs.Resolution, ...
-        specs.Focal, specs.FocalWide, specs.PrincipalPoint);
+        specs.Focal, specs.FocalWide, specs.PrincipalPoint, specs.PixelSize);
 
     figure('Name', sprintf('Camera Config — %s', label), ...
         'Position', [100, 100, 800, 600]);
@@ -386,7 +386,7 @@ function plotCamerasInAxis(chrom, specs)
     numCams = specs.Cams;
 
     [cameras, camCenters] = setupCameras(chrom, numCams, specs.Resolution, ...
-        specs.Focal, specs.FocalWide, specs.PrincipalPoint);
+        specs.Focal, specs.FocalWide, specs.PrincipalPoint, specs.PixelSize);
 
     hold on;
     drawCamerasWithFOV(cameras, camCenters, specs);

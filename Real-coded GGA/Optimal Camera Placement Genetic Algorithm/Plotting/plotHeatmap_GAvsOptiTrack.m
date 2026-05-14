@@ -282,7 +282,7 @@ function [cov, numCams] = perPointVisibility(chromosome, specs)
     focalWide    = specs.FocalWide;
 
     [cameras, camCenters] = setupCameras(chromosome, numCams, resolution, ...
-        focalLength, focalLengthWide, principalPoint);
+        focalLength, focalLengthWide, principalPoint, specs.PixelSize);
 
     % Pre-compute each camera's world-frame optical axis (the +Z column
     % of its rotation matrix). For in-front check we test the sign of

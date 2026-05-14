@@ -15,7 +15,7 @@ function y = fixPoorCameras(x, specs, coverageThreshold)
     maxRange = specs.PreComputed.maxCameraRange;
     maxRangeWide = specs.PreComputed.maxCameraRangeWide;
  
-    [cameras, camCenters] = setupCameras(x, numCams, resolution, focalLength, focalLengthWide, PrincipalPoint);
+    [cameras, camCenters] = setupCameras(x, numCams, resolution, focalLength, focalLengthWide, PrincipalPoint, specs.PixelSize);
     
     % Coverage check for each camera (with range check via findVisibleCameras)
     cameraCoverage = zeros(numCams, 1);

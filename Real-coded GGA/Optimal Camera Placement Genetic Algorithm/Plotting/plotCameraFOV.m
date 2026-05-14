@@ -18,15 +18,20 @@ function plotCameraFOV(camera, camCentre, effectiveRange, varargin)
 % Optional name/value pairs:
 %   'Color'         - RGB triplet (default [0 0.4 0.7])
 %   'EdgeAlpha'     - 0..1 (default 0.85)
-%   'FaceAlpha'     - 0..1 (default 0.10) — alpha of side + far faces
+%   'FaceAlpha'     - 0..1 (default 0.22) — alpha of side + far faces
 %   'LineWidth'     - default 1.0
 %   'Label'         - text label drawn at the apex (default '')
-%   'ShowBody'      - true to draw a small camera-body wedge at the apex
-%                     using Corke RVC3 CentralCamera.plot_camera.
+%   'ShowBody'      - true to draw a small camera-body wedge at the apex.
 %                     Default true.
 %   'BodyScale'     - scale factor for the body wedge (m). Default 0.25.
 %   'ShowOpticalAxis' - true to draw a dashed line along the optical
 %                       axis from apex to far-plane centre. Default true.
+%   'VisualRange'   - if non-empty, cap the drawn pyramid length at
+%                     this value (m). Useful when effectiveRange is much
+%                     larger than the scene (e.g. 16 m range in an 8 m
+%                     room). The actual effectiveRange is unchanged for
+%                     cost calculations — this only shortens what is
+%                     DRAWN. Default [] (no cap).
 %
 % camera must be a Peter-Corke CentralCamera built with the focal length
 % and resolution actually used by setupCameras (so K is meaningful).
@@ -34,14 +39,22 @@ function plotCameraFOV(camera, camCentre, effectiveRange, varargin)
     p = inputParser;
     addParameter(p, 'Color',           [0 0.4 0.7]);
     addParameter(p, 'EdgeAlpha',       0.85);
-    addParameter(p, 'FaceAlpha',       0.10);
+    addParameter(p, 'FaceAlpha',       0.22);
     addParameter(p, 'LineWidth',       1.0);
     addParameter(p, 'Label',           '');
     addParameter(p, 'ShowBody',        true,    @islogical);
     addParameter(p, 'BodyScale',       0.25,    @isnumeric);
     addParameter(p, 'ShowOpticalAxis', true,    @islogical);
+    addParameter(p, 'VisualRange',     [],      @(x) isempty(x) || isnumeric(x));
     parse(p, varargin{:});
     opts = p.Results;
+
+    % Cap the drawn pyramid length without affecting the caller's notion
+    % of effectiveRange (which is used for visibility cost calculations).
+    drawRange = effectiveRange;
+    if ~isempty(opts.VisualRange) && opts.VisualRange > 0
+        drawRange = min(drawRange, opts.VisualRange);
+    end
 
     camCentre = camCentre(:);                         % 3x1
 
@@ -63,14 +76,14 @@ function plotCameraFOV(camera, camCentre, effectiveRange, varargin)
     R         = camera.T.rotm;                        % camera-to-world rotation
     raysWorld = R * raysCam;                          % 3x4 world directions
 
-    % Normalise and scale to the effective range.
+    % Normalise and scale to the (possibly capped) drawing range.
     rayLens    = vecnorm(raysWorld, 2, 1);
     rayUnit    = raysWorld ./ rayLens;
-    farCorners = camCentre + rayUnit * effectiveRange; % 3x4 far-plane corners
+    farCorners = camCentre + rayUnit * drawRange;     % 3x4 far-plane corners
 
     % Optical axis (camera +Z in world frame) — used for body + axis line.
     opticAxisWorld = R(:, 3);                         % 3x1 unit
-    farCentre      = camCentre + opticAxisWorld * effectiveRange;
+    farCentre      = camCentre + opticAxisWorld * drawRange;
 
     hold('on');
 

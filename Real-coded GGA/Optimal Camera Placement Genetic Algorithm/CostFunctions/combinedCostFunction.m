@@ -17,7 +17,7 @@ function totalCost = combinedCostFunction(cameraChromosome, specs)
     uncertNorm = specs.PreComputed.uncertNorm;
     occlNorm = specs.PreComputed.occlNorm;
 
-    [cameras, CamCenters] = setupCameras(cameraChromosome, numCams, resolution, focalLength, focalLengthWide, PrincipalPoint);
+    [cameras, CamCenters] = setupCameras(cameraChromosome, numCams, resolution, focalLength, focalLengthWide, PrincipalPoint, specs.PixelSize);
     
     % Calculate individual cost components
     uncertaintyCost = resUncertainty(specs, cameras, CamCenters)/ uncertNorm;
