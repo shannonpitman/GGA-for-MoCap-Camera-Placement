@@ -1,5 +1,5 @@
 function plotCameraFOV(camera, camCentre, effectiveRange, varargin)
-% PLOTCAMERAFOV  Draw a camera's true field-of-view frustum.
+% PLOTCAMERAFOV  Draw a camera's true field-of-view frustum as a solid 3D pyramid.
 %
 % plotCameraFOV(camera, camCentre, effectiveRange) plots the pyramid that
 % extends from the camera's perspective centre out to its effective range,
@@ -8,28 +8,45 @@ function plotCameraFOV(camera, camCentre, effectiveRange, varargin)
 % findVisibleCameras / computePointUncertainty actually use as the camera's
 % visibility region.
 %
+% The pyramid is built from FIVE translucent patches (4 triangular side
+% faces + 1 quadrilateral far face) plus the 4 apex-to-corner edge lines
+% drawn on top, so the volume reads as unambiguously 3D from any view
+% angle. A small wedge representing the camera body is drawn at the apex
+% (use Corke's RVC3 plot_camera if available, falling back to a hand-
+% drawn marker).
+%
 % Optional name/value pairs:
-%   'Color'      - RGB triplet (default [0 0.4 0.7])
-%   'EdgeAlpha'  - 0..1 (default 0.7)
-%   'FaceAlpha'  - 0..1 (default 0.08)
-%   'LineWidth'  - default 0.8
-%   'Label'      - text label drawn at the apex (default '')
+%   'Color'         - RGB triplet (default [0 0.4 0.7])
+%   'EdgeAlpha'     - 0..1 (default 0.85)
+%   'FaceAlpha'     - 0..1 (default 0.10) — alpha of side + far faces
+%   'LineWidth'     - default 1.0
+%   'Label'         - text label drawn at the apex (default '')
+%   'ShowBody'      - true to draw a small camera-body wedge at the apex
+%                     using Corke RVC3 CentralCamera.plot_camera.
+%                     Default true.
+%   'BodyScale'     - scale factor for the body wedge (m). Default 0.25.
+%   'ShowOpticalAxis' - true to draw a dashed line along the optical
+%                       axis from apex to far-plane centre. Default true.
 %
 % camera must be a Peter-Corke CentralCamera built with the focal length
 % and resolution actually used by setupCameras (so K is meaningful).
 
     p = inputParser;
-    addParameter(p, 'Color',     [0 0.4 0.7]);
-    addParameter(p, 'EdgeAlpha', 0.7);
-    addParameter(p, 'FaceAlpha', 0.08);
-    addParameter(p, 'LineWidth', 0.8);
-    addParameter(p, 'Label',     '');
+    addParameter(p, 'Color',           [0 0.4 0.7]);
+    addParameter(p, 'EdgeAlpha',       0.85);
+    addParameter(p, 'FaceAlpha',       0.10);
+    addParameter(p, 'LineWidth',       1.0);
+    addParameter(p, 'Label',           '');
+    addParameter(p, 'ShowBody',        true,    @islogical);
+    addParameter(p, 'BodyScale',       0.25,    @isnumeric);
+    addParameter(p, 'ShowOpticalAxis', true,    @islogical);
     parse(p, varargin{:});
     opts = p.Results;
 
     camCentre = camCentre(:);                         % 3x1
 
-    % Image-plane corners in pixels (1..W, 1..H).
+    % Image-plane corners in pixels (1..W, 1..H), ordered CCW so adjacent
+    % columns of cornersPix are adjacent corners of the image plane.
     res = camera.npix;                                 % [W H] from CentralCamera
     if isempty(res)
         error('plotCameraFOV:NoResolution', ...
@@ -47,35 +64,85 @@ function plotCameraFOV(camera, camCentre, effectiveRange, varargin)
     raysWorld = R * raysCam;                          % 3x4 world directions
 
     % Normalise and scale to the effective range.
-    rayLens   = vecnorm(raysWorld, 2, 1);
-    rayUnit   = raysWorld ./ rayLens;
+    rayLens    = vecnorm(raysWorld, 2, 1);
+    rayUnit    = raysWorld ./ rayLens;
     farCorners = camCentre + rayUnit * effectiveRange; % 3x4 far-plane corners
 
-    % --- Draw apex point + label ---
+    % Optical axis (camera +Z in world frame) — used for body + axis line.
+    opticAxisWorld = R(:, 3);                         % 3x1 unit
+    farCentre      = camCentre + opticAxisWorld * effectiveRange;
+
     hold('on');
-    plot3(camCentre(1), camCentre(2), camCentre(3), '.', ...
-        'MarkerSize', 14, 'Color', opts.Color);
-    if ~isempty(opts.Label)
-        text(camCentre(1), camCentre(2), camCentre(3), ...
-            ['  ' opts.Label], 'Color', opts.Color, 'FontSize', 8);
+
+    % --- (1) Side faces as triangular patches (apex + two adj. corners) ---
+    %     This is what makes the frustum read as a solid pyramid.
+    for c = 1:4
+        c2 = mod(c, 4) + 1;     % next corner index (wrap around)
+        triX = [camCentre(1), farCorners(1,c), farCorners(1,c2)];
+        triY = [camCentre(2), farCorners(2,c), farCorners(2,c2)];
+        triZ = [camCentre(3), farCorners(3,c), farCorners(3,c2)];
+        patch(triX, triY, triZ, opts.Color, ...
+            'FaceAlpha', opts.FaceAlpha, ...
+            'EdgeColor', 'none', ...
+            'HandleVisibility', 'off');
     end
 
-    % --- Draw four edges from apex to far corners ---
+    % --- (2) Far-plane quad as patch (slightly stronger alpha) ---
+    farX = farCorners(1, :);
+    farY = farCorners(2, :);
+    farZ = farCorners(3, :);
+    patch(farX, farY, farZ, opts.Color, ...
+        'FaceAlpha', min(opts.FaceAlpha * 1.5, 1), ...
+        'EdgeColor', opts.Color, ...
+        'EdgeAlpha', opts.EdgeAlpha, ...
+        'LineWidth', opts.LineWidth, ...
+        'HandleVisibility', 'off');
+
+    % --- (3) Apex-to-corner edges (drawn on top of patches for clarity) ---
     for c = 1:4
         plot3([camCentre(1) farCorners(1,c)], ...
               [camCentre(2) farCorners(2,c)], ...
               [camCentre(3) farCorners(3,c)], ...
               '-', 'Color', [opts.Color opts.EdgeAlpha], ...
-              'LineWidth', opts.LineWidth);
+              'LineWidth', opts.LineWidth, ...
+              'HandleVisibility', 'off');
     end
 
-    % --- Draw far-plane quad as a translucent patch ---
-    farX = [farCorners(1,:) farCorners(1,1)];
-    farY = [farCorners(2,:) farCorners(2,1)];
-    farZ = [farCorners(3,:) farCorners(3,1)];
-    patch(farX, farY, farZ, opts.Color, ...
-        'FaceAlpha', opts.FaceAlpha, ...
-        'EdgeColor', opts.Color, ...
-        'EdgeAlpha', opts.EdgeAlpha, ...
-        'LineWidth', opts.LineWidth);
+    % --- (4) Optical axis (dashed line from apex to far-plane centre) ---
+    if opts.ShowOpticalAxis
+        plot3([camCentre(1) farCentre(1)], ...
+              [camCentre(2) farCentre(2)], ...
+              [camCentre(3) farCentre(3)], ...
+              ':', 'Color', [opts.Color 0.55], ...
+              'LineWidth', max(opts.LineWidth - 0.2, 0.6), ...
+              'HandleVisibility', 'off');
+    end
+
+    % --- (5) Camera body at apex ---
+    %     A small hand-drawn wedge oriented along the optical axis. We
+    %     deliberately do NOT call camera.plot_camera() from RVC3 here:
+    %     that method has side effects on axis limits, view angle, and
+    %     axis-equal mode, which would clobber the parent subplot.
+    if opts.ShowBody
+        % Big filled marker at the apex (the lens centre).
+        plot3(camCentre(1), camCentre(2), camCentre(3), 'o', ...
+            'MarkerSize', 8, 'MarkerFaceColor', opts.Color, ...
+            'MarkerEdgeColor', 'k', 'LineWidth', 0.7, ...
+            'HandleVisibility', 'off');
+        % Short stub along the optical axis — visually "the lens".
+        stub = camCentre + opticAxisWorld * (opts.BodyScale * 0.7);
+        plot3([camCentre(1) stub(1)], ...
+              [camCentre(2) stub(2)], ...
+              [camCentre(3) stub(3)], ...
+              '-', 'Color', opts.Color, ...
+              'LineWidth', opts.LineWidth + 0.6, ...
+              'HandleVisibility', 'off');
+    end
+
+    % --- (6) Label drawn last so it's not occluded by patches ---
+    if ~isempty(opts.Label)
+        text(camCentre(1), camCentre(2), camCentre(3), ...
+            ['  ' opts.Label], 'Color', opts.Color, ...
+            'FontSize', 9, 'FontWeight', 'bold');
+    end
 end
