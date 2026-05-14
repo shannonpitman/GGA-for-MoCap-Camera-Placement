@@ -1,25 +1,6 @@
 function plotConfigFOV_GAvsOptiTrack(varargin)
-% PLOTCONFIGFOV_GAVSOPTITRACK  Side-by-side camera-pose + FOV frustum plot
-% comparing the GA-best 7-camera configuration with the OptiTrack ad-hoc
-% rig for a single scenario (UAV or UGV).
-%
-% =====================================================================
-% EXAMINER REVIEW
-% =====================================================================
-% What this plot claims to show
-%   "Here is the physical realisation of the GA solution: each camera's
-%   position, orientation, and field-of-view frustum, drawn against the
-%   target volume. Side-by-side with the OptiTrack ad-hoc rig you can
-%   see WHERE the GA chose to redistribute cameras — apex spacing,
-%   pitch/yaw angle, and frustum coverage overlap."
-%
-% Strengths
-%   - The drawn frustum matches what findVisibleCameras actually checks
-%     (uses each camera's K-matrix and effective range).
-%   - Wide-lens cameras get a different colour and shorter frustum,
-%     so the lens choice the GA made is visible at a glance.
-%   - Identical axes / view angle on both panels makes geometric
-%     differences easy to read.
+% Side-by-side camera-pose + FOV frustum plot comparing the GA-best 7-camera configuration with the OptiTrack ad-hoc arrangement for a single scenario (UAV or UGV).
+
 %
 % USAGE
 %   plotConfigFOV_GAvsOptiTrack('TargetType', 1)               % UAV
@@ -33,8 +14,7 @@ function plotConfigFOV_GAvsOptiTrack(varargin)
 %   'SaveAs'     - output filename without extension.
 
     %% Parse inputs
-    defaultLog = fullfile(fileparts(fileparts(mfilename('fullpath'))), ...
-                          'Results', 'Logs', 'GGA_RunsLog.mat');
+    defaultLog = fullfile(fileparts(fileparts(mfilename('fullpath'))), 'Results', 'Logs', 'GGA_RunsLog.mat');
 
     p = inputParser;
     addParameter(p, 'TargetType',   1,        @isnumeric);
