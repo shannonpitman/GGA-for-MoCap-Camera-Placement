@@ -163,7 +163,8 @@ end
 
 
 function drawCamerasAndVolume(ax, chrom, specs, opts)
-% Draw camera FOV frustums + (optionally) the target point cloud.
+% Draw room-volume wireframe + camera FOV frustums + (optionally) the
+% target point cloud.
     numCams = specs.Cams;
     [cameras, camCenters] = setupCameras(chrom, numCams, ...
         specs.Resolution, specs.Focal, specs.FocalWide, specs.PrincipalPoint);
@@ -173,6 +174,15 @@ function drawCamerasAndVolume(ax, chrom, specs, opts)
     focalWide    = specs.FocalWide;
 
     hold(ax, 'on');
+
+    % --- Room-volume wireframe (gives the cameras spatial reference) ---
+    if isfield(specs, 'Target') && ~isempty(specs.Target)
+        T = specs.Target;
+        bb = [min(T,[],1); max(T,[],1)];   % 2x3 [x;y;z] bounds
+        drawBoxWire(ax, bb, [0.30 0.30 0.30], 0.6, 0.9);
+    end
+
+    % --- FOV pyramids ---
     for i = 1:numCams
         if cameras{i}.f == focalWide
             rng_i = maxRangeWide;
@@ -182,13 +192,16 @@ function drawCamerasAndVolume(ax, chrom, specs, opts)
             col_i = [0.10 0.45 0.75];   % narrow lens — blue
         end
         plotCameraFOV(cameras{i}, camCenters(:,i), rng_i, ...
-            'Color', col_i, 'Label', sprintf('cam%d', i));
+            'Color',     col_i, ...
+            'Label',     sprintf('cam%d', i), ...
+            'BodyScale', 0.30);
     end
 
     if opts.ShowTarget && isfield(specs, 'Target')
         T = specs.Target;
         plot3(ax, T(:,1), T(:,2), T(:,3), '.', ...
-            'Color', [0.45 0.45 0.45], 'MarkerSize', 3);
+            'Color', [0.55 0.55 0.55 0.45], 'MarkerSize', 3, ...
+            'HandleVisibility', 'off');
     end
 
     axis(ax, 'equal');
@@ -196,4 +209,22 @@ function drawCamerasAndVolume(ax, chrom, specs, opts)
     xlabel(ax, 'X (m)'); ylabel(ax, 'Y (m)'); zlabel(ax, 'Z (m)');
     view(ax, opts.ViewAngle);
     hold(ax, 'off');
+end
+
+
+function drawBoxWire(ax, bb, col, lw, alpha)
+% Draw the 12 edges of an axis-aligned bounding box bb = [xmin ymin zmin;
+% xmax ymax zmax].
+    x = bb(:,1);  y = bb(:,2);  z = bb(:,3);
+    % 8 vertices in canonical order
+    V = [x(1) y(1) z(1);  x(2) y(1) z(1);  x(2) y(2) z(1);  x(1) y(2) z(1);
+         x(1) y(1) z(2);  x(2) y(1) z(2);  x(2) y(2) z(2);  x(1) y(2) z(2)];
+    edges = [1 2; 2 3; 3 4; 4 1;     % bottom face
+             5 6; 6 7; 7 8; 8 5;     % top face
+             1 5; 2 6; 3 7; 4 8];    % verticals
+    for e = 1:size(edges, 1)
+        plot3(ax, V(edges(e,:), 1), V(edges(e,:), 2), V(edges(e,:), 3), ...
+            '-', 'Color', [col alpha], 'LineWidth', lw, ...
+            'HandleVisibility', 'off');
+    end
 end
