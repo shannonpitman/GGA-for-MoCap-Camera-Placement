@@ -181,7 +181,7 @@ function plotCoverageHeatmap(varargin)
         principalPoint  = specs.PrincipalPoint;
 
         [cameras, ~] = setupCameras(chromosome, numCams, resolution, ...
-            focalLength, focalLengthWide, principalPoint);
+            focalLength, focalLengthWide, principalPoint, specs.PixelSize);
 
         TargetSpace = specs.Target;
         numPoints   = size(TargetSpace, 1);

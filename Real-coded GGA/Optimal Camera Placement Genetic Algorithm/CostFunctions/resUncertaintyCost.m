@@ -7,7 +7,7 @@ function cost = resUncertaintyCost(cameraChromosome, specs)
     PrincipalPoint = specs.PrincipalPoint;
 
     [cameras, CamCenters] = setupCameras(cameraChromosome, numCams, ...
-        resolution, focalLength, focalLengthWide, PrincipalPoint);
+        resolution, focalLength, focalLengthWide, PrincipalPoint, specs.PixelSize);
 
     % Call the original resolution uncertainty function
     cost = resUncertainty(specs, cameras, CamCenters);

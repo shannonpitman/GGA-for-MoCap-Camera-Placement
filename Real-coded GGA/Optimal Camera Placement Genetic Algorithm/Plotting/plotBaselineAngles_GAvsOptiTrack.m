@@ -168,7 +168,7 @@ function angles = pairwiseBaselineAngles(chrom, specs)
 % pair) combinations.
     numCams = specs.Cams;
     [cameras, camCenters] = setupCameras(chrom, numCams, ...
-        specs.Resolution, specs.Focal, specs.FocalWide, specs.PrincipalPoint);
+        specs.Resolution, specs.Focal, specs.FocalWide, specs.PrincipalPoint, specs.PixelSize);
 
     resolution     = specs.Resolution;
     TargetSpace    = specs.Target;
