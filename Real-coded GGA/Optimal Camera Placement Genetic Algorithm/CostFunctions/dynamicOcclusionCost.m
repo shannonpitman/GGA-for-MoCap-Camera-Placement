@@ -8,7 +8,7 @@ function cost = dynamicOcclusionCost(cameraChromosome, specs)
     PrincipalPoint = specs.PrincipalPoint;
 
     [cameras, CamCenters] = setupCameras(cameraChromosome, numCams, ...
-        resolution, focalLength, focalLengthWide, PrincipalPoint);
+        resolution, focalLength, focalLengthWide, PrincipalPoint, specs.PixelSize);
 
     cost = dynamicOcclusion(specs, cameras, CamCenters);
 end
