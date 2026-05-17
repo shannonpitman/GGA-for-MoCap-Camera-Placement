@@ -27,7 +27,7 @@ addParameter(p, 'UGV_MaxHeight', 0.5, @isnumeric);
 % on a 0.5 m slab (z = [0, 0.25, 0.5]). x-y spacing is governed by Spacings
 % so UGV x-y can match UAV without forcing 33x33 in-plane resolution.
 addParameter(p, 'UGV_ZSpacing', 0.25, @(x) isnumeric(x) && isscalar(x) && x > 0);
-addParameter(p, 'NumRepeats', 3, @isnumeric);
+addParameter(p, 'NumRepeats', 5, @isnumeric);
 addParameter(p, 'SkipWarmStart', false, @islogical);
 
 % GA parameters
