@@ -1,0 +1,68 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 19-May-2026 09:40:29
+Number of Cameras: 8
+Best Cost (Cost Function 3): 0.036218
+Cost Function Weights: 0.50 Resolution Uncertainty and 0.50 Dynamic Occlusion
+Computation Time: 24.89 min
+Mutation Rate: 0.50
+Tournament Size: 3
+Warm Starting Used: false
+Population Size: 100
+Number of Generations: 150
+Target Type: UAV (Full Volume)
+Grid Mode: Normal Grid
+Number of Target Points: 405
+
+Camera Configurations:
+---------------------
+
+Camera 1:
+  Position (m):        [4.331, 4.138, 3.926]
+  Orientation (rad):    [2.086, -0.565, -1.094]
+  Orientation (deg):    [119.5, -32.4, -62.7]
+
+Camera 2:
+  Position (m):        [4.375, -3.843, 0.326]
+  Orientation (rad):    [-1.202, -0.911, 0.355]
+  Orientation (deg):    [-68.9, -52.2, 20.3]
+
+Camera 3:
+  Position (m):        [-4.780, 3.871, 4.057]
+  Orientation (rad):    [2.257, 0.805, 0.872]
+  Orientation (deg):    [129.3, 46.1, 49.9]
+
+Camera 4:
+  Position (m):        [-3.751, -4.015, 0.568]
+  Orientation (rad):    [-1.180, 0.846, -0.115]
+  Orientation (deg):    [-67.6, 48.5, -6.6]
+
+Camera 5:
+  Position (m):        [4.245, 2.497, 1.065]
+  Orientation (rad):    [0.304, -1.357, -0.385]
+  Orientation (deg):    [17.4, -77.8, -22.1]
+
+Camera 6:
+  Position (m):        [3.400, -3.865, 0.385]
+  Orientation (rad):    [-0.848, -1.100, 0.602]
+  Orientation (deg):    [-48.6, -63.0, 34.5]
+
+Camera 7:
+  Position (m):        [-4.439, -4.382, 1.627]
+  Orientation (rad):    [-1.537, 0.692, -0.724]
+  Orientation (deg):    [-88.0, 39.6, -41.5]
+
+Camera 8:
+  Position (m):        [-4.474, 3.578, 2.715]
+  Orientation (rad):    [1.619, 0.850, 1.373]
+  Orientation (deg):    [92.8, 48.7, 78.7]
+
+Camera Coverage Statistics:
+---------------------------
+Total target points: 405
+Points with 0 cameras: 0 (0.0%)
+Points with 1 camera:  39 (9.6%)
+Points with 2+ cameras: 366 (90.4%)
+Average coverage: 4.81 cameras per point
+Max coverage: 8 | Min: 1 | Median: 6.00
