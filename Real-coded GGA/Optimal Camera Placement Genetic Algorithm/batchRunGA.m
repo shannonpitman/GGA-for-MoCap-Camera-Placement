@@ -1,14 +1,11 @@
 function batchRunGA(varargin)
-% BATCHRUNGA  Systematic batch testing across all experimental conditions.
+% Systematic batch testing across all experimental conditions.
 % Number of cameras
 % Cost function type (1=ResUncert, 2=DynOccl, 3=Combined)
 % Target type (1=UAV, 2=UGV)
 % Grid discretisation mode (1=Uniform, 2=Normal)
 % Grid spacing
 % Warm-start (false first, then true seeded from best cold run)
-%
-% Cold-start runs execute FIRST for each condition so that the best
-% chromosome is available to seed the warm-start runs.
 
 % Make sure every code subfolder is on the MATLAB path.
 addProjectPaths();
