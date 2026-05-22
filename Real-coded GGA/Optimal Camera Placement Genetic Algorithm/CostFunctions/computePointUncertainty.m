@@ -27,21 +27,14 @@ function uncertainty = computePointUncertainty(point, cameras, cameraCentres, nu
         return;
     end
 
-    vertices = calcVertices(numVisible, visibleIdx, adjacentSurfaces, planes);
+    vertices = calcVertices(numVisible, visibleIdx, planes);
     if isempty(vertices)
-        % Polytope intersection produced no usable vertices (degenerate
-        % geometry — this can happen when multiple frustums only just
-        % overlap at the projection of the point). Fall back to a
-        % moderate penalty so the GA never sees NaN, but the chromosome
-        % is still discouraged.
         uncertainty = 0.5*penaltyUncertainty;
         return;
     end
     unique_vertices = unique(round(vertices,6),'rows', 'stable');
     if size(unique_vertices, 1) < 4
-        % Fewer than 4 unique vertices means the polytope is degenerate
-        % in 3D (point/line/plane). Treat as low-information and apply
-        % the same fallback penalty.
+        %Fewer than 4 unique vertices means the polytope is degenerate in 3D (point/line/plane)
         uncertainty = 0.5*penaltyUncertainty;
         return;
     end
@@ -52,7 +45,6 @@ function uncertainty = computePointUncertainty(point, cameras, cameraCentres, nu
     Eigs = eig(C0v_vert); %[eigenvectors, eigenvalues in a diagonal matrix]
     uncertainty = sum(sqrt(abs(Eigs))); % uncertainty based on the trace of the cov matrix
     if ~isfinite(uncertainty)
-        % Final NaN/Inf guard so the GA selection never sees NaN.
         uncertainty = 0.5*penaltyUncertainty;
     end
 

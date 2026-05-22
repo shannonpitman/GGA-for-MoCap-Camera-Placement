@@ -1,6 +1,4 @@
 function planes = buildPyramidSurf(cameraCentre, worldPoint, adj)
-%UNTITLED4 Summary of this function goes here
-%   Detailed explanation goes here
     corner1 = worldPoint(:,adj(:,1));
     corner2 = worldPoint(:,adj(:,2));
     
