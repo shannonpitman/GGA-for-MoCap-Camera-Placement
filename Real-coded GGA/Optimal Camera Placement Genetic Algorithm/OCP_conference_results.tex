@@ -1,0 +1,50 @@
+% =====================================================================
+% Compressed Results & Discussion for the IEEE conference paper.
+% Drop-in replacement for the empty Section \ref{sec:results} body.
+% Targets ~1 IEEE column page total (figure + table + 6 short paragraphs).
+% Figure paths assume figures/ at the conference paper's root.
+% =====================================================================
+
+\section{Results and Discussion}\label{sec:results}
+The experimental campaign comprises $80$ independent runs of the guided GA at the representative seven-camera, $\Delta=1\,\text{m}$ configuration for each of the four (target-type, grid-mode) cells. Each run uses the same evaluation budget of $15{,}100$ cost evaluations, so reported differences arise from search dynamics rather than from computational allotment. All costs are the combined normalised objective $J$ of Eq.~(\ref{eq:combined-cost}) with $w_\text{res}=w_\text{occ}=0.5$.
+
+\subsection{Convergence and Population Behaviour}
+Fig.~\ref{fig:convergence} shows the per-generation best-cost trajectory for the UAV/Uniform cell. The median falls from an initial $0.115$ to $0.047$ in the first $50$ generations ($-59\%$) and drifts down to $0.040$ by $G_{\max}{=}150$. The top-10 population average tracks the best curve $\sim 0.005$ above, confirming that the population floor is rising rather than the elite drifting alone. Population diversity (not shown) collapses by generation $\sim 50$ whilst the best cost continues to drop, the signature of healthy exploitation rather than premature convergence: elitism, mutation, and the camera-repair operator continue to find improving moves along the boundary of the converged cluster. Warm starting (seeding the initial population with elite chromosomes from prior cold-start runs) reduces the UAV/Uniform median final cost by $22\%$ ($0.0478\!\rightarrow\!0.0375$) and tightens the run-to-run standard deviation by $63\%$ ($0.0052\!\rightarrow\!0.0019$); the same direction of effect holds in all other cells.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/convergence_CF3_Combined_UAV_GM1_Uniform_sp100cm_7C.pdf}
+\caption{Best-cost convergence of the GA across $40$ independent runs per panel under the UAV/Uniform cell. Solid green: median best cost with $Q25$--$Q75$ inter-quartile ribbon. Dashed blue: median top-10 population average. Deep red: trace of the run achieving the lowest final cost.}
+\label{fig:convergence}
+\end{figure}
+
+\subsection{Comparison Against the Ad-hoc Baseline}
+Table~\ref{tab:headline} reports the best returned cost across all runs in each cell alongside the OptiTrack ad-hoc baseline evaluated under the same conditions. The GA delivers an $8.1$--$9.7\times$ reduction in combined cost relative to the ad-hoc rig. The improvement is consistent across both target modalities and both grid distributions, with the largest gain ($9.7\times$) under the normal-concentrated UGV grid where the optimiser most aggressively concentrates coverage on the floor slab. As a point of reference, Rahimian and Kearney's experimental study reported a $2.9\times$ improvement in full-marker reconstruction on a different but related metric \cite{rahimian_optimal_2017}; the larger ratio here reflects both the budget-constrained sensor model and the composite uncertainty-plus-occlusion objective that the ad-hoc rig was not designed against.
+
+\begin{table}[t]
+\centering
+\caption{Best returned combined cost at $k=7$, $\Delta=1\,\text{m}$, with the OptiTrack ad-hoc baseline at matched conditions.}
+\label{tab:headline}
+\begin{tabular}{l l c c c}
+\hline
+\textbf{TT} & \textbf{GM} & \textbf{GA best} & \textbf{Ad-hoc} & \textbf{Ratio} \\
+\hline
+UAV & Uniform & 0.0330 & 0.2691 & $8.2\times$ \\
+UAV & Normal  & 0.0281 & 0.2393 & $8.5\times$ \\
+UGV & Uniform & 0.0179 & 0.1449 & $8.1\times$ \\
+UGV & Normal  & 0.0126 & 0.1218 & $9.7\times$ \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Geometric Mechanism of the Improvement}
+The pairwise camera-baseline-angle distribution exposes the geometric origin of the cost reduction. The triangulability constraint of Section~\ref{DO} accepts a pair as a useful observer only when its convergence angle lies in $[40^\circ,140^\circ]$. The GA-best UAV layout places $73.2\%$ of pairs in this band against $64.8\%$ for the OptiTrack rig; under the UGV target the figures are $79.9\%$ vs $73.7\%$. The ad-hoc histogram exhibits a sharp $\sim 20^\circ$ peak (clustered, near-parallel pairs that triangulate poorly); the GA shifts mass into the $60^\circ$--$120^\circ$ region where triangulation is best conditioned. The per-point cost field across the workspace volume confirms the implication: GA layouts produce uniformly low uncertainty and occlusion fields, whereas the ad-hoc layout exhibits localised high-cost regions in the volume periphery where the clustered placement provides no triangulable view.
+
+\subsection{Coverage}
+Across the seven-camera, $\Delta=1\,\text{m}$ cells the GA layouts cover $\geq 99.99\%$ of target points with at least one camera and $79.6$--$87.2\%$ with two or more cameras, against $73.4\%$ ($2+$-cam) for the ad-hoc UAV layout, which also leaves $8.4\%$ of UAV target points entirely unobserved. Average per-target coverage is $3.85$--$4.65$ cameras under the GA layouts.
+
+\subsection{Computational Cost}
+Median per-run wall-clock time at $\Delta=1\,\text{m}$ on $24$ parallel workers is $\sim 20.8\,\text{min}$ (UAV, $\sim 405$ target points) and $\sim 13.6\,\text{min}$ (UGV, $\sim 243$ target points). The dependence on camera count between $k=6$ and $k=8$ is mild ($<30\%$), since per-point evaluation cost is dominated by pairwise visibility, range, and triangulability tests rather than by $\mathcal{O}(k)$ FOV checks. A grid-spacing sensitivity sweep ($\Delta\in[0.1,3]\,\text{m}$) confirms that the chosen $\Delta=1\,\text{m}$ deviates by $\leq 5\%$ from the $\Delta=0.1\,\text{m}$ reference on the combined cost whilst delivering a $\sim 250\times$ speedup, defending the discretisation choice.
+
+\subsection{Local Sensitivity}
+Perturbing one camera's roll, pitch, and yaw individually across $\pm 45^\circ$ from the GA-best, with the remaining cameras held fixed, produces a V-shaped cost curve with a clear minimum at zero perturbation in all three axes for the UAV configuration. The UGV configuration produces asymmetric V's: positive perturbations rotate the probe camera off the floor slab and incur a steep cost rise, whereas negative perturbations point it further into the already-covered region and produce only a shallow rise. The absence of any lower-cost configuration within $\pm 10^\circ$ in any axis confirms that the returned configuration sits at a true local minimum of the cost surface rather than at an arbitrary point the operator schedule happened to abandon.

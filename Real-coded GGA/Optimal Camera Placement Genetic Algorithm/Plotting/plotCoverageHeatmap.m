@@ -145,13 +145,16 @@ function plotCoverageHeatmap(varargin)
     %% Figure: 2 rows × nGridModes columns
     nCols = sum(hasResults);
     figWidth_in  = sty.FigWidthFull * max(nCols/2, 1);
-    figHeight_in = sty.FigHeightTall * 1.2;       % taller because of XY row
+    figHeight_in = sty.FigHeightTall * 1.3;       % extra height so 2-line titles clear colorbars
 
     fig = figure('Name', 'Coverage Heat Map Comparison', ...
         'Units', 'inches', ...
         'Position', [0.5, 0.5, figWidth_in, figHeight_in], ...
         'PaperPositionMode', 'auto', ...
         'Color', sty.BackgroundColor);
+
+    tl = tiledlayout(fig, 2, nCols, ...
+        'TileSpacing', 'compact', 'Padding', 'compact');
 
     %% First pass: find global max camera count for consistent colour scale
     globalMaxCams = 0;
@@ -200,17 +203,17 @@ function plotCoverageHeatmap(varargin)
             cameraCoverage(pt) = visCount;
         end
 
-        % Coverage statistics for title
+        % Coverage statistics for subtitle
         zeroPct    = 100 * sum(cameraCoverage == 0) / numPoints;
         twoPlusPct = 100 * sum(cameraCoverage >= 2) / numPoints;
         avgCov     = mean(cameraCoverage);
-        titleStr = {sprintf('%s — %d Cameras (Cost: %.4f)', ...
-                            gridModeNames{gm}, numCams, sd.BestCost), ...
-                    sprintf('Avg: %.1f cams/pt | 0-cam: %.1f%% | 2+cam: %.1f%%', ...
-                            avgCov, zeroPct, twoPlusPct)};
+        titleStr    = sprintf('%s: %d Cameras (Cost: %.4f)', ...
+                              gridModeNames{gm}, numCams, sd.BestCost);
+        subtitleStr = sprintf('Avg: %.1f cams/pt | 0-cam: %.1f%% | 2+cam: %.1f%%', ...
+                              avgCov, zeroPct, twoPlusPct);
 
         % ---- Top row: 3D scatter ----
-        ax3D = subplot(2, nCols, plotIdx);
+        ax3D = nexttile(tl, plotIdx);
         scatter3(TargetSpace(:,1), TargetSpace(:,2), TargetSpace(:,3), ...
             opts.MarkerSize, cameraCoverage, 'filled', 'MarkerFaceAlpha', 0.8);
         colormap(ax3D, cmap);
@@ -230,12 +233,14 @@ function plotCoverageHeatmap(varargin)
         title(ax3D, titleStr, ...
             'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName, ...
             'FontWeight', 'normal');
+        subtitle(ax3D, subtitleStr, ...
+            'FontSize', sty.FontSizeAnnot, 'FontName', sty.FontName);
         set(ax3D, 'FontSize', sty.FontSizeTick, 'FontName', sty.FontName);
 
         % ---- Bottom row: XY ground-plane worst-case projection ----
         % For each (x,y), report the MIN of cameraCoverage over Z. This
         % surfaces the zero-coverage shells that 3D occlusion would hide.
-        axXY = subplot(2, nCols, plotIdx + nCols);
+        axXY = nexttile(tl, plotIdx + nCols);
         plotMinCoverageByXY(axXY, TargetSpace, cameraCoverage, opts.MarkerSize, cmap, globalMaxCams);
         cb2 = colorbar(axXY);
         cb2.Label.String = 'Min visible cameras (over Z)';
@@ -247,7 +252,7 @@ function plotCoverageHeatmap(varargin)
         grid(axXY, 'on');
         xlabel(axXY, 'X (m)', 'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
         ylabel(axXY, 'Y (m)', 'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
-        title(axXY, sprintf('%s — XY worst-case projection', gridModeNames{gm}), ...
+        title(axXY, sprintf('%s: XY worst-case projection', gridModeNames{gm}), ...
             'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName, ...
             'FontWeight', 'normal');
         set(axXY, 'FontSize', sty.FontSizeTick, 'FontName', sty.FontName);
@@ -255,11 +260,11 @@ function plotCoverageHeatmap(varargin)
 
     % Overall figure title
     if nCols == 2
-        sgtitle('UAV Coverage Heat Map — Uniform vs Normal Grid (3D scatter + XY worst-case)', ...
+        title(tl, 'UAV Coverage Heat Map: Uniform vs Normal Grid (3D scatter + XY worst-case)', ...
             'FontSize', sty.FontSizeAxis + 2, 'FontWeight', 'bold', ...
             'FontName', sty.FontName);
     else
-        sgtitle('UAV Coverage Heat Map (3D scatter + XY worst-case)', ...
+        title(tl, 'UAV Coverage Heat Map (3D scatter + XY worst-case)', ...
             'FontSize', sty.FontSizeAxis + 2, 'FontWeight', 'bold', ...
             'FontName', sty.FontName);
     end

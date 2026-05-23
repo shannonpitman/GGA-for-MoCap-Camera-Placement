@@ -147,24 +147,29 @@ function plotHeatmap_GAvsOptiTrack(varargin)
                  'discussed in text.'], numCamsGA, numCamsOpti);
     end
 
-    %% Figure layout — 2 rows x 2 cols, shared scale within scenario
+    %% Figure layout — 2 rows x 2 cols, shared scale within scenario.
+    %  Switched to tiledlayout so the two-line panel titles and the
+    %  colorbars stop colliding on the top row.
     figW = sty.FigWidthFull;            % side-by-side cols
-    figH = sty.FigHeightTall * 1.1;     % 2 rows
+    figH = sty.FigHeightTall * 1.3;     % extra height for title clearance
 
-    fig = figure('Name', sprintf('Coverage: GA vs OptiTrack — %s', ttStr), ...
+    fig = figure('Name', sprintf('Coverage: GA vs OptiTrack: %s', ttStr), ...
         'Units', 'inches', ...
         'Position', [0.5, 0.5, figW, figH], ...
         'PaperPositionMode', 'auto', ...
         'Color', sty.BackgroundColor);
+
+    tl = tiledlayout(fig, 2, 2, ...
+        'TileSpacing', 'compact', 'Padding', 'compact');
 
     globalMaxCams = max([numCamsGA, numCamsOpti, max(covGA), max(covOpti)]);
     cmap = parula(max(globalMaxCams + 1, 2));
 
     % Pre-pack panels so we can use one loop
     panels(1).chrom = gaChrom;    panels(1).cov = covGA;
-    panels(1).name  = sprintf('GA-best (Cost: %.4f)', gaCost);
+    panels(1).name  = 'GA-best';   panels(1).cost = gaCost;
     panels(2).chrom = optiChrom;  panels(2).cov = covOpti;
-    panels(2).name  = sprintf('OptiTrack ad-hoc (Cost: %.4f)', optiCostVal);
+    panels(2).name  = 'OptiTrack ad-hoc'; panels(2).cost = optiCostVal;
 
     TargetSpace = specs.Target;
 
@@ -172,6 +177,7 @@ function plotHeatmap_GAvsOptiTrack(varargin)
     for k = 1:2
         cov  = panels(k).cov;
         name = panels(k).name;
+        c0   = panels(k).cost;
 
         zeroPct    = 100 * sum(cov == 0)  / specs.NumPoints;
         twoPlusPct = 100 * sum(cov >= 2)  / specs.NumPoints;
@@ -180,7 +186,7 @@ function plotHeatmap_GAvsOptiTrack(varargin)
                               avgCov, zeroPct, twoPlusPct);
 
         % ---- Top row: 3D scatter ----
-        ax3D = subplot(2, 2, k);
+        ax3D = nexttile(tl, k);
         scatter3(ax3D, TargetSpace(:,1), TargetSpace(:,2), TargetSpace(:,3), ...
             opts.MarkerSize, cov, 'filled', 'MarkerFaceAlpha', 0.85);
         colormap(ax3D, cmap);
@@ -197,13 +203,15 @@ function plotHeatmap_GAvsOptiTrack(varargin)
         ylabel(ax3D, 'Y (m)', 'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
         zlabel(ax3D, 'Z (m)', 'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
         view(ax3D, opts.ViewAngle);
-        title(ax3D, {name, statLine}, ...
+        title(ax3D, sprintf('%s (Cost: %.4f)', name, c0), ...
             'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName, ...
             'FontWeight', 'normal');
+        subtitle(ax3D, statLine, ...
+            'FontSize', sty.FontSizeAnnot, 'FontName', sty.FontName);
         set(ax3D, 'FontSize', sty.FontSizeTick, 'FontName', sty.FontName);
 
         % ---- Bottom row: XY worst-case (min coverage over Z) ----
-        axXY = subplot(2, 2, k + 2);
+        axXY = nexttile(tl, k + 2);
         plotMinCoverageByXY(axXY, TargetSpace, cov, opts.MarkerSize, cmap, globalMaxCams);
         cb2 = colorbar(axXY);
         cb2.Label.String   = 'Min visible cameras (over Z)';
@@ -215,13 +223,13 @@ function plotHeatmap_GAvsOptiTrack(varargin)
         grid(axXY, 'on');
         xlabel(axXY, 'X (m)', 'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
         ylabel(axXY, 'Y (m)', 'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
-        title(axXY, sprintf('%s — XY worst-case', stripCostFromName(name)), ...
+        title(axXY, sprintf('%s: XY worst-case', name), ...
             'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName, ...
             'FontWeight', 'normal');
         set(axXY, 'FontSize', sty.FontSizeTick, 'FontName', sty.FontName);
     end
 
-    sgtitle(sprintf('%s — Coverage: GA-best vs OptiTrack ad-hoc (%s, sp = %.2f m, %d cams)', ...
+    title(tl, sprintf('%s coverage: GA-best vs OptiTrack ad-hoc (%s, sp = %.2f m, %d cams)', ...
         ttStr, gmStr, opts.Spacing, opts.NumCameras), ...
         'FontSize', sty.FontSizeTitle, 'FontWeight', 'bold', ...
         'FontName', sty.FontName);

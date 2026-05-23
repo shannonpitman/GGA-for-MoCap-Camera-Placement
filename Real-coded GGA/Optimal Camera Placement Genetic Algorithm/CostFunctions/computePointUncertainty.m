@@ -45,7 +45,7 @@ function uncertainty = computePointUncertainty(point, cameras, cameraCentres, nu
     Eigs = eig(C0v_vert); %[eigenvectors, eigenvalues in a diagonal matrix]
     uncertainty = sum(sqrt(abs(Eigs))); % uncertainty based on the trace of the cov matrix
     if ~isfinite(uncertainty)
-        uncertainty = 0.5*penaltyUncertainty;
+        uncertainty = 0.5*penaltyUncertainty;q1
     end
 
     % Old code that found error volume based on Wu, Sharma and Huang
