@@ -22,7 +22,9 @@ function plotGA_ComputationTime(varargin)
 % Decisions taken to address prior examiner critiques
 %   1. BARS REPLACED WITH BOXES (no normality assumption).
 %   2. SAMPLE SIZE VISIBLE & EQUALISED across groups at each cam.
-%   3. AUTO LOG SCALE if max/min ratio across groups > 5.
+%   3. LINEAR Y-AXIS IN MINUTES — log scale removed (2026-05-23) because
+%      it made small differences look exponentially large; minutes are
+%      the unit a reader intuits without mental conversion.
 %   4. SCATTER OVERLAY REMOVED. Outliers still drawn — they are part
 %      of the box plot, not jitter clutter.
 % Notes still to address in caption text
@@ -36,7 +38,9 @@ function plotGA_ComputationTime(varargin)
 %
 %   Name-Value Parameters (passed through to loadGARuns, plus):
 %     'SplitBy'         - 'TargetType' (default), 'CostFunction', or 'none'
-%     'LogScale'        - 'auto' (default), true, or false
+%     'LogScale'        - false (default). Accepted for backwards
+%                         compatibility; pass true to force a log y-axis,
+%                         or 'auto' for the old max/min > 5 heuristic.
 %     'MatchSampleSize' - 'top' (default) trim each group at each
 %                         camera count to min(n) using the top-N
 %                         lowest-BestCost runs; 'random' random
@@ -46,7 +50,7 @@ function plotGA_ComputationTime(varargin)
     p = inputParser;
     p.KeepUnmatched = true;
     addParameter(p, 'SplitBy',          'TargetType', @ischar);
-    addParameter(p, 'LogScale',         'auto',       @(x) (ischar(x) && strcmpi(x,'auto')) || islogical(x));
+    addParameter(p, 'LogScale',         false,        @(x) (ischar(x) && strcmpi(x,'auto')) || islogical(x));
     addParameter(p, 'MatchSampleSize',  'top',        @(s) ischar(s) || isstring(s));
     addParameter(p, 'SaveAs',           '',           @ischar);
     parse(p, varargin{:});
@@ -99,7 +103,7 @@ function plotGA_ComputationTime(varargin)
             else
                 mask = ([runs.NumCameras] == cam) & ([runs.(splitField)] == splitVals(g));
             end
-            rawTimes{c,g} = [runs(mask).ElapsedTime] / 3600;   % s → h
+            rawTimes{c,g} = [runs(mask).ElapsedTime] / 60;     % s -> min
             rawCosts{c,g} = [runs(mask).BestCost];
         end
     end
@@ -164,16 +168,18 @@ function plotGA_ComputationTime(varargin)
         end
     end
 
-    %% Auto-decide log scale
+    %% Y-scale: linear by default (minutes). Log only if explicitly
+    %  requested via 'LogScale', true; the 'auto' heuristic is retained
+    %  for back-compat but no longer the default.
     flatTimes = [rawTimes{:}];
     flatTimes = flatTimes(flatTimes > 0);
     useLog = false;
-    if (ischar(opts.LogScale) && strcmpi(opts.LogScale, 'auto'))
+    if islogical(opts.LogScale)
+        useLog = opts.LogScale;
+    elseif ischar(opts.LogScale) && strcmpi(opts.LogScale, 'auto')
         if ~isempty(flatTimes) && (max(flatTimes)/min(flatTimes)) > 5
             useLog = true;
         end
-    elseif islogical(opts.LogScale)
-        useLog = opts.LogScale;
     end
     if useLog
         set(ax, 'YScale', 'log');
@@ -209,7 +215,7 @@ function plotGA_ComputationTime(varargin)
     set(ax, 'XTick', xPos, 'XTickLabel', ...
         arrayfun(@(x) sprintf('%d', x), uniqueCams, 'Uni', false));
     xlabel(ax, 'Number of Cameras', 'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
-    ylabel(ax, 'Computation Time (hours)', 'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
+    ylabel(ax, 'Computation Time (minutes)', 'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
     set(ax, 'FontSize', sty.FontSizeTick, 'FontName', sty.FontName, ...
         'Box', 'on', 'TickDir', 'out');
     xlim(ax, [0.4, nCams+0.6]);
@@ -227,7 +233,7 @@ function plotGA_ComputationTime(varargin)
     applyThesisStyle(fig);
 
     %% Print summary
-    fprintf('Computation time summary (hours, median [IQR], min–max):\n');
+    fprintf('Computation time summary (minutes, median [IQR], min-max):\n');
     for c = 1:nCams
         for g = 1:nGroups
             d = rawTimes{c,g};
@@ -236,7 +242,7 @@ function plotGA_ComputationTime(varargin)
                 continue;
             end
             q = quantile(d, [0.25 0.50 0.75]);
-            fprintf('  %dC %s: med=%.2f [%.2f–%.2f], range %.2f–%.2f, n=%d\n', ...
+            fprintf('  %dC %s: med=%.2f [%.2f-%.2f], range %.2f-%.2f, n=%d\n', ...
                     uniqueCams(c), splitNames{g}, q(2), q(1), q(3), ...
                     min(d), max(d), numel(d));
         end

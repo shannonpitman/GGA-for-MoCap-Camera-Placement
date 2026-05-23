@@ -49,18 +49,19 @@ function plotSpacingSensitivity(sweep, projectRoot, ts, tolerancePct, recs)
         end
         xlabel('Grid spacing [m]');
         ylabel('Cost');
-        title(cfLabels{f}, 'FontWeight', 'normal');
+        title(cleanTitle(cfLabels{f}), 'FontWeight', 'normal');
         set(gca, 'XScale', 'log');
         grid on; box on;
         if f == nF
             legend('Location', 'best', 'Box', 'off');
         end
     end
-    titleStr = sprintf('Cost vs grid spacing  -  %s,  volume %g x %g x %g m', ...
+    titleStr = sprintf('Cost vs grid spacing: %s, volume %g x %g x %g m', ...
         upper(modeTag), diff(sweep.volume(1,:)), diff(sweep.volume(2,:)), diff(sweep.volume(3,:)));
     title(tl, titleStr, 'FontWeight', 'bold');
+    applyThesisStyle(fig1);
     f1Path = fullfile(figDir, sprintf('cost_vs_spacing_%s.png', ts));
-    exportgraphics(fig1, f1Path, 'Resolution', 150);
+    exportgraphics(fig1, f1Path, 'Resolution', 150, 'BackgroundColor', 'white');
 
     %% Fig 2 — Relative deviation from finest-grid reference
     fig2 = figure('Position', [80 80 1500 440], 'Color', 'w');
@@ -102,18 +103,19 @@ function plotSpacingSensitivity(sweep, projectRoot, ts, tolerancePct, recs)
 
         xlabel('Grid spacing [m]');
         ylabel('Deviation from finest grid [%]');
-        title(cfLabels{f}, 'FontWeight', 'normal');
+        title(cleanTitle(cfLabels{f}), 'FontWeight', 'normal');
         set(gca, 'XScale', 'log');
         grid on; box on;
         if f == nF
             legend('Location', 'best', 'Box', 'off');
         end
     end
-    devTitle = sprintf('Relative deviation from finest grid (%g m) — %s', ...
+    devTitle = sprintf('Relative deviation from finest grid (%g m): %s', ...
         sweep.spacings(1), upper(modeTag));
     title(tl, devTitle, 'FontWeight', 'bold');
+    applyThesisStyle(fig2);
     f2Path = fullfile(figDir, sprintf('relative_deviation_%s.png', ts));
-    exportgraphics(fig2, f2Path, 'Resolution', 150);
+    exportgraphics(fig2, f2Path, 'Resolution', 150, 'BackgroundColor', 'white');
 
     %% Fig 3 — Evaluation cost
     fig3 = figure('Position', [80 80 900 440], 'Color', 'w');
@@ -124,7 +126,7 @@ function plotSpacingSensitivity(sweep, projectRoot, ts, tolerancePct, recs)
         plot(sub.spacing, sub.evalTime, ['-' markers{min(c,end)}], ...
              'LineWidth', 1.6, 'MarkerSize', 6, ...
              'Color', colors(c,:), 'MarkerFaceColor', colors(c,:), ...
-             'DisplayName', sprintf('%s — eval time', configNames{c}));
+             'DisplayName', sprintf('%s: eval time', configNames{c}));
     end
     set(gca, 'XScale', 'log', 'YScale', 'log');
     ylabel('CF3 evaluation time [s]');
@@ -137,14 +139,24 @@ function plotSpacingSensitivity(sweep, projectRoot, ts, tolerancePct, recs)
     ylabel('# target points');
 
     xlabel('Grid spacing [m]');
-    title(sprintf('Evaluation cost vs grid spacing — %s (CF3 = uncert + occl)', upper(modeTag)));
+    title(sprintf('Evaluation cost vs grid spacing: %s (CF3 = uncert + occl)', upper(modeTag)));
     grid on; box on;
     legend('Location', 'best', 'Box', 'off');
 
+    applyThesisStyle(fig3);
     f3Path = fullfile(figDir, sprintf('eval_time_%s.png', ts));
-    exportgraphics(fig3, f3Path, 'Resolution', 150);
+    exportgraphics(fig3, f3Path, 'Resolution', 150, 'BackgroundColor', 'white');
 
     fprintf('Figures saved to: %s\n', figDir);
+end
+
+
+function s = cleanTitle(s)
+% Replace em-dash / en-dash with a colon for thesis-figure consistency.
+    s = strrep(s, ' — ', ': ');
+    s = strrep(s, ' – ', ': ');
+    s = strrep(s, '—', ':');
+    s = strrep(s, '–', ':');
 end
 
 

@@ -324,13 +324,17 @@ function plotGA_CostBoxPlots(varargin)
         end
 
         % Final y-axis: auto-expand to include OptiTrack overlay (which
-        % typically sits well above the box data) and then add a small
-        % headroom pad. The earlier yLim/yRange captured the box-only
-        % range and is used purely for placing the n= annotations and
-        % significance brackets just above the IQR boxes.
+        % typically sits well above the box data) and then add headroom.
+        % When the legend is pinned top-right and an overlay marker is
+        % present, the legend needs extra clearance above the overlay,
+        % so the pad is bumped up in that case.
         ylim(ax, 'auto');
         yLimFinal = ylim(ax);
-        yPadFinal = 0.08 * (yLimFinal(2) - yLimFinal(1));
+        if ~isempty(overlayHandles)
+            yPadFinal = 0.22 * (yLimFinal(2) - yLimFinal(1));
+        else
+            yPadFinal = 0.08 * (yLimFinal(2) - yLimFinal(1));
+        end
         ylim(ax, [yLimFinal(1), yLimFinal(2) + yPadFinal]);
 
         % --- Cam-block dividers ----------------------------------------
@@ -365,15 +369,18 @@ function plotGA_CostBoxPlots(varargin)
             legendL = [legendL, overlayLabels(:)'];
         end
         if ~isempty(legendH)
-            legend(legendH, legendL, 'Location', 'best', ...
+            % Pin to top-right so the legend never covers the OptiTrack
+            % overlay markers, which sit above the 7-cam (middle) column.
+            legend(legendH, legendL, 'Location', 'northeast', ...
                 'FontSize', sty.FontSizeLegend);
         end
 
         % Title — describe the test only if it was actually run
+        % (no em-dashes; use a colon for the secondary clause)
         cfNameStr = sty.CostFuncNames{cf};
         if doStats
             titleStr = sprintf( ...
-                '%s — significance: Mann–Whitney U (* p<0.05, ** p<0.01, *** p<0.001)', ...
+                '%s: significance: Mann-Whitney U (* p<0.05, ** p<0.01, *** p<0.001)', ...
                 cfNameStr);
         else
             titleStr = cfNameStr;
