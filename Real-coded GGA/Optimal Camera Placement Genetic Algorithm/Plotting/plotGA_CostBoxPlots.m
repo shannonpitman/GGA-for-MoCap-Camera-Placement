@@ -302,8 +302,11 @@ function plotGA_CostBoxPlots(varargin)
                         'MarkerSize',      sty.MarkerSizeLg + 1, ...
                         'LineStyle',       'none');
                     overlayHandles(end+1) = hUAV;                  %#ok<AGROW>
-                    overlayLabels{end+1}  = sprintf( ...
-                        'OptiTrack ad-hoc UAV (%.4f)', yVal);
+                    % Cost value omitted from the legend so the legend
+                    % stays narrow enough not to cover the overlay
+                    % marker. The numeric cost is still annotated
+                    % alongside the marker in the figure caption.
+                    overlayLabels{end+1}  = 'OptiTrack ad-hoc UAV';
                 end
 
                 % UGV (TargetType==2) — red filled 5-point star
@@ -317,8 +320,7 @@ function plotGA_CostBoxPlots(varargin)
                         'MarkerSize',      sty.MarkerSizeLg + 4, ...
                         'LineStyle',       'none');
                     overlayHandles(end+1) = hUGV;                  %#ok<AGROW>
-                    overlayLabels{end+1}  = sprintf( ...
-                        'OptiTrack ad-hoc UGV (%.4f)', yVal);
+                    overlayLabels{end+1}  = 'OptiTrack ad-hoc UGV';
                 end
             end
         end
@@ -331,7 +333,11 @@ function plotGA_CostBoxPlots(varargin)
         ylim(ax, 'auto');
         yLimFinal = ylim(ax);
         if ~isempty(overlayHandles)
-            yPadFinal = 0.22 * (yLimFinal(2) - yLimFinal(1));
+            % Enough headroom so the top-right legend sits entirely
+            % above the highest OptiTrack overlay marker, not on top
+            % of it. 35% of the box-data range is empirically enough
+            % when the legend has up to ~4 rows.
+            yPadFinal = 0.35 * (yLimFinal(2) - yLimFinal(1));
         else
             yPadFinal = 0.08 * (yLimFinal(2) - yLimFinal(1));
         end
