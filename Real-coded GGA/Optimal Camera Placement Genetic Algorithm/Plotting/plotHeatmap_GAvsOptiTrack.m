@@ -174,6 +174,10 @@ function plotHeatmap_GAvsOptiTrack(varargin)
     TargetSpace = specs.Target;
 
     %% Plot top row (3D scatter) + bottom row (XY worst-case)
+    %  The Avg | 0-cam | 2+cam stat line that used to live in a
+    %  subtitle has been removed (rendered as illegible grey in
+    %  exported PDFs). Stats are now printed to the command window
+    %  so they remain easy to drop into the caption text.
     for k = 1:2
         cov  = panels(k).cov;
         name = panels(k).name;
@@ -182,8 +186,8 @@ function plotHeatmap_GAvsOptiTrack(varargin)
         zeroPct    = 100 * sum(cov == 0)  / specs.NumPoints;
         twoPlusPct = 100 * sum(cov >= 2)  / specs.NumPoints;
         avgCov     = mean(cov);
-        statLine   = sprintf('Avg %.2f | 0-cam %.1f%% | 2+cam %.1f%%', ...
-                              avgCov, zeroPct, twoPlusPct);
+        fprintf('  %s stats: Avg=%.2f | 0-cam=%.1f%% | 2+cam=%.1f%%\n', ...
+                 name, avgCov, zeroPct, twoPlusPct);
 
         % ---- Top row: 3D scatter ----
         ax3D = nexttile(tl, k);
@@ -205,9 +209,7 @@ function plotHeatmap_GAvsOptiTrack(varargin)
         view(ax3D, opts.ViewAngle);
         title(ax3D, sprintf('%s (Cost: %.4f)', name, c0), ...
             'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName, ...
-            'FontWeight', 'normal');
-        subtitle(ax3D, statLine, ...
-            'FontSize', sty.FontSizeAnnot, 'FontName', sty.FontName);
+            'FontWeight', 'normal', 'Color', 'k');
         set(ax3D, 'FontSize', sty.FontSizeTick, 'FontName', sty.FontName);
 
         % ---- Bottom row: XY worst-case (min coverage over Z) ----
@@ -225,14 +227,17 @@ function plotHeatmap_GAvsOptiTrack(varargin)
         ylabel(axXY, 'Y (m)', 'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
         title(axXY, sprintf('%s: XY worst-case', name), ...
             'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName, ...
-            'FontWeight', 'normal');
+            'FontWeight', 'normal', 'Color', 'k');
         set(axXY, 'FontSize', sty.FontSizeTick, 'FontName', sty.FontName);
     end
 
+    % Force black title — tiledlayout titles ignore applyThesisStyle's
+    % 'suptitle'-tag lookup and otherwise default to a faded grey in
+    % exported PDFs.
     title(tl, sprintf('%s coverage: GA-best vs OptiTrack ad-hoc (%s, sp = %.2f m, %d cams)', ...
         ttStr, gmStr, opts.Spacing, opts.NumCameras), ...
         'FontSize', sty.FontSizeTitle, 'FontWeight', 'bold', ...
-        'FontName', sty.FontName);
+        'FontName', sty.FontName, 'Color', 'k');
 
     applyThesisStyle(fig);
 

@@ -203,14 +203,16 @@ function plotCoverageHeatmap(varargin)
             cameraCoverage(pt) = visCount;
         end
 
-        % Coverage statistics for subtitle
+        % Coverage statistics (printed to command window; the grey
+        % subtitle that used to live under each subplot title has been
+        % removed because it exported as illegible light grey).
         zeroPct    = 100 * sum(cameraCoverage == 0) / numPoints;
         twoPlusPct = 100 * sum(cameraCoverage >= 2) / numPoints;
         avgCov     = mean(cameraCoverage);
-        titleStr    = sprintf('%s: %d Cameras (Cost: %.4f)', ...
+        titleStr   = sprintf('%s: %d Cameras (Cost: %.4f)', ...
                               gridModeNames{gm}, numCams, sd.BestCost);
-        subtitleStr = sprintf('Avg: %.1f cams/pt | 0-cam: %.1f%% | 2+cam: %.1f%%', ...
-                              avgCov, zeroPct, twoPlusPct);
+        fprintf('  %s stats: Avg=%.1f cams/pt | 0-cam=%.1f%% | 2+cam=%.1f%%\n', ...
+                 gridModeNames{gm}, avgCov, zeroPct, twoPlusPct);
 
         % ---- Top row: 3D scatter ----
         ax3D = nexttile(tl, plotIdx);
@@ -232,9 +234,7 @@ function plotCoverageHeatmap(varargin)
         view(opts.ViewAngle);
         title(ax3D, titleStr, ...
             'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName, ...
-            'FontWeight', 'normal');
-        subtitle(ax3D, subtitleStr, ...
-            'FontSize', sty.FontSizeAnnot, 'FontName', sty.FontName);
+            'FontWeight', 'normal', 'Color', 'k');
         set(ax3D, 'FontSize', sty.FontSizeTick, 'FontName', sty.FontName);
 
         % ---- Bottom row: XY ground-plane worst-case projection ----
@@ -254,19 +254,20 @@ function plotCoverageHeatmap(varargin)
         ylabel(axXY, 'Y (m)', 'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
         title(axXY, sprintf('%s: XY worst-case projection', gridModeNames{gm}), ...
             'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName, ...
-            'FontWeight', 'normal');
+            'FontWeight', 'normal', 'Color', 'k');
         set(axXY, 'FontSize', sty.FontSizeTick, 'FontName', sty.FontName);
     end
 
-    % Overall figure title
+    % Overall figure title — force black so the tiledlayout title does
+    % not export as faded grey.
     if nCols == 2
         title(tl, 'UAV Coverage Heat Map: Uniform vs Normal Grid (3D scatter + XY worst-case)', ...
             'FontSize', sty.FontSizeAxis + 2, 'FontWeight', 'bold', ...
-            'FontName', sty.FontName);
+            'FontName', sty.FontName, 'Color', 'k');
     else
         title(tl, 'UAV Coverage Heat Map (3D scatter + XY worst-case)', ...
             'FontSize', sty.FontSizeAxis + 2, 'FontWeight', 'bold', ...
-            'FontName', sty.FontName);
+            'FontName', sty.FontName, 'Color', 'k');
     end
 
     applyThesisStyle(fig);
