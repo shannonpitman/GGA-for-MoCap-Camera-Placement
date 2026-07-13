@@ -47,7 +47,6 @@ function Chromosome = initialPopulation(VarMin, VarMax,  SectionCentres, numCams
         q2Eul = euler(q, 'XYZ', 'point'); %euler angles in radians
     
         gene = [camPos, q2Eul];
-    
         Chromosome((c-1)*6+1:c*6) = gene;    
     end
 end

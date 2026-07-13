@@ -67,8 +67,16 @@ specs.PreComputed.maxCameraRangeWide = specs.RangeWide; %m effective range
 % Pre-compute target space in homogeneous coordinates for batch processing
 specs.TargetHomogeneous = [specs.Target'; ones(1, specs.NumPoints)];
 
-specs.PreComputed.uncertNorm = 100;  
-specs.PreComputed.occlNorm = 440;    
+% This standalone driver inlines its own cost params (it does NOT call
+% setupCostParams) and uses fixed norms with no utopia offset, i.e. the
+% combined cost reduces to raw/norm. The utopia fields are set to 0
+% explicitly so cf3Terms/combinedCostFunction stay on a well-defined
+% scale. To use the calibrated per-instance norms, run through
+% runCameraOptimiser (which calls setupCostParams) instead.
+specs.PreComputed.uncertNorm   = 100;
+specs.PreComputed.occlNorm     = 440;
+specs.PreComputed.uncertUtopia = 0;
+specs.PreComputed.occlUtopia   = 0;
 %% Problem Definition
 % Cost function:
 % 1 = Resolution Uncertainty only

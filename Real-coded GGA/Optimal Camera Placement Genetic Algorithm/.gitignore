@@ -1,0 +1,18 @@
+# Generated GA outputs, archives, and figures — binaries kept out of git.
+# (These are also what triggered Windows "Filename too long" on git add.)
+Archive/
+Results/
+Results_pre-bugfix/
+Results_UGV_fine_grid_archive/
+figures/
+figures_pre-bugfix/
+
+# MATLAB autosave + Simulink build artifacts
+*.asv
+slprj/
+
+# Generated figure exports (loose PDFs scattered in the tree)
+*.pdf
+
+# If you DO want the calibrated norm table under version control, force-add it:
+#   git add -f "Real-coded GGA/Optimal Camera Placement Genetic Algorithm/Results/normTable.mat"
