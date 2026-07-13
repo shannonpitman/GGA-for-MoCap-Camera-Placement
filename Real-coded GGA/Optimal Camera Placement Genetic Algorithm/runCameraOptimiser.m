@@ -37,7 +37,7 @@ targetMode = 1;
 
 % Grid spacing [m] - x-y (in-plane). For UGV the z spacing is decoupled
 % so that x-y can be coarsened without losing slab layers.
-spacing = 0.5;
+spacing = 1;
 
 % UGV max expected height of markers on UGV [m]
 UGV_maxHeight = 0.5;     % only used if targetType == 2

@@ -6,8 +6,13 @@ function out = evaluateOptiTrackCost(varargin)
 %   Returns a struct with fields:
 %     CF1   - raw resolution-uncertainty cost
 %     CF2   - raw dynamic-occlusion cost
-%     CF3   - weight-combined CF3 cost, normalised by the
-%             precomputed uncertNorm / occlNorm at the same target space
+%     CF3   - weight-combined CF3 cost, built via cf3Terms: each component
+%             min-max scaled as (raw - utopia)/norm then weighted, at the
+%             same target space (utopia = 0 when no calibrated normTable)
+%     WeightedUnc - the J_uncertainty term as it appears inside CF3, i.e.
+%                   WeightedUnc + WeightedOcc == CF3
+%     WeightedOcc - the J_occlusion term
+%     UncertNorm, OcclNorm - the normalisation constants used above
 %     numCams, targetType, gridMode, spacing
 %
 %   The function reuses the same pipeline as runCameraOptimiser /
@@ -94,13 +99,16 @@ function out = evaluateOptiTrackCost(varargin)
     tStart = tic;
     costUnc = resUncertainty(specs, cameras, CamCenters);
     costOcc = dynamicOcclusion(specs, cameras, CamCenters);
-    cost3   = opts.WeightUnc * (costUnc / specs.PreComputed.uncertNorm) + ...
-              opts.WeightOcc * (costOcc / specs.PreComputed.occlNorm);
+    [cost3, weightedUnc, weightedOcc] = cf3Terms(costUnc, costOcc, specs);
     tEval = toc(tStart);
 
     out.CF1        = costUnc;
     out.CF2        = costOcc;
     out.CF3        = cost3;
+    out.WeightedUnc = weightedUnc;
+    out.WeightedOcc = weightedOcc;
+    out.UncertNorm  = specs.PreComputed.uncertNorm;
+    out.OcclNorm    = specs.PreComputed.occlNorm;
     out.numCams    = numCams;
     out.targetType = opts.TargetType;
     out.gridMode   = opts.GridMode;

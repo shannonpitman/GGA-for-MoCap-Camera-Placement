@@ -1,28 +1,24 @@
 function totalCost = combinedCostFunction(cameraChromosome, specs)
-%Combined cost function using weighted approach between resolution 
-%uncertainty and dynamic occlusion
-    
-    %Adjustable Weight parameters
-    w_uncertainty = specs.WeightUncertainty; 
-    w_occlusion = specs.WeightOcclusion; 
+%Combined cost function using weighted approach between resolution
+%uncertainty and dynamic occlusion.
+%
+% Component scaling and weighting live in cf3Terms.m (single source of
+% truth): each objective is min-max scaled as (raw - utopia)/norm so that
+% utopia -> 0 and nadir -> 1, then weighted and summed.
 
     % Initialize cameras
     numCams = specs.Cams;
     resolution = specs.Resolution;
-    % pixelSize = specs.PixelSize; 
-    focalLength = specs.Focal; 
+    focalLength = specs.Focal;
     focalLengthWide = specs.FocalWide;
-    PrincipalPoint = specs.PrincipalPoint; 
-    % Npix = specs.npix;
-    uncertNorm = specs.PreComputed.uncertNorm;
-    occlNorm = specs.PreComputed.occlNorm;
+    PrincipalPoint = specs.PrincipalPoint;
 
     [cameras, CamCenters] = setupCameras(cameraChromosome, numCams, resolution, focalLength, focalLengthWide, PrincipalPoint, specs.PixelSize);
-    
-    % Calculate individual cost components
-    uncertaintyCost = resUncertainty(specs, cameras, CamCenters)/ uncertNorm;
-    occlusionCost = dynamicOcclusion(specs, cameras, CamCenters)/ occlNorm;
-    
-    % Combined weighted cost
-    totalCost = w_uncertainty*uncertaintyCost + w_occlusion*occlusionCost;
+
+    % Raw cost components
+    costUnc = resUncertainty(specs, cameras, CamCenters);
+    costOcc = dynamicOcclusion(specs, cameras, CamCenters);
+
+    % Weighted, utopia-shifted combined cost
+    totalCost = cf3Terms(costUnc, costOcc, specs);
 end

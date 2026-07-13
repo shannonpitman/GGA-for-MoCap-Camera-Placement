@@ -75,8 +75,7 @@ function saveOptiTrackAsRun(varargin)
     tStart = tic;
     costUnc = resUncertainty(specs, cameras, CamCenters);
     costOcc = dynamicOcclusion(specs, cameras, CamCenters);
-    cost3   = opt.WeightUnc * (costUnc / specs.PreComputed.uncertNorm) + ...
-              opt.WeightOcc * (costOcc / specs.PreComputed.occlNorm);
+    cost3   = cf3Terms(costUnc, costOcc, specs);
     elapsed = toc(tStart);
 
     fprintf('  raw uncertainty = %.5f\n', costUnc);

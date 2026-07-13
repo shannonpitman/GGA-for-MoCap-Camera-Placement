@@ -124,8 +124,7 @@ function sweep = spacingSensitivityCore(opts)
             costOcc = dynamicOcclusion(specs, cameras, CamCenters);
             tOcc = toc(tStart);
 
-            cost3 = opts.weightUnc * (costUnc / specs.PreComputed.uncertNorm) + ...
-                    opts.weightOcc * (costOcc / specs.PreComputed.occlNorm);
+            cost3 = cf3Terms(costUnc, costOcc, specs);
             t3    = tUnc + tOcc;
 
             triplet  = {costUnc, costOcc, cost3};
