@@ -102,6 +102,46 @@ else
     fprintf('  ** MISMATCH -- investigate before using. **\n\n');
 end
 
+%% ---- Occlusion equivalence (dynamicOcclusion path) ----
+minAng = specs.PreComputed.minTriangAngle;
+maxAng = specs.PreComputed.maxTriangAngle;
+maxR   = specs.PreComputed.maxCameraRange;
+maxRW  = specs.PreComputed.maxCameraRangeWide;
+fW     = specs.FocalWide;
+
+maxErrOcc = 0;
+nMismOcc  = 0;
+rng(1);
+for t = 1:nTest
+    chrom = VarMin + rand(1,6*numCams).*(VarMax - VarMin);
+    [cameras, CamCenters] = setupCameras(chrom, numCams, resolution, ...
+        specs.Focal, specs.FocalWide, specs.PrincipalPoint, specs.PixelSize);
+
+    [visMask, viewUnit] = projectVisibilityOcclusion(cameras, Target, CamCenters, ...
+        resolution, maxR, maxRW, fW);
+
+    for p = 1:numPoints
+        vRow = visMask(p,:);
+        vMat = reshape(viewUnit(p,:,:), numCams, 3).';
+        [vcN, vvN] = findVisibleCameras(Target(p,:), cameras, CamCenters, numCams, ...
+            resolution, maxR, maxRW, fW, vRow, vMat);                 % new
+        [vcO, vvO] = findVisibleCameras(Target(p,:), cameras, CamCenters, numCams, ...
+            resolution, maxR, maxRW, fW);                             % original
+        qN = calculatePointOcclusion(vcN, vvN, minAng, maxAng);
+        qO = calculatePointOcclusion(vcO, vvO, minAng, maxAng);
+        e = abs(qN - qO);
+        maxErrOcc = max(maxErrOcc, e);
+        if e > 1e-9, nMismOcc = nMismOcc + 1; end
+    end
+end
+fprintf('Occlusion equivalence: max |new - old| = %.3e, mismatches = %d of %d\n', ...
+    maxErrOcc, nMismOcc, nTest*numPoints);
+if maxErrOcc < 1e-9
+    fprintf('  PASS -- batched occlusion visibility matches per-point path.\n\n');
+else
+    fprintf('  ** MISMATCH -- investigate before using. **\n\n');
+end
+
 %% ---- Timing: per-point project vs batched projectAllPoints ----
 chrom = VarMin + rand(1,6*numCams).*(VarMax - VarMin);
 [cameras, CamCenters] = setupCameras(chrom, numCams, resolution, ...
@@ -131,6 +171,8 @@ fprintf('  per-point  : %.4f s\n', tOld);
 fprintf('  batched    : %.4f s\n', tNew);
 fprintf('  speedup    : %.1fx (projection stage only)\n\n', tOld / tNew);
 
-%% ---- Sanity: full resUncertainty still runs ----
+%% ---- Sanity: full cost functions still run ----
 u = resUncertainty(specs, cameras, CamCenters);
-fprintf('resUncertainty() returns %.6f (finite: %d)\n', u, isfinite(u));
+o = dynamicOcclusion(specs, cameras, CamCenters);
+fprintf('resUncertainty()  returns %.6f (finite: %d)\n', u, isfinite(u));
+fprintf('dynamicOcclusion() returns %.6f (finite: %d)\n', o, isfinite(o));

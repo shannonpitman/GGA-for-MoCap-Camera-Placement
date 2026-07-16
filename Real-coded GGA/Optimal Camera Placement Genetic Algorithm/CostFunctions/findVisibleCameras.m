@@ -1,5 +1,17 @@
-function [visibleCams, camViewVectors] = findVisibleCameras(point, cameras, camCenters, numCams, resolution, maxRange, maxRangeWide, FocalWide)
+function [visibleCams, camViewVectors] = findVisibleCameras(point, cameras, camCenters, numCams, resolution, maxRange, maxRangeWide, FocalWide, visRow, viewMat)
 %Returns indices of cameras that can see the point and their view vectors
+%
+% Optional trailing args visRow (1 x numCams logical) and viewMat
+% (3 x numCams unit view vectors) let a caller supply this point's
+% visibility/view vectors precomputed in bulk by projectVisibilityOcclusion.
+% When omitted the point is processed per-camera here, so existing callers
+% (8-arg) are unaffected.
+if nargin >= 10 && ~isempty(visRow)
+    visibleCams    = find(visRow(:).');      % ascending camera indices
+    camViewVectors = viewMat(:, visibleCams);
+    return;
+end
+
 visibleCams = zeros(1, numCams);
 camViewVectors = zeros(3, numCams);
 visCount = 0;  % Counter for visible cameras

@@ -15,14 +15,23 @@ function occlusionError = dynamicOcclusion(specs, cameras, CamCenters)
     focalWide = specs.FocalWide;
     numPoints = size(TargetSpace, 1);
     occlusionAngles = zeros(numPoints, 1);
-    
+
+    % Batched visibility + view vectors for every point/camera, computed
+    % once here instead of numPoints*numCams per-point project() + range
+    % calls inside findVisibleCameras.
+    [visMask, viewUnit] = projectVisibilityOcclusion(cameras, TargetSpace, ...
+        CamCenters, resolution, maxCameraRange, maxCameraRangeWide, focalWide);
+
     % Process each target point
     parfor p = 1:numPoints
-        point = TargetSpace(p, :);
-        
-        % Find which cameras can see this point
-        [visibleCams, camViewVectors] = findVisibleCameras(point, cameras, CamCenters, numCams, resolution, maxCameraRange, maxCameraRangeWide, focalWide);
-        
+        visRow  = visMask(p, :);
+        viewMat = reshape(viewUnit(p, :, :), numCams, 3).';   % 3 x numCams
+
+        % Find which cameras can see this point (from precomputed data)
+        [visibleCams, camViewVectors] = findVisibleCameras(TargetSpace(p, :), cameras, ...
+            CamCenters, numCams, resolution, maxCameraRange, maxCameraRangeWide, focalWide, ...
+            visRow, viewMat);
+
         % Calculate occlusion angle for this point
         occlusionAngles(p) = calculatePointOcclusion(visibleCams, camViewVectors, minTriangAngle, maxTriangAngle);
     end
