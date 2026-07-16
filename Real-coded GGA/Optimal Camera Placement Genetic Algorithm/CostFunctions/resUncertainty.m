@@ -15,10 +15,16 @@ function errorVolume = resUncertainty(specs, cameras, CamCenters)
 
     numPoints = specs.NumPoints;
     uncertainties = zeros(numPoints,1);
-    
+
+    % Batched projection of every point through every camera, done once
+    % here instead of numPoints*numCams per-point project() calls inside the
+    % loop. Returns U, V, visMask (all numPoints x numCams).
+    [U, V, visMask] = projectAllPoints(cameras, TargetSpace, CamCenters, resolution);
+
     parfor p =1:numPoints
-        point = TargetSpace(p,:);
-        uncertainties(p) = computePointUncertainty(point, cameras, CamCenters, numCams, adjacentSurfaces, du,dv, penaltyUncertainty, w2, resolution);
+        uncertainties(p) = computePointUncertainty(TargetSpace(p,:), cameras, CamCenters, ...
+            numCams, adjacentSurfaces, du,dv, penaltyUncertainty, w2, resolution, ...
+            U(p,:), V(p,:), visMask(p,:));
     end
 
     errorVolume = mean(uncertainties);

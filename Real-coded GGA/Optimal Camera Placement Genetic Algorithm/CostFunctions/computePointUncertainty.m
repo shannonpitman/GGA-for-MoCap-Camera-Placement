@@ -1,22 +1,36 @@
-function uncertainty = computePointUncertainty(point, cameras, cameraCentres, numCams, adjacentSurfaces, du,dv, penaltyUncertainty, w2, Resolution)
-    uv = zeros(numCams,2);
+function uncertainty = computePointUncertainty(point, cameras, cameraCentres, numCams, adjacentSurfaces, du,dv, penaltyUncertainty, w2, Resolution, uRow, vRow, visRow)
+%   Optional trailing args uRow, vRow, visRow (each 1 x numCams) let a
+%   caller supply the projection of THIS point precomputed in bulk by
+%   projectAllPoints. When omitted the point is projected per-camera here,
+%   so existing callers (e.g. plotCostField_GAvsOptiTrack) are unaffected.
     planes = cell(1, numCams);
-    visIdx = false(numCams,1); %Logical operator to see if camera lies within bounds of image plane and is in front of the camera
-    
-    % Vectorized visibility check for all cameras
-    for i = 1:numCams
-        uv(i,:) = cameras{i}.project(point); %uv projected coordinates
-        u = uv(i,1); % current camera's u (column 1, row i)
-        v = uv(i,2); % current camera's v (column 2, row i)
-        if (u >= 1 && u <= Resolution(1) && v >= 1 && v <= Resolution(2))
-            worldPoints = quantToWorld(cameras{i}, u, v, du, dv, cameraCentres(:,i));
-            planes{i} = buildPyramidSurf(cameraCentres(:,i), worldPoints, adjacentSurfaces);
-            visIdx(i) = true;
+
+    if nargin < 13 || isempty(visRow)
+        % Original path: project this point through each camera locally.
+        uAll = zeros(numCams,1);
+        vAll = zeros(numCams,1);
+        for i = 1:numCams
+            uv = cameras{i}.project(point); %uv projected coordinates
+            uAll(i) = uv(1);
+            vAll(i) = uv(2);
         end
+        visIdx = (uAll >= 1 & uAll <= Resolution(1) & vAll >= 1 & vAll <= Resolution(2));
+    else
+        % Precomputed (batched) projection supplied by projectAllPoints.
+        uAll   = uRow(:);
+        vAll   = vRow(:);
+        visIdx = logical(visRow(:));
     end
-    
+
+    % Build the quantisation pyramid only for cameras that see the point.
     visibleIdx = find(visIdx);
-    numVisible = length(visibleIdx);
+    for k = 1:numel(visibleIdx)
+        i = visibleIdx(k);
+        worldPoints = quantToWorld(cameras{i}, uAll(i), vAll(i), du, dv, cameraCentres(:,i));
+        planes{i} = buildPyramidSurf(cameraCentres(:,i), worldPoints, adjacentSurfaces);
+    end
+
+    numVisible = numel(visibleIdx);
     
     %early exit if triangulation is not possible
     if numVisible == 0 
