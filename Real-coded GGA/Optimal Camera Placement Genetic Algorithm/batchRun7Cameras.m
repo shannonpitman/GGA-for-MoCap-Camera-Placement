@@ -39,8 +39,8 @@ function results = batchRun7Cameras(varargin)
     addParameter(p, 'MaxGenerations',  150,     @isnumeric);
     addParameter(p, 'PopulationSize',  100,     @isnumeric);
     addParameter(p, 'Volume',          [-4 4; -4 4; 0 4], @isnumeric);
-    addParameter(p, 'CamLowerBounds',  [-5 -4.5 0  -pi -pi -pi], @isnumeric);
-    addParameter(p, 'CamUpperBounds',  [ 5  4.5 4.8 pi  pi  pi], @isnumeric);
+    addParameter(p, 'CamLowerBounds',  [-5 -4.5 0  -pi -pi/2 -pi], @isnumeric);
+    addParameter(p, 'CamUpperBounds',  [ 5  4.5 4.8 pi  pi/2  pi], @isnumeric);
     addParameter(p, 'Tier0Only',       false, @islogical);
     addParameter(p, 'DryRun',          false, @islogical);
     addParameter(p, 'SuppressPlots',   true,  @islogical);

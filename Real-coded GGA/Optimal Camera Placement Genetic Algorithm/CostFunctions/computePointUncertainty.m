@@ -6,8 +6,8 @@ function uncertainty = computePointUncertainty(point, cameras, cameraCentres, nu
     % Vectorized visibility check for all cameras
     for i = 1:numCams
         uv(i,:) = cameras{i}.project(point); %uv projected coordinates
-        u = uv(i,1);   % current camera's u (column 1, row i)
-        v = uv(i,2);   % current camera's v (column 2, row i)
+        u = uv(i,1); % current camera's u (column 1, row i)
+        v = uv(i,2); % current camera's v (column 2, row i)
         if (u >= 1 && u <= Resolution(1) && v >= 1 && v <= Resolution(2))
             worldPoints = quantToWorld(cameras{i}, u, v, du, dv, cameraCentres(:,i));
             planes{i} = buildPyramidSurf(cameraCentres(:,i), worldPoints, adjacentSurfaces);

@@ -5,15 +5,15 @@ function normTable = buildNormalisationSchedule(varargin)
     addProjectPaths();
 
     p = inputParser;
-    addParameter(p, 'NumCameras', [5 6 7 8], @isnumeric);
+    addParameter(p, 'NumCameras', [6 7 8], @isnumeric);
     addParameter(p, 'TargetTypes', [1 2], @isnumeric);
     addParameter(p, 'GridModes', [1 2], @isnumeric);
     addParameter(p, 'Spacing', 1.0, @isnumeric);
     addParameter(p, 'Replicates', 5, @isnumeric);
-    addParameter(p, 'QuickGenerations', 75, @isnumeric);
-    addParameter(p, 'QuickPopSize', 50, @isnumeric);
-    addParameter(p, 'CamLowerBounds', [-5 -4.5 0   -pi -pi -pi], @isnumeric);
-    addParameter(p, 'CamUpperBounds', [ 5  4.5 4.8  pi  pi  pi], @isnumeric);
+    addParameter(p, 'QuickGenerations', 50, @isnumeric);
+    addParameter(p, 'QuickPopSize', 400, @isnumeric);
+    addParameter(p, 'CamLowerBounds', [-5 -4.5 0   -pi -pi/2 -pi], @isnumeric);
+    addParameter(p, 'CamUpperBounds', [ 5  4.5 4.8  pi  pi/2  pi], @isnumeric);
     addParameter(p, 'OutFile', '', @ischar);
     addParameter(p, 'Append',  false, @islogical); %if true, merge into prev file
     parse(p, varargin{:});
