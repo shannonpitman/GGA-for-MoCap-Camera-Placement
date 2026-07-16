@@ -25,8 +25,19 @@ function vertices = calcVertices(numVisible, visibleIdx, planes)
         col = col + c;
     end
 
-    %Enumerate all triples of distinct planes
-    triples  = nchoosek(1:P, 3);
+    %Enumerate all triples of distinct planes. The triple INDEX set depends
+    % only on P (number of planes = 4*numVisible), not on the geometry, and P
+    % takes only a few values. Cache per P so nchoosek runs once per distinct
+    % P per worker instead of on every point -- nchoosek/combs was the single
+    % biggest cost in resUncertainty profiling (~160 s of self time).
+    persistent tripleCache
+    if isempty(tripleCache)
+        tripleCache = {};
+    end
+    if numel(tripleCache) < P || isempty(tripleCache{P})
+        tripleCache{P} = nchoosek(1:P, 3);
+    end
+    triples  = tripleCache{P};
     nTriples = size(triples, 1);
 
     % Three normals and offsets per triple
