@@ -22,8 +22,8 @@ numCams = 7;
 % WORKSPACE VOLUME [m] & MOUNTING CONSTRAINTS
 volume = [-4 4; -4 4; 0 4]; %Matches the available dimensions of the MS.G flight envelope 
 %Bounds for the 6 design variables (search space) [Xc, Yc, Zc, alpha, beta, gamma]
-cameraLowerBounds = [-5 -4.5 0  -pi -pi -pi]; %wall-mounting constraints lower bounds
-cameraUpperBounds = [ 5  4.5 4.8 pi  pi  pi]; %wall-mounting constraints upper bounds
+cameraLowerBounds = [-5 -4.5 0  -pi -pi/2 -pi]; %wall-mounting constraints lower bounds
+cameraUpperBounds = [ 5  4.5 4.8 pi  pi/2  pi]; %wall-mounting constraints upper bounds
 
 % TARGET SPACE MODALITY
 % 1= UAV: entire space (full flight volume)
