@@ -3,30 +3,15 @@ function y = fixPoorCameras(x, specs, coverageThreshold)
     % coverageThreshold: minimum fraction of points a camera should see
     
     numCams = specs.Cams;
-    TargetSpace = specs.Target;
-    numPoints = size(TargetSpace, 1);
+    numPoints = size(specs.Target, 1);
     minPointsRequired = ceil(coverageThreshold * numPoints);
-    
-    % Setup cameras
-    resolution = specs.Resolution;
-    focalLength = specs.Focal;
-    focalLengthWide = specs.FocalWide;
-    PrincipalPoint = specs.PrincipalPoint;
-    maxRange = specs.PreComputed.maxCameraRange;
-    maxRangeWide = specs.PreComputed.maxCameraRangeWide;
- 
-    [cameras, camCenters] = setupCameras(x, numCams, resolution, focalLength, focalLengthWide, PrincipalPoint, specs.PixelSize);
-    
-    % Coverage check for each camera (with range check via findVisibleCameras)
-    cameraCoverage = zeros(numCams, 1);
-    for p = 1:numPoints
-        point = TargetSpace(p, :);
-        [visibleCams, ~] = findVisibleCameras(point, cameras, camCenters, numCams, resolution, maxRange, maxRangeWide, focalLengthWide);
-        for k = 1:length(visibleCams)
-            cameraCoverage(visibleCams(k)) = cameraCoverage(visibleCams(k)) + 1;
-        end
-    end
-    
+
+    % Vectorised per-camera coverage, built directly from the chromosome
+    % (no CentralCamera objects, no per-point loop). Replaces the old
+    % setupCameras + per-point findVisibleCameras loop, which was the
+    % dominant serial cost when the GA calls this thousands of times.
+    cameraCoverage = cameraCoverageCounts(x, specs);
+
     % Fix cameras that see too few points
     y = x;
     for c = 1:numCams
