@@ -36,8 +36,10 @@ function results = batchRun7Cameras(varargin)
     addParameter(p, 'Spacing',         1.0,     @isnumeric);
     addParameter(p, 'TargetType',      1,       @isnumeric); % 1=UAV
     addParameter(p, 'GridMode',        1,       @isnumeric); % 1=Uniform
-    addParameter(p, 'MaxGenerations',  150,     @isnumeric);
-    addParameter(p, 'PopulationSize',  100,     @isnumeric);
+    addParameter(p, 'MaxGenerations',  100,     @isnumeric);
+    % PopulationSize [] => auto-scale as numCams * params-per-camera * 10
+    % (= problem.nVar * 10). Pass a numeric value to force a fixed population.
+    addParameter(p, 'PopulationSize',  [],      @(x) isempty(x) || isnumeric(x));
     addParameter(p, 'Volume',          [-4 4; -4 4; 0 4], @isnumeric);
     addParameter(p, 'CamLowerBounds',  [-5 -4.5 0  -pi -pi/2 -pi], @isnumeric);
     addParameter(p, 'CamUpperBounds',  [ 5  4.5 4.8 pi  pi/2  pi], @isnumeric);
@@ -48,6 +50,16 @@ function results = batchRun7Cameras(varargin)
     cfg = p.Results;
 
     numCams = 7;
+
+    % Population scales with chromosome length unless a fixed PopulationSize
+    % was supplied: nPop = numCams * numParams * 10 (7 cams -> 420).
+    numParams = numel(cfg.CamLowerBounds);
+    if isempty(cfg.PopulationSize)
+        popSize = numCams * numParams * 10;
+    else
+        popSize = cfg.PopulationSize;
+    end
+
     if cfg.Tier0Only
         cfg.CostFunctions  = 3;
         cfg.NumColdRepeats = 1;
@@ -65,8 +77,9 @@ function results = batchRun7Cameras(varargin)
     fprintf('  Warm per CF:      %d (each seeded from running best, cold+warm)\n', ...
         cfg.NumWarmRepeats);
     fprintf('  Target / grid:    UAV / Uniform / spacing %.2fm\n', cfg.Spacing);
-    fprintf('  GA budget:        %d generations x population %d\n\n', ...
-        cfg.MaxGenerations, cfg.PopulationSize);
+    fprintf('  GA budget:        %d generations x population %d%s\n\n', ...
+        cfg.MaxGenerations, popSize, ...
+        ternary(isempty(cfg.PopulationSize), ' (auto: 7 x 6 x 10)', ' (fixed)'));
     if cfg.DryRun
         fprintf('  DRY RUN — no GA executed.\n\n');
         results = struct([]);
@@ -113,7 +126,7 @@ function results = batchRun7Cameras(varargin)
 
             problem = setupProblem(numCams, cfType, ...
                 cfg.CamUpperBounds, cfg.CamLowerBounds);
-            params  = setupGAparams(cfg.MaxGenerations, cfg.PopulationSize);
+            params  = setupGAparams(cfg.MaxGenerations, popSize);
 
             tic;
             out = RunGA(problem, params, specs);
@@ -166,7 +179,7 @@ function results = batchRun7Cameras(varargin)
                 specs.warmStart       = true;
                 specs.warmChromosomes = [seed; perturb];
 
-                params = setupGAparams(cfg.MaxGenerations, cfg.PopulationSize);
+                params = setupGAparams(cfg.MaxGenerations, popSize);
 
                 tic;
                 out = RunGA(problem, params, specs);

@@ -60,8 +60,12 @@ costFunctionType = 3;
 problem = setupProblem(numCams, costFunctionType, cameraUpperBounds, cameraLowerBounds);
 
 % GA PARAMETERS
-maxGenerations = 150;
-populationSize = 100;
+% Population scales with chromosome length: nPop = (params per camera) *
+% numCams * 10 = problem.nVar * 10. numParams is read from the per-camera
+% bound vector so it stays correct if the camera model changes.
+numParams      = numel(cameraLowerBounds);        % design variables per camera (6)
+maxGenerations = 100;
+populationSize = numCams * numParams * 10;         % e.g. 7 cams -> 420
 
 % WARM-START
 % To warm-start the GA from a previously found chromosome, set
