@@ -28,7 +28,7 @@ addParameter(p, 'NumRepeats', 5, @isnumeric);
 addParameter(p, 'SkipWarmStart', false, @islogical);
 
 % GA parameters
-addParameter(p, 'MaxGenerations', 150,  @isnumeric);
+addParameter(p, 'MaxGenerations', 100,  @isnumeric);
 addParameter(p, 'PopulationSize', 100,  @isnumeric);
 
 % Workspace volume & mounting constraints

@@ -36,7 +36,7 @@ function results = batchRun7Cameras(varargin)
     addParameter(p, 'Spacing',         1.0,     @isnumeric);
     addParameter(p, 'TargetType',      1,       @isnumeric); % 1=UAV
     addParameter(p, 'GridMode',        1,       @isnumeric); % 1=Uniform
-    addParameter(p, 'MaxGenerations',  150,     @isnumeric);
+    addParameter(p, 'MaxGenerations',  420,     @isnumeric);
     addParameter(p, 'PopulationSize',  100,     @isnumeric);
     addParameter(p, 'Volume',          [-4 4; -4 4; 0 4], @isnumeric);
     addParameter(p, 'CamLowerBounds',  [-5 -4.5 0  -pi -pi/2 -pi], @isnumeric);
