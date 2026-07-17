@@ -3,15 +3,17 @@
 
 clc; clear; close all;
 addProjectPaths();
+mpiprofile on
 
 %% USER CONFIG  %%
 % Configurations to compare: {label, nPop, MaxIt}
 configs = {
-    '420x50', 420, 50    
+    '420x60',  420,  60
+    '420x80',  420,  80
     '420x100',  420,  100
 };
 
-nSeeds = 3;  % independent repeats per config (>=3 recommended)
+nSeeds = 5;  % independent repeats per config (>=3 recommended)
 seeds  = 1:nSeeds; % rng seeds
 
 % Elitism handling (see header note)
@@ -24,7 +26,7 @@ numCams          = 7;
 volume           = [-4 4; -4 4; 0 4];
 cameraLowerBounds = [-5 -4.5 0  -pi -pi -pi];
 cameraUpperBounds = [ 5  4.5 4.8 pi  pi  pi];
-targetType       = 2;       % 1=UAV, 2=UGV
+targetType       = 1;       % 1=UAV, 2=UGV
 targetMode       = 1;       % 1=uniform grid, 2=normalised grid
 spacing          = 1;
 UGV_maxHeight    = 0.5;
@@ -54,7 +56,7 @@ specs.WeightOcclusion = weightOcclusion;
 specs.TargetType = targetType;
 specs.TargetMode = targetMode;
 specs.Target = generateTargetSpace(volume, targetMode, targetSpacing);
-specs.NumPoint = size(specs.Target,1);
+specs.NumPoints = size(specs.Target,1);
 specs.spacing = spacing;
 if targetType == 2
     specs.spacingZ = UGV_zSpacing;
