@@ -10,8 +10,10 @@ function normTable = buildNormalisationSchedule(varargin)
     addParameter(p, 'GridModes', [1 2], @isnumeric);
     addParameter(p, 'Spacing', 1.0, @isnumeric);
     addParameter(p, 'Replicates', 5, @isnumeric);
-    addParameter(p, 'QuickGenerations', 50, @isnumeric);
-    addParameter(p, 'QuickPopSize', 400, @isnumeric);
+    addParameter(p, 'QuickGenerations', 100, @isnumeric);
+    % QuickPopSize [] => auto-scale per instance as numCams * params-per-camera
+    % * 10 (= problem.nVar * 10). Pass a numeric value to force a fixed size.
+    addParameter(p, 'QuickPopSize', [], @(x) isempty(x) || isnumeric(x));
     addParameter(p, 'CamLowerBounds', [-5 -4.5 0   -pi -pi/2 -pi], @isnumeric);
     addParameter(p, 'CamUpperBounds', [ 5  4.5 4.8  pi  pi/2  pi], @isnumeric);
     addParameter(p, 'OutFile', '', @ischar);
@@ -53,7 +55,12 @@ function normTable = buildNormalisationSchedule(varargin)
     instances = [TT(:), GM(:), NC(:)];
     nInst = size(instances, 1);
 
-    fprintf('\n Normalisation schedule: %d instance(s), %d replicate(s) each, %d gen x %d pop \n', nInst, opts.Replicates, opts.QuickGenerations, opts.QuickPopSize);
+    if isempty(opts.QuickPopSize)
+        popStr = sprintf('auto (numCams x %d x 10)', numel(opts.CamLowerBounds));
+    else
+        popStr = sprintf('%d', opts.QuickPopSize);
+    end
+    fprintf('\n Normalisation schedule: %d instance(s), %d replicate(s) each, %d gen x %s pop \n', nInst, opts.Replicates, opts.QuickGenerations, popStr);
 
     normTable = struct([]);
     tAll = tic;
@@ -101,7 +108,15 @@ function normTable = buildNormalisationSchedule(varargin)
         specs.warmStart = false;
         specs.warmChromosomes = [];
 
-        quickParams = setupGAparams(opts.QuickGenerations, opts.QuickPopSize);
+        % Population scales with chromosome length unless a fixed QuickPopSize
+        % was supplied: nPop = numCams * numParams * 10.
+        numParams = numel(opts.CamLowerBounds);
+        if isempty(opts.QuickPopSize)
+            quickPop = numCams * numParams * 10;
+        else
+            quickPop = opts.QuickPopSize;
+        end
+        quickParams = setupGAparams(opts.QuickGenerations, quickPop);
 
         problem1 = setupProblem(numCams, 1, opts.CamUpperBounds, opts.CamLowerBounds);
         problem2 = setupProblem(numCams, 2, opts.CamUpperBounds, opts.CamLowerBounds);
@@ -201,12 +216,17 @@ end
 
 function saveSchedule(outFile, normTable, opts, ttNames, gmNames)
 % Persist the struct array, a readable table view, and provenance metadata.
+    if isempty(opts.QuickPopSize)
+        popMeta = 'auto: numCams*numParams*10';
+    else
+        popMeta = opts.QuickPopSize;
+    end
     meta = struct( ...
         'CreatedOn',  datestr(now, 'yyyy-mm-dd HH:MM:SS'), ...
         'Method', 'payoff-table (utopia = diagonal, nadir = off-diagonal)', ...
         'Replicates', opts.Replicates, ...
         'QuickGenerations', opts.QuickGenerations, ...
-        'QuickPopSize', opts.QuickPopSize, ...
+        'QuickPopSize', popMeta, ...
         'Spacing', opts.Spacing, ...
         'CamLowerBounds', opts.CamLowerBounds, ...
         'CamUpperBounds', opts.CamUpperBounds);

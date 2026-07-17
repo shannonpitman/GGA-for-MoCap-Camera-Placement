@@ -28,8 +28,10 @@ addParameter(p, 'NumRepeats', 5, @isnumeric);
 addParameter(p, 'SkipWarmStart', false, @islogical);
 
 % GA parameters
-addParameter(p, 'MaxGenerations', 150,  @isnumeric);
-addParameter(p, 'PopulationSize', 100,  @isnumeric);
+% PopulationSize [] => auto-scale per run as numCams * params-per-camera * 10
+% (= problem.nVar * 10). Pass a numeric value to force a fixed population.
+addParameter(p, 'MaxGenerations', 100,  @isnumeric);
+addParameter(p, 'PopulationSize', [],   @(x) isempty(x) || isnumeric(x));
 
 % Workspace volume & mounting constraints
 addParameter(p, 'Volume', [-4 4; -4 4; 0 4], @isnumeric);
@@ -66,7 +68,11 @@ end
 fprintf('Repeats: %d\n', cfg.NumRepeats);
 fprintf('Warm-start: %s\n', string(~cfg.SkipWarmStart));
 fprintf('GA generations: %d\n', cfg.MaxGenerations);
-fprintf('Population size: %d\n', cfg.PopulationSize);
+if isempty(cfg.PopulationSize)
+    fprintf('Population size: auto (numCams x %d x 10)\n', numel(cfg.CamLowerBounds));
+else
+    fprintf('Population size: %d (fixed)\n', cfg.PopulationSize);
+end
 
 % Estimate runtime
 coldRuns = sum(~[schedule.WarmStart]);
@@ -231,8 +237,15 @@ for runIdx = startIdx:totalRuns
         problem = setupProblem(numCams, costFunctionType, ...
             cfg.CamUpperBounds, cfg.CamLowerBounds);
         
-        % GA parameters
-        params = setupGAparams(cfg.MaxGenerations, cfg.PopulationSize);
+        % GA parameters. Population scales with chromosome length unless a
+        % fixed PopulationSize was supplied: nPop = numCams * numParams * 10.
+        numParams = numel(cfg.CamLowerBounds);
+        if isempty(cfg.PopulationSize)
+            popSize = numCams * numParams * 10;
+        else
+            popSize = cfg.PopulationSize;
+        end
+        params = setupGAparams(cfg.MaxGenerations, popSize);
         
         %% Run GA 
         tic;

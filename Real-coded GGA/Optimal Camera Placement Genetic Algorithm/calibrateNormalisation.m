@@ -24,8 +24,10 @@ function calibrateNormalisation(varargin)
     addParameter(p, 'GridMode', 1, @isnumeric);
     addParameter(p, 'Spacing', 1.0, @isnumeric);
     addParameter(p, 'NumNadirSamples', 500,@isnumeric);
-    addParameter(p, 'QuickGenerations', 75, @isnumeric);
-    addParameter(p, 'QuickPopSize', 50, @isnumeric);
+    addParameter(p, 'QuickGenerations', 100, @isnumeric);
+    % QuickPopSize [] => auto-scale as numCams * params-per-camera * 10
+    % (= problem.nVar * 10). Pass a numeric value to force a fixed size.
+    addParameter(p, 'QuickPopSize', [], @(x) isempty(x) || isnumeric(x));
     addParameter(p, 'CamLowerBounds', [-5 -4.5 0   -pi -pi -pi], @isnumeric);
     addParameter(p, 'CamUpperBounds', [ 5  4.5 4.8  pi  pi  pi], @isnumeric);
     parse(p, varargin{:});
@@ -87,10 +89,19 @@ function calibrateNormalisation(varargin)
 
     specs.warmStart       = false;
     specs.warmChromosomes = [];
-    quickParams = setupGAparams(opts.QuickGenerations, opts.QuickPopSize);
+
+    % Population scales with chromosome length unless a fixed QuickPopSize
+    % was supplied: nPop = numCams * numParams * 10.
+    numParams = numel(opts.CamLowerBounds);
+    if isempty(opts.QuickPopSize)
+        quickPop = numCams * numParams * 10;
+    else
+        quickPop = opts.QuickPopSize;
+    end
+    quickParams = setupGAparams(opts.QuickGenerations, quickPop);
 
     fprintf('\n[2/2] Quick CF1-only GA (%d gens x pop %d) -> utopia_res \n', ...
-        opts.QuickGenerations, opts.QuickPopSize);
+        opts.QuickGenerations, quickPop);
     problem1 = setupProblem(numCams, 1, opts.CamUpperBounds, opts.CamLowerBounds);
     tGA = tic;
     out1 = RunGA(problem1, quickParams, specs);
@@ -98,7 +109,7 @@ function calibrateNormalisation(varargin)
     fprintf('  done in %.1fs, utopia_res = %.4f\n', toc(tGA), utopiaUnc);
 
     fprintf('\nQuick CF2-only GA (%d gens x pop %d) -> utopia_occ \n', ...
-        opts.QuickGenerations, opts.QuickPopSize);
+        opts.QuickGenerations, quickPop);
     problem2 = setupProblem(numCams, 2, opts.CamUpperBounds, opts.CamLowerBounds);
     tGA = tic;
     out2 = RunGA(problem2, quickParams, specs);
