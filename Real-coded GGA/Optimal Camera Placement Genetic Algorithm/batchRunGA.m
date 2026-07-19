@@ -18,7 +18,7 @@ addParameter(p, 'CameraRange', [6 7 8], @isnumeric);
 addParameter(p, 'CostFunctions', [1 2 3], @isnumeric);
 addParameter(p, 'TargetTypes', [1 2], @isnumeric); % 1=UAV, 2=UGV
 addParameter(p, 'GridModes', [1 2], @isnumeric); % 1=Uniform, 2=Normal
-addParameter(p, 'Spacings', [0.25 0.5 1.0], @isnumeric); % metres (x-y on the grid)
+addParameter(p, 'Spacings', [1.0], @isnumeric); % metres (x-y on the grid)
 addParameter(p, 'UGV_MaxHeight', 0.5, @isnumeric);
 % UGV z-axis spacing is decoupled from x-y. Default 0.25 m gives 3 z-layers
 % on a 0.5 m slab (z = [0, 0.25, 0.5]). x-y spacing is governed by Spacings
