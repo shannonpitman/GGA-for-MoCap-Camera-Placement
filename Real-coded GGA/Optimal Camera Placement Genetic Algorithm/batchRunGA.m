@@ -48,9 +48,12 @@ addParameter(p, 'SuppressPlots',  true, @islogical);
 parse(p, varargin{:});
 cfg = p.Results;
 
-%% Tests 
-% Cold-start runs first, then warm-start runs (which reference cold results)
+%% Tests
+% Cold-start runs first, then warm-start runs (which reference cold results).
+% Phase-ordered so all CF1/CF2 runs execute before any CF3 run: the CF3
+% normalisation table is derived mid-run from the completed CF1/CF2 results.
 schedule = buildSchedule(cfg);
+schedule = orderByPhase(schedule);
 totalRuns = length(schedule);
 
 fprintf('\n');
@@ -128,8 +131,9 @@ if ~isempty(cfg.ResumeLog)
     batchLogFile = cfg.ResumeLog;  % keep writing to same file
 else
     schedule = buildSchedule(cfg);
+    schedule = orderByPhase(schedule);
     totalRuns = length(schedule);
-    
+
     % ... existing initialisation code (print summary, dry run, etc.) ...
     
     for i = 1:totalRuns
@@ -163,9 +167,31 @@ end
 %% Execution Station
 batchTic = tic;
 
+% Two-pass normalisation: CF3 runs read a normTable derived from the CF1/CF2
+% runs that precede them (phase-ordered above). Built lazily the first time a
+% CF3 run is reached this session, from every completed CF1/CF2 run so far.
+% This also covers resume: on resume the CF1/CF2 runs are already 'done'.
+normRebuilt = false;
+haveCF12 = any(ismember([schedule.CostFunc], [1 2]));
+
 for runIdx = startIdx:totalRuns
     s = schedule(runIdx);
-    
+
+    % Refresh CF3 normalisation from completed CF1/CF2 runs before the first
+    % CF3 run. utopia = min single-objective cost (a genuine lower bound at the
+    % full production budget), so CF3 = (raw - utopia)/norm stays >= 0.
+    if s.CostFunc == 3 && ~normRebuilt && haveCF12
+        fprintf('  Deriving CF3 normalisation from completed CF1/CF2 runs...\n');
+        try
+            buildNormFromBatch(schedule, batchConfig);
+        catch ME
+            warning('batchRunGA:normBuild', ...
+                'normTable build failed (%s); CF3 will use existing/default norms.', ...
+                ME.message);
+        end
+        normRebuilt = true;
+    end
+
     fprintf('Run %d/%d [%s] \n', runIdx, totalRuns, ...
         string(datetime('now'), 'HH:mm:ss'));
     fprintf('    %dC | CF%d | TT%d | GM%d | sp=%.2f | WS=%d | Rep%d\n', ...
@@ -522,4 +548,21 @@ function printBatchSummary(schedule, totalElapsed, logFile)
     end
     
     fprintf('\n=========================================================\n\n');
+end
+
+
+function schedule = orderByPhase(schedule)
+% Execute all CF1/CF2 runs before any CF3 run so the CF3 normalisation can be
+% derived from completed single-objective runs. Stable within each phase, so
+% the existing cold-before-warm ordering is preserved. RunIndex is renumbered
+% to match the new execution order.
+    if isempty(schedule)
+        return;
+    end
+    phase = 1 + ([schedule.CostFunc] == 3);   % 1 = CF1/CF2, 2 = CF3
+    [~, ord] = sort(phase, 'stable');
+    schedule = schedule(ord);
+    for i = 1:numel(schedule)
+        schedule(i).RunIndex = i;
+    end
 end
