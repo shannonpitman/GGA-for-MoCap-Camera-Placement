@@ -560,7 +560,7 @@ function schedule = orderByPhase(schedule)
         return;
     end
     phase = 1 + ([schedule.CostFunc] == 3);   % 1 = CF1/CF2, 2 = CF3
-    [~, ord] = sort(phase, 'stable');
+    [~, ord] = sort(phase);   % MATLAB sort is stable: ties keep input order
     schedule = schedule(ord);
     for i = 1:numel(schedule)
         schedule(i).RunIndex = i;
