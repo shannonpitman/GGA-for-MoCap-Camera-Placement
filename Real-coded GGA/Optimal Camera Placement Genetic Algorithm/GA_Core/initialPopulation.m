@@ -44,7 +44,7 @@ function Chromosome = initialPopulation(VarMin, VarMax,  SectionCentres, numCams
     
         q = quaternion([cos(rotAng/2),rotAxis*sin(rotAng/2)]);
         q = normalize(q);
-        q2Eul = euler(q, 'XYZ', 'point'); %euler angles in radians
+        q2Eul = euler(q, 'XYZ', 'point'); %covert quaternion to euler angles in radians
     
         gene = [camPos, q2Eul];
         Chromosome((c-1)*6+1:c*6) = gene;    
