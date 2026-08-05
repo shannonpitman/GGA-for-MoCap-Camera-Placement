@@ -1,6 +1,29 @@
-# Ignore folder
-Real-coded GA/
+# Generated GA outputs, archives, and figures — binaries kept out of git.
+# (These are also what triggered Windows "Filename too long" on git add.)
+#
+# NOTE: this project was flattened on 2026-08-05 — it used to live under
+# "Real-coded GGA/Optimal Camera Placement Genetic Algorithm/" and is now the
+# repository root, so these patterns apply from the root directly.
+_Archive/
+Archive/
+Results_pre-bugfix/
+Results_UGV_fine_grid_archive/
+figures/
+figures_pre-bugfix/
 
-# Ignore specific MATLAB files
-guidedGeneticAlgorithm.m
-optiTrackConfig.asv
+# Results/ is deliberately TRACKED — the run logs and per-run .mat files are
+# needed on the laptop to produce results, so they must travel through git.
+# A full results set is only a few MB.
+
+# MATLAB autosave + Simulink build artifacts
+*.asv
+slprj/
+
+# Generated figure exports (loose PDFs scattered in the tree)
+*.pdf
+
+# macOS Finder metadata
+.DS_Store
+
+# If you DO want the calibrated norm table under version control, force-add it:
+#   git add -f Results/normTable.mat
