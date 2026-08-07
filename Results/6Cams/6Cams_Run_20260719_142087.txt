@@ -1,0 +1,58 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 19-Jul-2026 14:20:19
+Number of Cameras: 6
+Best Cost (Cost Function 2): 28.608360
+Cost Function Weights: 0.50 Resolution Uncertainty and 0.50 Dynamic Occlusion
+Computation Time: 1.22 min
+Mutation Rate: 0.50
+Tournament Size: 3
+Warm Starting Used: false
+Population Size: 360
+Number of Generations: 100
+Target Type: UGV (Floor Slab)
+Grid Mode: Uniform Grid
+Number of Target Points: 243
+
+Camera Configurations:
+---------------------
+
+Camera 1:
+  Position (m):        [-5.000, -3.693, 1.194]
+  Orientation (rad):    [-2.046, 0.821, -0.371]
+  Orientation (deg):    [-117.2, 47.0, -21.3]
+
+Camera 2:
+  Position (m):        [1.965, -2.685, 4.724]
+  Orientation (rad):    [-2.599, -0.560, 0.316]
+  Orientation (deg):    [-148.9, -32.1, 18.1]
+
+Camera 3:
+  Position (m):        [-5.000, 4.386, 3.774]
+  Orientation (rad):    [2.109, 0.534, 0.426]
+  Orientation (deg):    [120.8, 30.6, 24.4]
+
+Camera 4:
+  Position (m):        [-4.829, -2.625, 2.774]
+  Orientation (rad):    [-2.373, 0.707, -1.718]
+  Orientation (deg):    [-136.0, 40.5, -98.4]
+
+Camera 5:
+  Position (m):        [4.755, 0.284, 3.819]
+  Orientation (rad):    [3.002, -1.047, -3.102]
+  Orientation (deg):    [172.0, -60.0, -177.7]
+
+Camera 6:
+  Position (m):        [-1.850, 4.413, 4.035]
+  Orientation (rad):    [2.086, -0.050, -0.012]
+  Orientation (deg):    [119.5, -2.9, -0.7]
+
+Camera Coverage Statistics:
+---------------------------
+Total target points: 243
+Points with 0 cameras: 0 (0.0%)
+Points with 1 camera:  58 (23.9%)
+Points with 2+ cameras: 185 (76.1%)
+Average coverage: 3.73 cameras per point
+Max coverage: 6 | Min: 1 | Median: 4.00
