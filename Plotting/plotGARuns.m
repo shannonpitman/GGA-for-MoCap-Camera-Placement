@@ -1,9 +1,9 @@
 %% Generates figures from GA results from batch-run
 clear; clc; close all;
 
-% Make sure every code subfolder is on the MATLAB path.
-projectRoot = fileparts(mfilename('fullpath'));
-addProjectPaths();
+% Make sure every code subfolder is on the MATLAB path, and get the project
+% root for building Results/ and figures/ paths.
+projectRoot = addProjectPaths();
 
 %% File Management (post-restructure layout)
 logFile   = fullfile(projectRoot, 'Results', 'Logs', 'GGA_RunsLog.mat'); % Master run log

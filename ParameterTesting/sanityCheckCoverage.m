@@ -18,7 +18,7 @@ function stats = sanityCheckCoverage(varargin)
     addProjectPaths();
 
     %% Parse inputs
-    defaultLog = fullfile(fileparts(mfilename('fullpath')), ...
+    defaultLog = fullfile(addProjectPaths(), ...
                           'Results', 'Logs', 'GGA_RunsLog.mat');
 
     p = inputParser;

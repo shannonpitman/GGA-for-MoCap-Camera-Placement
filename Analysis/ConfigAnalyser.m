@@ -42,7 +42,7 @@ classdef ConfigAnalyser < handle
             addOptional(p, 'GridMode', 1, @isnumeric);
             addParameter(p, 'File', '', @ischar);
             % Default log lives under Results/Logs/
-            defaultLog = fullfile(fileparts(mfilename('fullpath')), ...
+            defaultLog = fullfile(addProjectPaths(), ...
                                   'Results', 'Logs', 'GGA_RunsLog.mat');
             addParameter(p, 'LogFile', defaultLog, @ischar);
             addParameter(p, 'Volume', [-4 4; -4 4; 0 4], @isnumeric);

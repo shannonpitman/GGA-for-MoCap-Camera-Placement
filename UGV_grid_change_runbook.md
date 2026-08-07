@@ -67,8 +67,7 @@ which archiveUGVRuns                   % should resolve
 ### 3. Archive the existing UGV runs
 
 ```matlab
-cd 'C:\Users\USER-PC\GGA-for-MoCap-Camera-Placement\Real-coded GGA\Optimal Camera Placement Genetic Algorithm'
-addProjectPaths();
+START_HERE    % from the workspace root — sets the path and cd's here for you
 
 % Dry run — see what would move
 plan = archiveUGVRuns();

@@ -66,7 +66,7 @@ specs = setupCostParams(specs);
 
 % ---- Output folder ----
 stamp   = datestr(now,'yyyymmdd_HHMMSS');
-outDir  = fullfile('Sweep_PopVsGen', ['sweep_' stamp]);
+outDir  = fullfile(addProjectPaths(), 'Results', 'Sweep_PopVsGen', ['sweep_' stamp]);
 if ~exist(outDir,'dir'); mkdir(outDir); end
 
 nConfig = size(configs,1);

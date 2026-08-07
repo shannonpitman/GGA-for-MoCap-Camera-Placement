@@ -9,7 +9,7 @@ function T = reportCostBreakdown(varargin)
     parse(p, varargin{:});
     opts = p.Results;
 
-    projectRoot = fileparts(mfilename('fullpath'));
+    projectRoot = addProjectPaths();
     if isempty(opts.LogFile)
         opts.LogFile = fullfile(projectRoot, 'Results', 'Logs', 'GGA_RunsLog.mat');
     end

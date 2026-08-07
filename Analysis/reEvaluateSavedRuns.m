@@ -36,7 +36,7 @@ function summary = reEvaluateSavedRuns(varargin)
 
     projectRoot = fileparts(fileparts(mfilename('fullpath')));
     resultsDir  = fullfile(projectRoot, 'Results');
-    archiveDir  = fullfile(projectRoot, 'Results_pre-bugfix');
+    archiveDir  = fullfile(projectRoot, '_Archive', 'Results_pre-bugfix');
 
     if ~isfolder(resultsDir)
         error('reEvaluateSavedRuns:NoResults', ...

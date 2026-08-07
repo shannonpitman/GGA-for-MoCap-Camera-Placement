@@ -13,8 +13,7 @@
 
 clear; clc; close all;
 
-projectRoot = fileparts(mfilename('fullpath'));
-addProjectPaths();
+projectRoot = addProjectPaths();
 
 logFile   = fullfile(projectRoot, 'Results', 'Logs', 'GGA_RunsLog.mat');
 outputDir = fullfile(projectRoot, 'figures');

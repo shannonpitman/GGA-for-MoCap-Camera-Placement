@@ -41,7 +41,7 @@ function normTable = buildNormFromBatch(schedule, cfg, varargin)
     parse(p, varargin{:});
     o = p.Results;
 
-    projectRoot = fileparts(mfilename('fullpath'));
+    projectRoot = addProjectPaths();
     if isempty(o.OutFile)
         o.OutFile = fullfile(projectRoot, 'Results', 'normTable.mat');
     end

@@ -47,7 +47,7 @@ function summary = archiveUGVRuns(varargin)
 
     resultsDir = fullfile(cfg.ProjectRoot, 'Results');
     logFile    = fullfile(resultsDir, 'Logs', 'GGA_RunsLog.mat');
-    archiveDir = fullfile(cfg.ProjectRoot, cfg.ArchiveName);
+    archiveDir = fullfile(cfg.ProjectRoot, '_Archive', cfg.ArchiveName);
 
     if ~isfile(logFile)
         error('archiveUGVRuns:NoLog', 'Master log not found: %s', logFile);

@@ -1,14 +1,14 @@
 function batchRunGA(varargin)
-% BATCHRUNGA  Systematic batch testing across all experimental conditions.
+% Systematic batch testing across all experimental conditions.
 % Number of cameras
 % Cost function type (1=ResUncert, 2=DynOccl, 3=Combined)
 % Target type (1=UAV, 2=UGV)
 % Grid discretisation mode (1=Uniform, 2=Normal)
 % Grid spacing
 % Warm-start (false first, then true seeded from best cold run)
-%
-% Cold-start runs execute FIRST for each condition so that the best
-% chromosome is available to seed the warm-start runs.
+
+% Make sure every code subfolder is on the MATLAB path.
+addProjectPaths();
 
 %% Inputs
 p = inputParser;
@@ -18,19 +18,25 @@ addParameter(p, 'CameraRange', [6 7 8], @isnumeric);
 addParameter(p, 'CostFunctions', [1 2 3], @isnumeric);
 addParameter(p, 'TargetTypes', [1 2], @isnumeric); % 1=UAV, 2=UGV
 addParameter(p, 'GridModes', [1 2], @isnumeric); % 1=Uniform, 2=Normal
-addParameter(p, 'Spacings', [0.25 0.5 1.0], @isnumeric); % metres
+addParameter(p, 'Spacings', [1.0], @isnumeric); % metres (x-y on the grid)
 addParameter(p, 'UGV_MaxHeight', 0.5, @isnumeric);
-addParameter(p, 'NumRepeats', 3, @isnumeric);
+% UGV z-axis spacing is decoupled from x-y. Default 0.25 m gives 3 z-layers
+% on a 0.5 m slab (z = [0, 0.25, 0.5]). x-y spacing is governed by Spacings
+% so UGV x-y can match UAV without forcing 33x33 in-plane resolution.
+addParameter(p, 'UGV_ZSpacing', 0.25, @(x) isnumeric(x) && isscalar(x) && x > 0);
+addParameter(p, 'NumRepeats', 5, @isnumeric);
 addParameter(p, 'SkipWarmStart', false, @islogical);
 
 % GA parameters
-addParameter(p, 'MaxGenerations', 150,  @isnumeric);
-addParameter(p, 'PopulationSize', 100,  @isnumeric);
+% PopulationSize [] => auto-scale per run as numCams * params-per-camera * 10
+% (= problem.nVar * 10). Pass a numeric value to force a fixed population.
+addParameter(p, 'MaxGenerations', 100,  @isnumeric);
+addParameter(p, 'PopulationSize', [],   @(x) isempty(x) || isnumeric(x));
 
 % Workspace volume & mounting constraints
 addParameter(p, 'Volume', [-4 4; -4 4; 0 4], @isnumeric);
-addParameter(p, 'CamLowerBounds', [-5 -4.5 0  -pi -pi -pi], @isnumeric);
-addParameter(p, 'CamUpperBounds', [ 5  4.5 4.8 pi  pi  pi], @isnumeric);
+addParameter(p, 'CamLowerBounds', [-5 -4.5 0  -pi -pi/2 -pi], @isnumeric);
+addParameter(p, 'CamUpperBounds', [ 5  4.5 4.8 pi  pi/2  pi], @isnumeric);
 
 % Execution control
 addParameter(p, 'DryRun', false, @islogical);
@@ -42,9 +48,12 @@ addParameter(p, 'SuppressPlots',  true, @islogical);
 parse(p, varargin{:});
 cfg = p.Results;
 
-%% Tests 
-% Cold-start runs first, then warm-start runs (which reference cold results)
+%% Tests
+% Cold-start runs first, then warm-start runs (which reference cold results).
+% Phase-ordered so all CF1/CF2 runs execute before any CF3 run: the CF3
+% normalisation table is derived mid-run from the completed CF1/CF2 results.
 schedule = buildSchedule(cfg);
+schedule = orderByPhase(schedule);
 totalRuns = length(schedule);
 
 fprintf('\n');
@@ -53,11 +62,20 @@ fprintf('Cameras: %s\n', mat2str(cfg.CameraRange));
 fprintf('Cost functions: %s\n', mat2str(cfg.CostFunctions));
 fprintf('Target types: %s\n', mat2str(cfg.TargetTypes));
 fprintf('Grid modes: %s\n', mat2str(cfg.GridModes));
-fprintf('Spacings: %s\n', mat2str(cfg.Spacings));
+fprintf('Spacings (x-y): %s m\n', mat2str(cfg.Spacings));
+if any(cfg.TargetTypes == 2)
+    fprintf('UGV slab: z in [0, %.3g] m, z-spacing fixed at %.3g m (%d layers)\n', ...
+        cfg.UGV_MaxHeight, cfg.UGV_ZSpacing, ...
+        numel(0:cfg.UGV_ZSpacing:cfg.UGV_MaxHeight));
+end
 fprintf('Repeats: %d\n', cfg.NumRepeats);
 fprintf('Warm-start: %s\n', string(~cfg.SkipWarmStart));
 fprintf('GA generations: %d\n', cfg.MaxGenerations);
-fprintf('Population size: %d\n', cfg.PopulationSize);
+if isempty(cfg.PopulationSize)
+    fprintf('Population size: auto (numCams x %d x 10)\n', numel(cfg.CamLowerBounds));
+else
+    fprintf('Population size: %d (fixed)\n', cfg.PopulationSize);
+end
 
 % Estimate runtime
 coldRuns = sum(~[schedule.WarmStart]);
@@ -85,23 +103,58 @@ if ~isempty(cfg.OutputDir)
 end
 
 %% Batch log
-batchTimestamp = datetime('now');
-batchDateStr = string(batchTimestamp, 'yyyyMMdd_HHmmss');
-batchLogFile = sprintf('BatchLog_%s.mat', batchDateStr);
+% Build or reload schedule
+if ~isempty(cfg.ResumeLog)
+    % Resume from saved batch log
+    if ~isfile(cfg.ResumeLog)
+        error('Resume log not found: %s', cfg.ResumeLog);
+    end
+    loaded = load(cfg.ResumeLog, 'schedule', 'batchConfig', 'batchTimestamp');
+    schedule = loaded.schedule;
+    batchTimestamp = loaded.batchTimestamp;
+    batchConfig = loaded.batchConfig;
+    totalRuns = length(schedule);
+    
+    % Find first non-done run
+    doneFlags = strcmp({schedule.Status}, 'done');
+    startIdx = find(~doneFlags, 1);
+    if isempty(startIdx)
+        fprintf('All %d runs already completed!\n', totalRuns);
+        return;
+    end
+    
+    nDone = sum(doneFlags);
+    fprintf('\n  RESUMING from saved log: %s\n', cfg.ResumeLog);
+    fprintf('  %d/%d runs already completed — starting from run %d\n\n', ...
+        nDone, totalRuns, startIdx);
+    
+    batchLogFile = cfg.ResumeLog;  % keep writing to same file
+else
+    schedule = buildSchedule(cfg);
+    schedule = orderByPhase(schedule);
+    totalRuns = length(schedule);
 
-for i = 1:totalRuns
-    schedule(i).Status     = 'pending';  % pending | running | done | failed
-    schedule(i).BestCost   = NaN;
-    schedule(i).ElapsedTime = NaN;
-    schedule(i).BestChromosome = [];
-    schedule(i).RunFilename = '';
-    schedule(i).ErrorMsg   = '';
+    % ... existing initialisation code (print summary, dry run, etc.) ...
+    
+    for i = 1:totalRuns
+        schedule(i).Status     = 'pending';
+        schedule(i).BestCost   = NaN;
+        schedule(i).ElapsedTime = NaN;
+        schedule(i).BestChromosome = [];
+        schedule(i).RunFilename = '';
+        schedule(i).ErrorMsg   = '';
+    end
+    
+    batchTimestamp = datetime('now');
+    batchConfig = cfg;
+    batchDateStr = string(batchTimestamp, 'yyyyMMdd_HHmmss');
+
+    % Batch logs live alongside the master run log under Results/Logs/.
+    logsDir = fullfile(addProjectPaths(), 'Results', 'Logs');
+    if ~isfolder(logsDir), mkdir(logsDir); end
+    batchLogFile = fullfile(logsDir, sprintf('BatchLog_%s.mat', batchDateStr));
+    startIdx = max(1, cfg.ResumeFrom);
 end
-
-% If resuming is required
-batchConfig = cfg;
-save(batchLogFile, 'schedule', 'batchConfig', 'batchTimestamp');
-fprintf('Batch log initialised: %s\n\n', batchLogFile);
 
 %% Suppress figures
 
@@ -112,12 +165,33 @@ if cfg.SuppressPlots
 end
 
 %% Execution Station
-startIdx = max(1, cfg.ResumeFrom);
 batchTic = tic;
+
+% Two-pass normalisation: CF3 runs read a normTable derived from the CF1/CF2
+% runs that precede them (phase-ordered above). Built lazily the first time a
+% CF3 run is reached this session, from every completed CF1/CF2 run so far.
+% This also covers resume: on resume the CF1/CF2 runs are already 'done'.
+normRebuilt = false;
+haveCF12 = any(ismember([schedule.CostFunc], [1 2]));
 
 for runIdx = startIdx:totalRuns
     s = schedule(runIdx);
-    
+
+    % Refresh CF3 normalisation from completed CF1/CF2 runs before the first
+    % CF3 run. utopia = min single-objective cost (a genuine lower bound at the
+    % full production budget), so CF3 = (raw - utopia)/norm stays >= 0.
+    if s.CostFunc == 3 && ~normRebuilt && haveCF12
+        fprintf('  Deriving CF3 normalisation from completed CF1/CF2 runs...\n');
+        try
+            buildNormFromBatch(schedule, batchConfig);
+        catch ME
+            warning('batchRunGA:normBuild', ...
+                'normTable build failed (%s); CF3 will use existing/default norms.', ...
+                ME.message);
+        end
+        normRebuilt = true;
+    end
+
     fprintf('Run %d/%d [%s] \n', runIdx, totalRuns, ...
         string(datetime('now'), 'HH:mm:ss'));
     fprintf('    %dC | CF%d | TT%d | GM%d | sp=%.2f | WS=%d | Rep%d\n', ...
@@ -135,10 +209,17 @@ for runIdx = startIdx:totalRuns
         warmStartUsed = s.WarmStart;
         volume = cfg.Volume;
         if targetType == 2
+            % UGV floor-slab volume
             volume(3,:) = [0, cfg.UGV_MaxHeight];
-            if spacing > cfg.UGV_MaxHeight
-                spacing = cfg.UGV_MaxHeight / 2;
-            end
+            % Anisotropic spacing for UGV: x-y honour the swept Spacing,
+            % z is held fixed (default 3 layers on a 0.5 m slab). This was
+            % previously clamped to UGV_MaxHeight/2 isotropic, which forced
+            % the in-plane grid to 0.25 m and made UGV runs ~7x slower than
+            % UAV. See generateTargetSpace for the vector-spacing contract.
+            zSp = min(cfg.UGV_ZSpacing, cfg.UGV_MaxHeight); % safety clamp
+            targetSpacing = [spacing, spacing, zSp];   % vector, for grid build
+        else
+            targetSpacing = spacing;                   % scalar, isotropic
         end
         
         specs = setupHardwareSpecs(numCams);
@@ -165,9 +246,12 @@ for runIdx = startIdx:totalRuns
         % Target space
         specs.TargetType = targetType;
         specs.TargetMode = targetMode;
-        specs.Target = generateTargetSpace(volume, targetMode, spacing);
+        specs.Target = generateTargetSpace(volume, targetMode, targetSpacing);
         specs.NumPoints = size(specs.Target, 1);
-        specs.spacing = spacing;
+        specs.spacing = spacing;                 % scalar x-y; kept for log
+        if targetType == 2
+            specs.spacingZ = zSp;                % UGV z spacing (info only)
+        end
         
         % Section centres
         specs.SectionCentres = generateSectionCentres(numCams, volume);
@@ -179,8 +263,15 @@ for runIdx = startIdx:totalRuns
         problem = setupProblem(numCams, costFunctionType, ...
             cfg.CamUpperBounds, cfg.CamLowerBounds);
         
-        % GA parameters
-        params = setupGAparams(cfg.MaxGenerations, cfg.PopulationSize);
+        % GA parameters. Population scales with chromosome length unless a
+        % fixed PopulationSize was supplied: nPop = numCams * numParams * 10.
+        numParams = numel(cfg.CamLowerBounds);
+        if isempty(cfg.PopulationSize)
+            popSize = numCams * numParams * 10;
+        else
+            popSize = cfg.PopulationSize;
+        end
+        params = setupGAparams(cfg.MaxGenerations, popSize);
         
         %% Run GA 
         tic;
@@ -457,4 +548,21 @@ function printBatchSummary(schedule, totalElapsed, logFile)
     end
     
     fprintf('\n=========================================================\n\n');
+end
+
+
+function schedule = orderByPhase(schedule)
+% Execute all CF1/CF2 runs before any CF3 run so the CF3 normalisation can be
+% derived from completed single-objective runs. Stable within each phase, so
+% the existing cold-before-warm ordering is preserved. RunIndex is renumbered
+% to match the new execution order.
+    if isempty(schedule)
+        return;
+    end
+    phase = 1 + ([schedule.CostFunc] == 3);   % 1 = CF1/CF2, 2 = CF3
+    [~, ord] = sort(phase);   % MATLAB sort is stable: ties keep input order
+    schedule = schedule(ord);
+    for i = 1:numel(schedule)
+        schedule(i).RunIndex = i;
+    end
 end

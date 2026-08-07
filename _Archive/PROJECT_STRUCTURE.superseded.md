@@ -1,8 +1,38 @@
 # Project Structure
 
-Reorganised on 2026-05-06. Every entry-point script lives at the root; everything
-else is grouped by role under a code subfolder. Run results and logs live under
-`Results/`. Anything in `Unused/` is intentionally off the active MATLAB path.
+Reorganised on 2026-05-06, flattened on 2026-08-05. Every entry-point script
+lives at the root; everything else is grouped by role under a code subfolder.
+Anything in `_Archive/` is intentionally off the active MATLAB path.
+
+## How to start
+
+From the workspace root (`MSc/MATLAB/`), run:
+
+```matlab
+START_HERE
+```
+
+That is the whole setup. It puts the RVC3 toolbox on the path (so
+`CentralCamera` and `se3` resolve), calls `addProjectPaths`, changes into this
+folder and lists the entry points. Opening `rvc3setup.prj` by hand is no longer
+needed, and neither is navigating down through subfolders — this project used to
+sit five levels deep under `Simulation/Optimising Camera Placement/Genetic
+Algorithm/Real-coded GGA/Optimal Camera Placement Genetic Algorithm/` and is now
+the root of its own repository.
+
+## ⚠️ `Results/` is empty on this machine
+
+The current (end-of-July 2026) GA runs live on the **simulation machine** and
+have never been committed — `Results/` is in `.gitignore`, so they were never
+picked up. Until they are force-added there and pushed, this machine has no
+valid run data and `viewGALog` / `analyseConfiguration` will not find anything.
+
+See the "Getting the results off the simulation machine" section of the
+workspace `README.md` for the exact sequence.
+
+`_Archive/Results_pre-bugfix/` holds 514 files from Mar–May 2026. Those predate
+the FOV and normalisation fixes and are **not valid results** — neither
+`viewGALog` nor `resolveRunPath` will fall back to them, deliberately.
 
 ## Layout
 
@@ -80,20 +110,25 @@ else is grouped by role under a code subfolder. Run results and logs live under
 │                              under Results/<N>Cams/ (back-compat with
 │                              existing log entries that store basenames)
 │
-├── Results/
-│   ├── 6Cams/                 Per-run .mat + .txt for 6-camera runs (146 files)
-│   ├── 7Cams/                 Per-run .mat + .txt for 7-camera runs (224 files)
-│   ├── 8Cams/                 Per-run .mat + .txt for 8-camera runs (144 files)
-│   ├── Logs/                  GGA_RunsLog.mat, GA_RunsLog.mat, BatchLog_*.mat
-│   └── 7C_UAV_setup.txt       Curated camera setup sheet (kept here for visibility)
+├── Results/                   EMPTY ON THIS MACHINE — see warning above
+│   ├── 6Cams/  7Cams/  8Cams/  Logs/    (awaiting push from the sim machine)
+│   ├── Sensitivity/           spacing sweep .mat files (UAV + UGV)
+│   └── Sweep_PopVsGen/        population-vs-generations sweeps (Jul 2026)
 │
 ├── figures/                   Output PDFs (from plotGARuns) + PNG plots
 │
-└── Unused/                    OFF the active MATLAB path
-    ├── UniformCrossover.m     Alternative crossover not wired into RunGA
-    ├── CameraConfigPlot.m     One-off plot script with hard-coded positions
-    ├── computeOcclusionAngle.m  Duplicate of calculatePointOcclusion.m
-    └── Autosaves/             *.asv MATLAB autosaves
+├── Reference/
+│   └── Rahimian-P2I-python/   Rahimian et al. Python implementation (reference)
+│
+└── _Archive/                  OFF the active MATLAB path — nothing deleted
+    ├── Unused/                UniformCrossover.m, CameraConfigPlot.m,
+    │                          computeOcclusionAngle.m, old autosaves
+    ├── pre-bugfix-snapshots/  Dated snapshots (pre_FOVfix, pre_normfix)
+    ├── figures_pre-bugfix/    Figures generated before the fixes
+    ├── Results_UGV_fine_grid_archive/
+    ├── EarlyRootScripts/      optiTrackConfig.m, sectionCentres.m (superseded)
+    ├── autosaves/             *.asv MATLAB editor backups
+    └── build_cache/           slprj Simulink build artefacts (regenerable)
 ```
 
 ## Where things live (quick lookup)
@@ -105,9 +140,11 @@ else is grouped by role under a code subfolder. Run results and logs live under
 | Generate every thesis figure          | `plotGARuns.m`                                         |
 | Inspect / tweak the best result       | `analyseConfiguration.m` or `ConfigAnalyser.m`         |
 | List runs in the master log           | `viewGALog.m`                                          |
+| Set the path and get started          | `START_HERE` from the workspace root                   |
 | Find a per-run `.mat` / `.txt`        | `Results/<N>Cams/<N>Cams_Run_<timestamp>.<ext>`        |
 | Load the master log                   | `Results/Logs/GGA_RunsLog.mat`                         |
 | Find batch-sweep state                | `Results/Logs/BatchLog_<timestamp>.mat`                |
+| Compare GA vs the ad-hoc OptiTrack rig| `saveOptiTrackAsRun.m` (stay in GA mode — see below)   |
 | Add a new cost function               | drop in `CostFunctions/`                               |
 | Add a new plotting helper             | drop in `Plotting/`                                    |
 
@@ -116,8 +153,15 @@ else is grouped by role under a code subfolder. Run results and logs live under
 Every entry-point script and every interactive function calls
 `addProjectPaths()` at the top. That walks the project root and adds
 `GA_Core/`, `CostFunctions/`, `Geometry/`, `Setup/`, `Plotting/` and
-`Analysis/` to the MATLAB path, but **not** `Unused/`. So any function in
+`Analysis/` to the MATLAB path, but **not** `_Archive/`. So any function in
 those subfolders is reachable by name from anywhere.
+
+Note that `START_HERE` deliberately does **not** add
+`1_CameraPlacement/OptiTrackConfig/` at the same time as this project. Those two
+folders define 15 same-named functions (`buildPyramidSurf`, `calcVertices`,
+`resUncertainty`, `combinedCostFunction`, …) with different bodies, so having
+both on the path would silently resolve to the wrong one. Use
+`START_HERE optitrack` to switch.
 
 Per-run `.mat` files are referenced from log entries by their **basename
 only** (e.g. `7Cams_Run_20260331_001929.mat`). The helper
@@ -142,6 +186,6 @@ forward.
   `CostFunctions/calculatePointOcclusion.m`. Calling
   `computeOcclusionAngle(...)` in MATLAB would actually fail (function
   name doesn't match the file name). Moved out so it can't be picked up.
-* **`Unused/Autosaves/*.asv`** — MATLAB editor backups. Kept (rather than
+* **`_Archive/autosaves/*.asv`** — MATLAB editor backups. Kept (rather than
   deleted) so they're available if you ever need to recover an in-progress
   edit, but out of the way.

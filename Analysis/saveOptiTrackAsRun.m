@@ -29,7 +29,7 @@ function saveOptiTrackAsRun(varargin)
 %   resulting .mat from analyseConfiguration / sanity scripts.
 
     addProjectPaths();
-    projectRoot = fileparts(mfilename('fullpath'));
+    projectRoot = addProjectPaths();
 
     %% Parse inputs
     p = inputParser;

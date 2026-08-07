@@ -34,7 +34,7 @@ function nc = getNormConstants(varargin)
         varargin = [leading, varargin(2:end)];
     end
 
-    projectRoot = fileparts(mfilename('fullpath'));
+    projectRoot = addProjectPaths();
 
     p = inputParser;
     addParameter(p, 'TargetType', 1, @isnumeric);

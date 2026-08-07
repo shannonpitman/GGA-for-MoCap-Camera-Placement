@@ -48,7 +48,7 @@ function summary = archiveAllRuns(varargin)
     figsDir    = fullfile(cfg.ProjectRoot, 'figures');
 
     ts         = char(datetime('now', 'Format', 'yyyyMMdd_HHmmss'));
-    archiveDir = fullfile(cfg.ProjectRoot, 'Archive', ...
+    archiveDir = fullfile(cfg.ProjectRoot, '_Archive', 'pre-bugfix-snapshots', ...
                           sprintf('%s_%s', ts, cfg.ArchiveTag));
 
     fprintf('\n  archiveAllRuns -------------------------------------------\n');

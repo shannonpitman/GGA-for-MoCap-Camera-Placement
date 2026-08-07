@@ -10,7 +10,7 @@ function viewGALog(varargin)
     addProjectPaths();
 
     % Parse inputs — default log lives under Results/Logs/.
-    defaultLog = fullfile(fileparts(mfilename('fullpath')), ...
+    defaultLog = fullfile(addProjectPaths(), ...
                           'Results', 'Logs', 'GA_RunsLog.mat');
 
     p = inputParser;
@@ -23,8 +23,11 @@ function viewGALog(varargin)
     logFile = p.Results.LogFile;
 
     % Back-compat: also try the GGA name and the legacy root location.
+    % Deliberately does NOT fall back to _Archive/Results_pre-bugfix — those
+    % runs predate the FOV and normalisation fixes and must never be quoted
+    % as results.
     if ~isfile(logFile)
-        projectRoot = fileparts(mfilename('fullpath'));
+        projectRoot = addProjectPaths();
         candidates = { ...
             fullfile(projectRoot, 'Results', 'Logs', 'GGA_RunsLog.mat'), ...
             fullfile(projectRoot, 'GA_RunsLog.mat'), ...
@@ -44,19 +47,24 @@ function viewGALog(varargin)
     % Apply filters
     keepIdx = true(totalRuns, 1);
     
+    % NOTE: [runLog.Field] comes back as a ROW vector while keepIdx is a
+    % COLUMN. Without the (:) below, "keepIdx & row" broadcasts into an
+    % NxN matrix and runLog(keepIdx) then errors with "logical indices
+    % contain a true value outside of the array bounds" — which used to
+    % break every filtered call.
     if ~isempty(p.Results.NumCameras)
         numCameras = [runLog.NumCameras];
-        keepIdx = keepIdx & (numCameras == p.Results.NumCameras);
+        keepIdx = keepIdx & (numCameras(:) == p.Results.NumCameras);
     end
-    
+
     if ~isempty(p.Results.CostFunction)
         costFuncTypes = [runLog.CostFunctionType];
-        keepIdx = keepIdx & (costFuncTypes == p.Results.CostFunction);
+        keepIdx = keepIdx & (costFuncTypes(:) == p.Results.CostFunction);
     end
-    
+
     if ~isempty(p.Results.WarmStart)
         warmStarts = [runLog.WarmStart];
-        keepIdx = keepIdx & (warmStarts == p.Results.WarmStart);
+        keepIdx = keepIdx & (warmStarts(:) == p.Results.WarmStart);
     end
     
     runLog = runLog(keepIdx);

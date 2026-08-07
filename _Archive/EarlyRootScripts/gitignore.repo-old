@@ -1,0 +1,6 @@
+# Ignore folder
+Real-coded GA/
+
+# Ignore specific MATLAB files
+guidedGeneticAlgorithm.m
+optiTrackConfig.asv

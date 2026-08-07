@@ -21,7 +21,7 @@ function normTable = buildNormalisationSchedule(varargin)
     parse(p, varargin{:});
     opts = p.Results;
 
-    projectRoot = fileparts(mfilename('fullpath'));
+    projectRoot = addProjectPaths();
     if isempty(opts.OutFile)
         opts.OutFile = fullfile(projectRoot, 'Results', 'normTable.mat');
     end

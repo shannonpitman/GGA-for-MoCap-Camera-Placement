@@ -47,7 +47,7 @@ function analyseConfiguration(varargin)
 
     %% Parse inputs
     % Default log lives under Results/Logs/ (post-restructure layout).
-    defaultLog = fullfile(fileparts(mfilename('fullpath')), ...
+    defaultLog = fullfile(addProjectPaths(), ...
                           'Results', 'Logs', 'GGA_RunsLog.mat');
 
     p = inputParser;

@@ -64,6 +64,10 @@ function fullPath = resolveRunPath(filename, numCams, runDir)
     candidates{end+1} = fullfile(projectRoot, 'Results', filename);
     candidates{end+1} = fullfile(projectRoot, filename);
 
+    % NOTE: _Archive/Results_pre-bugfix is deliberately NOT searched. Those
+    % runs predate the FOV and normalisation fixes; silently resolving to
+    % them would mix invalid data into current analysis.
+
     for i = 1:numel(candidates)
         if isfile(candidates{i})
             fullPath = candidates{i};

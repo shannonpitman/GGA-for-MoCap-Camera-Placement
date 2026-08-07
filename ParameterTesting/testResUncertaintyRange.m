@@ -26,7 +26,7 @@
 
 clc; clear; close all;
 addProjectPaths();
-projectRoot = fileparts(mfilename('fullpath'));
+projectRoot = addProjectPaths();
 rng(1);   % reproducible sampling
 
 %% ---------------- Parameters -------------------------------------------
