@@ -46,7 +46,7 @@ function out = RunGA(problem, params, specs)
     end
     if warmStartUsed
         for i = 1:size(warmStartChromosome,1)
-            chromosomes(i,:)= enforceMount(warmStartChromosome(i,:), mountRegions);
+            chromosomes(i,:)= enforceMount(wrapChromRotvecs(warmStartChromosome(i,:)), mountRegions);
         end
     end
     %Evaluate in Parallel
@@ -130,6 +130,7 @@ function out = RunGA(problem, params, specs)
                     popc(l).Chromosome = fixPoorCameras(popc(l).Chromosome, specs, 0.05);
             end
    
+            popc(l).Chromosome = wrapChromRotvecs(popc(l).Chromosome); % rotation vectors back into |r| <= pi
             popc(l).Chromosome = max(popc(l).Chromosome, VarMin); % if greater than VarMin -> unchanged
             popc(l).Chromosome = min(popc(l).Chromosome, VarMax);
             popc(l).Chromosome = enforceMount(popc(l).Chromosome, mountRegions); % mountable positions only

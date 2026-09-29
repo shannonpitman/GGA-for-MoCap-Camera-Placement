@@ -197,7 +197,7 @@ function [chrom, specs, cost] = localBestGARun(o)
     cand = r(mask);
     [cost, idx] = min([cand.BestCost]);
     L = load(resolveRunPath(cand(idx).RunFilename, cand(idx).NumCameras), 'saveData');
-    chrom = L.saveData.BestSolution.Chromosome;
+    chrom = runChromosome(L.saveData);
     specs = L.saveData.Specifications;
 end
 

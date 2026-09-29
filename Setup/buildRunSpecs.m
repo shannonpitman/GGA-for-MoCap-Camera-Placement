@@ -36,6 +36,7 @@ function [specs, problem, params] = buildRunSpecs(cfg, numCams, costFunctionType
     %% Specs
     specs = setupHardwareSpecs(numCams, cfg.Hardware);
     specs.RunConfig = cfg;
+    specs.Parameterisation = 'rotvec';   % orientation genes = rotation vector
     specs.warmStart = false;
     specs.warmChromosomes = [];
 

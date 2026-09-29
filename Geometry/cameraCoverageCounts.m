@@ -35,7 +35,7 @@ function coverage = cameraCoverageCounts(x, specs)
     for i = 1:numCams
         s      = (i-1)*6;
         camPos = x(s+1:s+3);
-        camEul = x(s+4:s+6);
+        camRot = x(s+4:s+6);            % rotation-vector genes
 
         if mod(i,2) == 0            % even cameras use the wide lens (setupCameras)
             f = fW;  effRange = rW;
@@ -43,7 +43,7 @@ function coverage = cameraCoverageCounts(x, specs)
             f = fN;  effRange = rN;
         end
 
-        Rcw = eul2rotm(camEul, "XYZ");                 % camera-to-world (== setupCameras)
+        Rcw = genesToRotm(camRot);                     % camera-to-world (== setupCameras)
         K   = [f/rho, 0, u0; 0, f/rho, v0; 0, 0, 1];   % pinhole intrinsics
         c   = camPos(:);                               % 3 x 1 camera centre
 

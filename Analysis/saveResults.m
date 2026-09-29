@@ -29,8 +29,9 @@ currentDateTime = datetime('now');
         chromStart = (i-1)*6 + 1;
         chromEnd = i*6;
         saveData.Cameras(i).Position = out.bestsol.Chromosome(chromStart:chromStart+2);
-        saveData.Cameras(i).Orientation = out.bestsol.Chromosome(chromEnd-2:chromEnd);
-        saveData.Cameras(i).OrientationDegrees = rad2deg(saveData.Cameras(i).Orientation);
+        saveData.Cameras(i).Orientation = out.bestsol.Chromosome(chromEnd-2:chromEnd);  % rotation vector [rad]
+        saveData.Cameras(i).OrientationDegrees = rad2deg(rotm2eul( ...
+            genesToRotm(saveData.Cameras(i).Orientation), "XYZ"));                     % XYZ Euler [deg], display
     end
 
     %% MAT file (written into Results/<N>Cams/, RunFilename stays a basename
@@ -79,8 +80,8 @@ currentDateTime = datetime('now');
     for i = 1:specs.Cams
         fprintf(fid, '\nCamera %d:\n', i);
         fprintf(fid, '  Position (m):        [%.3f, %.3f, %.3f]\n', saveData.Cameras(i).Position);
-        fprintf(fid, '  Orientation (rad):    [%.3f, %.3f, %.3f]\n', saveData.Cameras(i).Orientation);
-        fprintf(fid, '  Orientation (deg):    [%.1f, %.1f, %.1f]\n', saveData.Cameras(i).OrientationDegrees);
+        fprintf(fid, '  Rotation vector (rad): [%.3f, %.3f, %.3f]\n', saveData.Cameras(i).Orientation);
+        fprintf(fid, '  XYZ Euler (deg):       [%.1f, %.1f, %.1f]\n', saveData.Cameras(i).OrientationDegrees);
     end
 
     fprintf(fid, '\nCamera Coverage Statistics:\n');

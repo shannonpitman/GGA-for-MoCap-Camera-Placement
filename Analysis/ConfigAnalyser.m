@@ -92,7 +92,7 @@ classdef ConfigAnalyser < handle
 
             obj.specs = sd.Specifications;
             obj.numCams = obj.specs.Cams;
-            obj.originalChrom = sd.BestSolution.Chromosome;
+            obj.originalChrom = runChromosome(sd);
             obj.currentChrom = obj.originalChrom;
             obj.originalCost = sd.BestCost;
 
@@ -132,7 +132,7 @@ classdef ConfigAnalyser < handle
             for c = 1:obj.numCams
                 idx = (c-1)*6 + 1;
                 pos = obj.currentChrom(idx:idx+2);
-                ori = rad2deg(obj.currentChrom(idx+3:idx+5));
+                ori = rad2deg(rotm2eul(genesToRotm(obj.currentChrom(idx+3:idx+5)), "XYZ"));
 
                 if mod(c,2) == 0
                     lensStr = 'Wide';
@@ -373,7 +373,7 @@ classdef ConfigAnalyser < handle
                 idx = (c-1)*6 + 1;
                 pos = obj.currentChrom(idx:idx+2);
                 ori = obj.currentChrom(idx+3:idx+5);
-                R = eul2rotm(ori, 'XYZ');
+                R = genesToRotm(ori);
 
                 % Determine focal length, range, and colour per lens type
                 if mod(c,2) == 0
@@ -478,7 +478,7 @@ classdef ConfigAnalyser < handle
             for c = 1:obj.numCams
                 idx = (c-1)*6 + 1;
                 pos = obj.currentChrom(idx:idx+2);
-                ori = rad2deg(obj.currentChrom(idx+3:idx+5));
+                ori = rad2deg(rotm2eul(genesToRotm(obj.currentChrom(idx+3:idx+5)), "XYZ"));
 
                 if mod(c,2) == 0, lensStr = 'Wide'; else, lensStr = 'Narr'; end
 
@@ -525,7 +525,7 @@ classdef ConfigAnalyser < handle
                 idx = (c-1)*6 + 1;
                 pos = chrom(idx:idx+2);
                 ori = chrom(idx+3:idx+5);
-                T = se3(eul2rotm(ori, 'XYZ'), pos);
+                T = se3(genesToRotm(ori), pos);
                 cam = CentralCamera('name', sprintf('cam%d', c), 'pose', T);
                 cam.plot_camera('label', 'scale', 0.5);
             end

@@ -102,6 +102,11 @@ function normTable = buildNormFromBatch(schedule, cfg, varargin)
         [utopiaOcc, a2] = min(cf2Costs);
         chromUnc = done(idxCF1(a1)).BestChromosome;
         chromOcc = done(idxCF2(a2)).BestChromosome;
+        if ~isfield(cfg, 'Preset')
+            % Batch logs from before runConfig store XYZ Euler genes
+            chromUnc = eulerChromToRotvec(chromUnc);
+            chromOcc = eulerChromToRotvec(chromOcc);
+        end
 
         % Reconstruct the instance specs exactly as batchRunGA does, then
         % cross-evaluate: the opposite objective at each single-objective

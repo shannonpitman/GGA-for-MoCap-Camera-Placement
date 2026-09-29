@@ -2,7 +2,8 @@ function [chrom, report] = snapChromosome(chrom, varargin)
 %SNAPCHROMOSOME  Snap a configuration to a mountable manufacturing grid.
 %
 %   [chrom, report] = snapChromosome(chrom, 'OrientationStepDeg', 15) rounds
-%   every Euler gene to the nearest multiple of 15 degrees and reports how
+%   every XYZ Euler angle (computed from the rotation-vector genes) to the
+%   nearest multiple of 15 degrees and reports how
 %   far each camera actually moved.
 %
 %   WHY
@@ -114,11 +115,12 @@ function [chrom, report] = snapChromosome(chrom, varargin)
         end
 
         if oriStepRad > 0 && ~isempty(genes)
-            eul = chrom(idx+3:idx+5);
-            % Distance from each original gene to its nearest grid multiple.
+            % Snap on the physical XYZ angles, then store as rotation vector
+            eul = rotm2eul(genesToRotm(chrom(idx+3:idx+5)), "XYZ");
+            % Distance from each original angle to its nearest grid multiple.
             gridResidualDeg(c,:) = rad2deg(abs(eul - round(eul / oriStepRad) * oriStepRad));
             eul(genes) = round(eul(genes) / oriStepRad) * oriStepRad;
-            chrom(idx+3:idx+5) = eul;
+            chrom(idx+3:idx+5) = rotmToGenes(eul2rotm(eul, "XYZ"));
         end
     end
 
@@ -153,10 +155,9 @@ function [chrom, report] = snapChromosome(chrom, varargin)
         deltaPos(c,:) = chrom(idx:idx+2) - original(idx:idx+2);
         posShift(c)   = norm(deltaPos(c,:));
 
-        deltaEulerDeg(c,:) = rad2deg(wrapAnglePi(chrom(idx+3:idx+5) - original(idx+3:idx+5)));
-
-        R0 = eul2rotm(original(idx+3:idx+5), "XYZ");
-        R1 = eul2rotm(chrom(idx+3:idx+5),    "XYZ");
+        R0 = genesToRotm(original(idx+3:idx+5));
+        R1 = genesToRotm(chrom(idx+3:idx+5));
+        deltaEulerDeg(c,:) = rad2deg(wrapAnglePi(rotm2eul(R1, "XYZ") - rotm2eul(R0, "XYZ")));
 
         cosTheta = (trace(R0.' * R1) - 1) / 2;
         geodesicDeg(c) = acosd(max(-1, min(1, cosTheta)));

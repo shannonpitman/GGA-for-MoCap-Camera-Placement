@@ -113,7 +113,7 @@ function plotHeatmap_GAvsOptiTrack(varargin)
     sd = L.saveData;
 
     specs   = sd.Specifications;
-    gaChrom = sd.BestSolution.Chromosome;
+    gaChrom = runChromosome(sd);
 
     fprintf(['plotHeatmap_GAvsOptiTrack: %s scenario, GM=%s, sp=%.2f m, ' ...
              'CF=%d, %d cams.\n  Optimised GA Rig run: %s (Cost=%.4f)\n'], ...

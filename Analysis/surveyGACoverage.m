@@ -61,7 +61,7 @@ function results = surveyGACoverage(varargin)
             matPath = resolveRunPath(r.RunFilename, r.NumCameras);
             L  = load(matPath, 'saveData');
             sd = L.saveData;
-            [~, st] = perTargetCoverage(sd.BestSolution.Chromosome, sd.Specifications);
+            [~, st] = perTargetCoverage(runChromosome(sd), sd.Specifications);
         catch ME
             fprintf('  Skipped %s: %s\n', r.RunFilename, ME.message);
             continue;

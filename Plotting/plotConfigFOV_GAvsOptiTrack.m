@@ -168,7 +168,7 @@ function [chrom, specs, cost] = loadBestGARun(opts)
         error('GA result file not found: %s', matFile);
     end
     L = load(matFile, 'saveData');
-    chrom = L.saveData.BestSolution.Chromosome;
+    chrom = runChromosome(L.saveData);
     specs = L.saveData.Specifications;
 end
 

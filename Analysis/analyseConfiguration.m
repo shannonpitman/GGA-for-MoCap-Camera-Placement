@@ -116,7 +116,7 @@ function cfg = analyseConfiguration(varargin)
     %% Extract data
     specs = sd.Specifications;
     numCams = specs.Cams;
-    originalChrom = sd.BestSolution.Chromosome;
+    originalChrom = runChromosome(sd);
     currentChrom = originalChrom; % mutable copy
 
     %% Build output handle (struct of function handles)
@@ -330,7 +330,7 @@ function cfg = analyseConfiguration(varargin)
         for c = 1:numCams
             idx = (c-1)*6 + 1;
             pos = currentChrom(idx:idx+2);
-            ori = rad2deg(currentChrom(idx+3:idx+5));
+            ori = rad2deg(rotm2eul(genesToRotm(currentChrom(idx+3:idx+5)), "XYZ"));
 
             % Determine which wall (if any)
             wallStr = '';
@@ -401,7 +401,7 @@ function printCameraTable(chrom, numCams, label)
     for c = 1:numCams
         idx = (c-1)*6 + 1;
         pos = chrom(idx:idx+2);
-        ori = rad2deg(chrom(idx+3:idx+5));
+        ori = rad2deg(rotm2eul(genesToRotm(chrom(idx+3:idx+5)), "XYZ"));
         if info.Degenerate(c)
             status = 'vertical';
         elseif info.Inverted(c)

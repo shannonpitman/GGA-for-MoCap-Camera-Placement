@@ -88,7 +88,7 @@ function saveOptiTrackAsRun(varargin)
         i0 = (i-1)*6;
         sd.Cameras(i).Position           = chrom(i0+1:i0+3);
         sd.Cameras(i).Orientation        = chrom(i0+4:i0+6);
-        sd.Cameras(i).OrientationDegrees = rad2deg(chrom(i0+4:i0+6));
+        sd.Cameras(i).OrientationDegrees = rad2deg(rotm2eul(genesToRotm(chrom(i0+4:i0+6)), "XYZ"));
     end
 
     % Tag this as the ad-hoc reference (not a GA run)
@@ -145,8 +145,8 @@ function saveOptiTrackAsRun(varargin)
     for i = 1:numCams
         fprintf(fid, '\nCamera %d:\n', i);
         fprintf(fid, '  Position (m):       [%.3f, %.3f, %.3f]\n', sd.Cameras(i).Position);
-        fprintf(fid, '  Orientation (rad):  [%.3f, %.3f, %.3f]\n', sd.Cameras(i).Orientation);
-        fprintf(fid, '  Orientation (deg):  [%.1f, %.1f, %.1f]\n', sd.Cameras(i).OrientationDegrees);
+        fprintf(fid, '  Rotation vector (rad): [%.3f, %.3f, %.3f]\n', sd.Cameras(i).Orientation);
+        fprintf(fid, '  XYZ Euler (deg):       [%.1f, %.1f, %.1f]\n', sd.Cameras(i).OrientationDegrees);
     end
 
     fprintf(fid, '\nCamera Coverage Statistics:\n');

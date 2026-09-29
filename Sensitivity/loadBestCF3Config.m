@@ -48,5 +48,5 @@ function [chromosome, bestRun] = loadBestCF3Config(numCams, targetType, gridMode
             'Run file not resolvable: %s', runPath);
     end
     sd = load(runPath, 'saveData');
-    chromosome = sd.saveData.BestSolution.Chromosome(:)';
+    chromosome = runChromosome(sd.saveData);
 end

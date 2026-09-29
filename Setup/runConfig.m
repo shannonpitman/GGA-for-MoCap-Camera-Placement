@@ -40,10 +40,11 @@ function cfg = runConfig(preset, varargin)
     cfg.UGV_MaxHeight = 0.5;                 % UGV slab height [m]
     cfg.UGV_ZSpacing  = 0.25;                % UGV slab z spacing [m]
 
-    % Camera search box [x y z alpha beta gamma]. Positions are further
+    % Camera search box [x y z rx ry rz]: position [m] and rotation vector
+    % (exponential map, |r| <= pi, see genesToRotm). Positions are further
     % restricted to the mountable regions in cfg.Mount.
-    cfg.CamLowerBounds = [-5 -4.5 0   -pi -pi/2 -pi];
-    cfg.CamUpperBounds = [ 5  4.5 4.8  pi  pi/2  pi];
+    cfg.CamLowerBounds = [-5 -4.5 0   -pi -pi -pi];
+    cfg.CamUpperBounds = [ 5  4.5 4.8  pi  pi  pi];
 
     % Mountable camera positions (see mountRegions):
     %   Model 'walls_ceiling_tripod' | 'walls_ceiling' | 'tripod' | 'box'

@@ -2,8 +2,8 @@ function [chrom, report] = uprightCameras(chrom, varargin)
 %UPRIGHTCAMERAS  Roll cameras about their optical axes so none is inverted.
 %
 %   [chrom, report] = uprightCameras(chrom) returns a chromosome in which
-%   no camera perceives the world upside down. Nothing but the roll gene
-%   (gamma) of each camera changes.
+%   no camera perceives the world upside down. Only each camera's roll
+%   about its own optical axis changes.
 %
 %   WHY THIS EXISTS
 %   The GA never constrains roll. Its cost function only asks which target
@@ -17,11 +17,10 @@ function [chrom, report] = uprightCameras(chrom, varargin)
 %   constraining the GA, so previously logged runs stay valid.
 %
 %   WHY IT IS (ESSENTIALLY) FREE
-%   setupCameras builds R = Rx(alpha)*Ry(beta)*Rz(gamma), an intrinsic XYZ
-%   sequence, so Rz is applied last, about the camera's own +z — the
-%   optical axis. gamma therefore rolls the image without moving the
-%   optical axis at all. In 'flip' mode the correction is exactly
-%   gamma -> gamma + pi, a 180-degree image rotation. A 180-degree rotation
+%   The roll is applied as R -> R*Rz(delta), a rotation about the camera's
+%   own +z — the optical axis — so it rolls the image without moving the
+%   optical axis at all (identical to the old gamma -> gamma + delta on XYZ
+%   Euler genes). In 'flip' mode delta = pi, a 180-degree image rotation. A 180-degree rotation
 %   maps the sensor rectangle onto itself, so the set of directions inside
 %   the field of view is unchanged and coverage is preserved to floating
 %   point (the only exception is a target that lands exactly on the far
@@ -29,11 +28,11 @@ function [chrom, report] = uprightCameras(chrom, varargin)
 %   principal point at W/2 — a measure-zero case worth nothing).
 %
 %   MODES
-%     'flip'  (default) Add 180 degrees to gamma for inverted cameras only.
+%     'flip'  (default) Roll inverted cameras by 180 degrees only.
 %             Coverage-neutral. Leaves the residual roll away from level
 %             untouched, so cameras stay tilted exactly as the GA left them,
 %             just no longer inverted.
-%     'level' Set gamma so every camera's roll about the optical axis is
+%     'level' Roll every camera so its roll about the optical axis is
 %             zero, i.e. the horizon is level in frame. This is NOT
 %             coverage-neutral: the sensor is 1280 x 1024, so rolling by
 %             anything other than a multiple of 180 degrees re-orients a
@@ -91,8 +90,10 @@ function [chrom, report] = uprightCameras(chrom, varargin)
 
     for c = 1:numCams
         if deltaDeg(c) == 0, continue; end
-        gIdx = (c-1)*6 + 6;
-        chrom(gIdx) = wrapAnglePi(chrom(gIdx) + deg2rad(deltaDeg(c)));
+        rIdx = (c-1)*6 + (4:6);
+        d = deg2rad(deltaDeg(c));
+        Rroll = [cos(d) -sin(d) 0; sin(d) cos(d) 0; 0 0 1];   % about camera +z
+        chrom(rIdx) = rotmToGenes(genesToRotm(chrom(rIdx)) * Rroll);
     end
 
     after = cameraOrientationInfo(chrom, numCams, opts.DegenerateTolDeg);

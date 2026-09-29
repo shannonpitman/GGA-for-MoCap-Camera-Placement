@@ -19,8 +19,9 @@ function testLabPresetMatchesLegacySpecs(tc)
                      'WeightUncertainty', 'WeightOcclusion', 'NumPoints'}
                 verifyEqual(tc, specs.(f{1}), legacy.(f{1}), sprintf('TT%d GM%d %s', tt, gm, f{1}));
             end
-            verifyEqual(tc, problem.VarMin, repmat([-5 -4.5 0 -pi -pi/2 -pi], 1, 7));
-            verifyEqual(tc, problem.VarMax, repmat([ 5  4.5 4.8 pi pi/2 pi], 1, 7));
+            % positions as before; orientation genes are a rotation vector in [-pi, pi]^3
+            verifyEqual(tc, problem.VarMin, repmat([-5 -4.5 0 -pi -pi -pi], 1, 7));
+            verifyEqual(tc, problem.VarMax, repmat([ 5  4.5 4.8 pi pi pi], 1, 7));
             verifyEqual(tc, params.nPop, 420);
             verifyEqual(tc, [params.mu, params.sigma, params.Tournamentsize, params.pC], [0.5 0.1 3 1]);
         end

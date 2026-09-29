@@ -50,7 +50,7 @@ function T = reportCostBreakdown(varargin)
             tmp = load(runFile, 'saveData');
             sd    = tmp.saveData;
             specs = backfillLegacySpecs(sd.Specifications);
-            chrom = sd.BestSolution.Chromosome;
+            chrom = runChromosome(sd);
 
             [cameras, camCenters] = setupCameras(chrom, specs.Cams, ...
                 specs.Resolution, specs.Focal, specs.FocalWide, ...

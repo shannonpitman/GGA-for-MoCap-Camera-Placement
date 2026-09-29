@@ -2,7 +2,7 @@ function [chrom, calibID] = buildOptiTrackChromosome()
 %BUILDOPTITRACKCHROMOSOME  Build the 1x42 chromosome for the OptiTrack rig.
 %   Reproduces the lab measurements supplied for the 7-camera OptiTrack
 %   ad-hoc rig and converts them into the GA's chromosome representation
-%   (six [x y z alpha beta gamma] genes per camera, XYZ Euler angles).
+%   (six [x y z rx ry rz] genes per camera: position + rotation vector).
 %
 %   The OptiTrack frame is Y-up and uses the OpenGL camera convention.
 %   We transform to MATLAB's Z-up frame via T_transform, then post-multiply
@@ -71,8 +71,7 @@ function [chrom, calibID] = buildOptiTrackChromosome()
         c = calibID(i);
         p_world = T_transform * camPos(c,:)';
         R_world = T_transform * R{c} * rotX180;
-        eul     = rotm2eul(R_world, 'XYZ');     % [alpha beta gamma]
         chrom((i-1)*6 + (1:3)) = p_world';
-        chrom((i-1)*6 + (4:6)) = eul;
+        chrom((i-1)*6 + (4:6)) = rotmToGenes(R_world);   % rotation vector
     end
 end

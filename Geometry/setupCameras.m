@@ -33,7 +33,7 @@ function [cameras, cameraCenters] = setupCameras(cameraChromosome, numCams, reso
         camPosition    = cameraChromosome(chromStartIdx:chromStartIdx+2);
         camOrientation = cameraChromosome(chromEndIdx-2:chromEndIdx);
 
-        T = se3(eul2rotm(camOrientation, "XYZ"), camPosition);
+        T = se3(genesToRotm(camOrientation), camPosition);   % rotation-vector genes
         if mod(i,2) == 0
             f = focalLengthWide;
         else

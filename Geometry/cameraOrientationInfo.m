@@ -11,22 +11,20 @@ function info = cameraOrientationInfo(cameraChromosome, numCams, degenerateTolDe
 %   relative to the horizon is undefined.
 %
 %   CONVENTIONS
-%   The chromosome stores [x y z alpha beta gamma] per camera and
-%   setupCameras builds R = eul2rotm([alpha beta gamma], "XYZ"), which is
-%   the intrinsic sequence R = Rx(alpha)*Ry(beta)*Rz(gamma). The camera
+%   The chromosome stores [x y z rx ry rz] per camera (rotation vector) and
+%   setupCameras builds R = genesToRotm([rx ry rz]). The camera
 %   frame follows Peter Corke's CentralCamera convention, so the columns of
 %   R are the world directions of
 %
 %       R(:,1) = image RIGHT (+u)      R(:,2) = image DOWN (+v)
 %       R(:,3) = OPTICAL AXIS (+z)
 %
-%   Because Rz is applied last, and Rz*[0;0;1] = [0;0;1], the optical axis
-%   depends on alpha and beta ONLY. gamma is a pure roll about the optical
-%   axis: changing it spins the image without moving where the camera
-%   looks. That property is what uprightCameras exploits.
+%   Writing R as XYZ Euler angles, R = Rx(alpha)*Ry(beta)*Rz(gamma), the
+%   optical axis depends on alpha and beta only and gamma is a pure roll
+%   about it. uprightCameras rolls cameras as R*Rz(delta) on that basis.
 %
 %   OUTPUT fields (each numCams rows)
-%     Euler          numCams x 3  [alpha beta gamma] in radians
+%     Euler          numCams x 3  XYZ Euler [alpha beta gamma] in radians (display)
 %     Right          numCams x 3  world direction of image +u
 %     Down           numCams x 3  world direction of image +v
 %     OpticalAxis    numCams x 3  world direction the camera looks along
@@ -62,8 +60,8 @@ function info = cameraOrientationInfo(cameraChromosome, numCams, degenerateTolDe
 
     for c = 1:numCams
         idx = (c-1)*6 + 1;
-        eul = cameraChromosome(idx+3:idx+5);
-        R   = eul2rotm(eul(:).', "XYZ");
+        R   = genesToRotm(cameraChromosome(idx+3:idx+5));   % rotation-vector genes
+        eul = rotm2eul(R, "XYZ");                            % reported for display
 
         xc = R(:,1);            % image right
         yc = R(:,2);            % image down

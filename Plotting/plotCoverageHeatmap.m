@@ -180,7 +180,7 @@ function plotCoverageHeatmap(varargin)
 
         % --- Compute coverage ---
         specs = sd.Specifications;
-        chromosome = sd.BestSolution.Chromosome;
+        chromosome = runChromosome(sd);
 
         numCams = specs.Cams;
         resolution      = specs.Resolution;

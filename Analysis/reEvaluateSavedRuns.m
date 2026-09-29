@@ -97,7 +97,7 @@ function summary = reEvaluateSavedRuns(varargin)
         end
         sd     = tmp.saveData;
         specs  = sd.Specifications;
-        chrom  = sd.BestSolution.Chromosome;
+        chrom  = runChromosome(sd);
 
         % Backfill any fields older saves are missing (e.g. FocalWide,
         % PreComputed.maxCameraRangeWide) so the corrected cost functions

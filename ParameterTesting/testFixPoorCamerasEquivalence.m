@@ -140,16 +140,7 @@ function y = fixPoorCamerasOld(x, specs, coverageThreshold)
             targetPoint = specs.SectionCentres(closestIdx, :);
             directionVec = targetPoint - camPos;
             directionUnit = directionVec / norm(directionVec);
-            Z_axis = [0, 0, 1];
-            rotAng = acos(dot(Z_axis, directionUnit));
-            rotAxis = cross(Z_axis, directionUnit);
-            if norm(rotAxis) > 0
-                rotAxis = rotAxis / norm(rotAxis);
-                q = quaternion([cos(rotAng/2), rotAxis * sin(rotAng/2)]);
-                q = normalize(q);
-                q2Eul = euler(q, 'XYZ', 'point');
-                y(chromEnd-2:chromEnd) = q2Eul;
-            end
+            y(chromEnd-2:chromEnd) = aimRotvec(directionUnit);   % rotation-vector genes
         end
     end
 end

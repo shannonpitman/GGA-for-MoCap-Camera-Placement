@@ -45,16 +45,8 @@ function Chromosome = initialPopulation(VarMin, VarMax,  SectionCentres, numCams
         directionVec = nearest_centre-camPos;
         directionUnit = directionVec/norm(directionVec);
     
-        Z_axis = [0,0,1];
-        rotAng = acos(dot(Z_axis, directionUnit));
-        rotAxis = cross(Z_axis, directionUnit);
-        rotAxis = rotAxis/norm(rotAxis);
-    
-        q = quaternion([cos(rotAng/2),rotAxis*sin(rotAng/2)]);
-        q = normalize(q);
-        q2Eul = euler(q, 'XYZ', 'point'); %covert quaternion to euler angles in radians
-    
-        gene = [camPos, q2Eul];
+        % Axis-angle aim stored directly as the rotation-vector genes
+        gene = [camPos, aimRotvec(directionUnit)];
         Chromosome((c-1)*6+1:c*6) = gene;    
     end
 end

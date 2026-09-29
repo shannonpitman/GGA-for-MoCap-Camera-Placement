@@ -400,6 +400,6 @@ function [chrom, specs, cost] = bestRunFor(runLog, nc, cf, tt, gm, sp)
     end
     [cost, i] = min([cand.BestCost]);
     sd = load(resolveRunPath(cand(i).RunFilename, nc), 'saveData').saveData;
-    chrom = sd.BestSolution.Chromosome;
+    chrom = runChromosome(sd);
     specs = backfillLegacySpecs(sd.Specifications);
 end

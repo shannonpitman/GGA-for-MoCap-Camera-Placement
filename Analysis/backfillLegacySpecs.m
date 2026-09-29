@@ -16,6 +16,12 @@ function specs = backfillLegacySpecs(specs)
     end
 
     % --- Hardware-level defaults from the current setupHardwareSpecs ---
+    % Runs saved before the exponential-map change store XYZ Euler genes.
+    % Use runChromosome(saveData) to read their chromosomes as rotation vectors.
+    if ~isfield(specs, 'Parameterisation') || isempty(specs.Parameterisation)
+        specs.Parameterisation = 'euler';
+    end
+
     defaults = setupHardwareSpecs(specs.Cams);
     fns = fieldnames(defaults);
     for i = 1:numel(fns)
