@@ -230,6 +230,12 @@ function plotGA_ComputationTime(varargin)
         end
     end
 
+    % Name the instance: this figure is generated per (grid mode x
+    % spacing), and the exported files are otherwise indistinguishable.
+    title(ax, prettifyFilterDesc(filterDesc), ...
+        'FontWeight', 'normal', ...
+        'FontSize', sty.FontSizeAnnot, 'FontName', sty.FontName);
+
     applyThesisStyle(fig);
 
     %% Print summary
@@ -254,10 +260,9 @@ function plotGA_ComputationTime(varargin)
     else
         outName = opts.SaveAs;
     end
-    exportgraphics(fig, [outName '.pdf'], ...
-        'ContentType',     'vector', ...
-        'BackgroundColor', sty.ExportBgColor);
-    fprintf('Saved: %s.pdf\n', outName);
+    exportThesisFigure(fig, outName, ...
+        'Background', sty.ExportBgColor, 'Quiet', true);
+    fprintf('Saved: %s.{pdf,png}\n', outName);
 end
 
 

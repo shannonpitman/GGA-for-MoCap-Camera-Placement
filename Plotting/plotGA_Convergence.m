@@ -74,6 +74,12 @@ function plotGA_Convergence(varargin)
 %     'SplitWarmCold'  - 'auto' (default), 'on', or 'off'.
 %                        'auto': split into Cold | Warm panels unless
 %                        WarmStart was passed in the caller args.
+%     'LegendLocation' - legend location (default 'northeast'); use an
+%                        '...outside' location to keep it off the curves
+%     'LegendFontSize' - legend font size (default: style)
+%     'FigHeight'      - figure height in inches (default: style)
+%     'AnnotFontSize'  - font size of the in-plot labels (default: style)
+%     'AxisFontSize'   - font size of the axis titles (default: style)
 %     'SaveAs'         - Output filename without extension (default: auto)
 %     (all loadGARuns parameters are also accepted)
 
@@ -91,6 +97,12 @@ function plotGA_Convergence(varargin)
     addParameter(p, 'LogScale',       false,    @islogical);
     addParameter(p, 'MaxIt',          [],       @(x) isempty(x) || (isnumeric(x) && isscalar(x)));
     addParameter(p, 'SplitWarmCold',  'auto',   @(s) ischar(s) || isstring(s));
+    addParameter(p, 'LegendLocation', 'northeast', @(s) ischar(s) || isstring(s));
+    addParameter(p, 'LegendFontSize', [],       @(x) isempty(x) || isnumeric(x));
+    addParameter(p, 'FigHeight',      [],       @(x) isempty(x) || isnumeric(x));
+    addParameter(p, 'AnnotFontSize',  [],       @(x) isempty(x) || isnumeric(x));
+    addParameter(p, 'AxisFontSize',   [],       @(x) isempty(x) || isnumeric(x));
+    addParameter(p, 'TickFontSize',   [],       @(x) isempty(x) || isnumeric(x));
     addParameter(p, 'SaveAs',         '',       @ischar);
     parse(p, varargin{:});
 
@@ -144,8 +156,10 @@ function plotGA_Convergence(varargin)
     %  =========================================================
     if doSplit
         % --- 1x2 figure: Cold | Warm -------------------------------
+        figH = sty.FigHeightWide;
+        if ~isempty(opts.FigHeight), figH = opts.FigHeight; end
         fig = figure('Units', 'inches', ...
-            'Position', [1 1 sty.FigWidthDouble sty.FigHeightWide], ...
+            'Position', [1 1 sty.FigWidthDouble figH], ...
             'PaperPositionMode', 'auto', ...
             'Color', sty.BackgroundColor);
         tl = tiledlayout(fig, 1, 2, 'Padding', 'compact', ...
@@ -213,10 +227,9 @@ function plotGA_Convergence(varargin)
     else
         outName = opts.SaveAs;
     end
-    exportgraphics(fig, [outName '.pdf'], ...
-        'ContentType',     'vector', ...
-        'BackgroundColor', sty.ExportBgColor);
-    fprintf('Saved: %s.pdf\n', outName);
+    exportThesisFigure(fig, outName, ...
+        'Background', sty.ExportBgColor, 'Quiet', true);
+    fprintf('Saved: %s.{pdf,png}\n', outName);
 end
 
 
@@ -233,6 +246,10 @@ function meta = renderConvergencePanel(ax, runs, titleStr, opts, sty)
 
     meta = [];
     nIn  = length(runs);
+    annotFont = sty.FontSizeAnnot;
+    if ~isempty(opts.AnnotFontSize), annotFont = opts.AnnotFontSize; end
+    axisFont = sty.FontSizeAxis;
+    if ~isempty(opts.AxisFontSize), axisFont = opts.AxisFontSize; end
 
     %% Discover modal MaxIt and load histories
     matPaths  = strings(nIn, 1);
@@ -455,15 +472,17 @@ function meta = renderConvergencePanel(ax, runs, titleStr, opts, sty)
         % Inline callout *next to the line end*. Extend the x-axis so
         % the box sits to the right of the endpoint with a short
         % leader, rather than overlapping the trace.
-        calloutText = sprintf(' Run %d/%d\n Final = %.4f', ...
+        % One line, inside the axes and just BELOW the endpoint: nothing
+        % is ever plotted under the panel best, so it cannot cross a curve
+        % or spill into the neighbouring panel.
+        calloutText = sprintf('Run %d/%d: final %.4f', ...
                               overallBestRunIdx, nValid, bestTrace(end));
-        % Place to the right of the endpoint; alignment LEFT
-        xCallout = nGen + 0.015 * nGen;
-        yCallout = bestTrace(end);
+        xCallout = nGen;
+        yCallout = bestTrace(end) * 0.965;
         text(ax, xCallout, yCallout, calloutText, ...
-            'HorizontalAlignment', 'left', ...
-            'VerticalAlignment',   'middle', ...
-            'FontSize', sty.FontSizeAnnot, 'FontName', sty.FontName, ...
+            'HorizontalAlignment', 'right', ...
+            'VerticalAlignment',   'top', ...
+            'FontSize', annotFont, 'FontName', sty.FontName, ...
             'BackgroundColor', 'w', 'EdgeColor', bestRunCol, ...
             'Color', 'k', 'Margin', 4);
     end
@@ -483,13 +502,13 @@ function meta = renderConvergencePanel(ax, runs, titleStr, opts, sty)
         else
             initCentral = mean(bestHists(:,1));
         end
-        plot(ax, 1, initCentral, 'kv', ...
+        % Value goes in the legend rather than as in-plot text, where it
+        % sat on top of the curves that start at the same point.
+        hInit = plot(ax, 1, initCentral, 'kv', ...
             'MarkerFaceColor', [0.4 0.4 0.4], 'MarkerEdgeColor', 'k', ...
-            'MarkerSize', sty.MarkerSize, 'HandleVisibility', 'off');
-        text(ax, 1 + 0.02*nGen, initCentral, ...
-            sprintf('init %s = %.3f', centralLbl, initCentral), ...
-            'FontSize', sty.FontSizeAnnot, 'FontName', sty.FontName, ...
-            'VerticalAlignment', 'bottom', 'Color', 'k');
+            'MarkerSize', sty.MarkerSize + 2, 'LineStyle', 'none');
+        legendHandles(end+1) = hInit;
+        legendLabels{end+1}  = sprintf('Initial %s = %.3f', centralLbl, initCentral);
     end
 
     if opts.LogScale
@@ -499,9 +518,9 @@ function meta = renderConvergencePanel(ax, runs, titleStr, opts, sty)
     hold(ax, 'off');
 
     %% Formatting
-    xlabel(ax, 'Generation', 'FontSize', sty.FontSizeAxis, ...
+    xlabel(ax, 'Generation', 'FontSize', axisFont, ...
                               'FontName', sty.FontName);
-    ylabel(ax, 'Cost', 'FontSize', sty.FontSizeAxis, ...
+    ylabel(ax, 'Cost', 'FontSize', axisFont, ...
                        'FontName', sty.FontName);
     if ~isempty(titleStr)
         title(ax, titleStr, 'FontSize', sty.FontSizeTitle, ...
@@ -511,8 +530,16 @@ function meta = renderConvergencePanel(ax, runs, titleStr, opts, sty)
     set(ax, 'FontSize', sty.FontSizeTick, 'FontName', sty.FontName, ...
             'Box', 'on', 'TickDir', 'out');
     grid(ax, 'on');
+    % Setting the axes FontSize rescales the labels, so pin them again.
+    ax.XLabel.FontSize = axisFont;
+    ax.YLabel.FontSize = axisFont;
+    if ~isempty(opts.TickFontSize), ax.FontSize = opts.TickFontSize;
+        ax.XLabel.FontSize = axisFont;  ax.YLabel.FontSize = axisFont; end
 
     yLo = max(0, min(bestLower) * 0.9);
+    if opts.ShowBestRun
+        yLo = min(yLo, overallBest * 0.80);   % room for the run label
+    end
     yHi = max(bestUpper) * 1.05;
     if opts.LogScale
         yLo = max(1e-6, yLo);
@@ -521,11 +548,12 @@ function meta = renderConvergencePanel(ax, runs, titleStr, opts, sty)
         yLo = 0; yHi = 1;
     end
 
-    % Extend x-axis to give the callout room to breathe
-    xlim(ax, [1, nGen * 1.18]);
+    xlim(ax, [1, nGen * 1.02]);
 
+    lgFont = sty.FontSizeLegend;
+    if ~isempty(opts.LegendFontSize), lgFont = opts.LegendFontSize; end
     legend(ax, legendHandles, legendLabels, ...
-        'Location', 'northeast', 'FontSize', sty.FontSizeLegend);
+        'Location', char(opts.LegendLocation), 'FontSize', lgFont);
 
     %% Pack metadata
     meta.nValid       = nValid;
@@ -552,48 +580,8 @@ end
 
 
 % =========================================================================
-function pretty = prettifyFilterDesc(desc)
-% Convert e.g. "7C_CF3_TT1_GM1_sp100cm" into a human-readable supertitle.
-    tokens = strsplit(desc, '_');
-    parts  = strings(1, 0);
-    cfNames = {'Resolution Uncertainty', 'Dynamic Occlusion', 'Combined'};
-    ttNames = {'UAV', 'UGV'};
-    gmNames = {'Uniform grid', 'Normal grid'};
-    for k = 1:numel(tokens)
-        t = tokens{k};
-        if endsWith(t, 'C') && all(isstrprop(t(1:end-1), 'digit'))
-            n = str2double(t(1:end-1));
-            parts(end+1) = sprintf('%d cameras', n);                         %#ok<AGROW>
-        elseif startsWith(t, 'CF')
-            n = str2double(t(3:end));
-            if n>=1 && n<=numel(cfNames)
-                parts(end+1) = sprintf('CF%d (%s)', n, cfNames{n});          %#ok<AGROW>
-            else
-                parts(end+1) = t;                                           %#ok<AGROW>
-            end
-        elseif startsWith(t, 'TT')
-            n = str2double(t(3:end));
-            if n>=1 && n<=numel(ttNames)
-                parts(end+1) = ttNames{n};                                  %#ok<AGROW>
-            else
-                parts(end+1) = t;                                           %#ok<AGROW>
-            end
-        elseif startsWith(t, 'GM')
-            n = str2double(t(3:end));
-            if n>=1 && n<=numel(gmNames)
-                parts(end+1) = gmNames{n};                                  %#ok<AGROW>
-            else
-                parts(end+1) = t;                                           %#ok<AGROW>
-            end
-        elseif startsWith(t, 'sp') && endsWith(t, 'cm')
-            num = str2double(t(3:end-2));
-            parts(end+1) = sprintf('%.2f m spacing', num/100);              %#ok<AGROW>
-        else
-            parts(end+1) = string(t);                                       %#ok<AGROW>
-        end
-    end
-    pretty = char(strjoin(parts, '  ·  '));
-end
+% prettifyFilterDesc now lives in its own file so every per-instance
+% figure names its instance the same way.
 
 
 % =========================================================================

@@ -1,6 +1,6 @@
 function plotBaselineAngles_GAvsOptiTrack(varargin)
 % PLOTBASELINEANGLES_GAVSOPTITRACK  Pairwise camera-baseline-angle histogram
-% comparing GA-best 7-camera config with OptiTrack ad-hoc, one scenario
+% comparing Optimised GA Rig 7-camera config with Manually Posed Rig, one scenario
 % per figure (UAV or UGV).
 %
 % =====================================================================
@@ -63,7 +63,7 @@ function plotBaselineAngles_GAvsOptiTrack(varargin)
     optiSpecs.Cams = 7;
 
     %% Collect pairwise baseline angles (degrees) for every target point
-    fprintf('Computing pairwise baseline angles for GA-best...\n');
+    fprintf('Computing pairwise baseline angles for Optimised GA Rig...\n');
     angGA   = pairwiseBaselineAngles(gaChrom,   specs);
     fprintf('Computing pairwise baseline angles for OptiTrack...\n');
     angOpti = pairwiseBaselineAngles(optiChrom, optiSpecs);
@@ -74,7 +74,7 @@ function plotBaselineAngles_GAvsOptiTrack(varargin)
     %% Plot
     fig = figure('Name', sprintf('Baseline angles: %s', ttStr), ...
         'Units', 'inches', ...
-        'Position', [0.5, 0.5, sty.FigWidthFull, sty.FigHeight], ...
+        'Position', [0.5, 0.5, sty.FigWidthFull, sty.FigHeight + 0.4], ...
         'PaperPositionMode', 'auto', ...
         'Color', sty.BackgroundColor);
     ax = axes(fig);
@@ -87,14 +87,14 @@ function plotBaselineAngles_GAvsOptiTrack(varargin)
         'FaceColor',    sty.CostFuncColors(3,:), ...   % combined-green
         'FaceAlpha',    0.55, ...
         'EdgeColor',    'none', ...
-        'DisplayName',  'GA-best');
+        'DisplayName',  'Optimised GA Rig');
 
     hOpti = histogram(ax, angOpti, edges, ...
         'Normalization', opts.Normalise, ...
         'FaceColor',    [0.85 0.10 0.10], ...          % opti-red
         'FaceAlpha',    0.45, ...
         'EdgeColor',    'none', ...
-        'DisplayName',  'OptiTrack ad-hoc');
+        'DisplayName',  'Manually Posed Rig');
 
     %% Triangulable-band guide lines
     yL = ylim(ax);
@@ -120,11 +120,14 @@ function plotBaselineAngles_GAvsOptiTrack(varargin)
         ylabel(ax, sprintf('Fraction (%s)', opts.Normalise), ...
             'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
     end
-    title(ax, sprintf( ...
-        '%s: Pairwise baseline angles (in-band: GA %.1f%%, OptiTrack %.1f%%)', ...
-        ttStr, 100*fracGA, 100*fracOpti), ...
-        'FontWeight', 'normal', ...
-        'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
+    % In-band = pairs inside [minTri, maxTri], marked by the dashed lines.
+    title(ax, 'Pairwise Baseline Angles', ...
+        'FontWeight', 'bold', 'FontSize', sty.FontSizeTitle, ...
+        'FontName', sty.FontName);
+    subtitle(ax, sprintf('%s, %s Grid, optimised %.1f%% vs manual %.1f%%', ...
+                         ttStr, gmStr, 100*fracGA, 100*fracOpti), ...
+        'FontWeight', 'normal', 'FontSize', sty.FontSizeAxis, ...
+        'FontName', sty.FontName);
     set(ax, 'FontSize', sty.FontSizeTick, 'FontName', sty.FontName, ...
         'Box', 'on', 'TickDir', 'out');
     grid(ax, 'on');
@@ -135,7 +138,7 @@ function plotBaselineAngles_GAvsOptiTrack(varargin)
 
     fprintf('\n%s — baseline-angle summary (CF3, %dC, %s, sp=%.2f m):\n', ...
         ttStr, opts.NumCameras, gmStr, opts.Spacing);
-    fprintf('  GA-best      median %.1f° | in-band %.1f%% | n_pairs %d (cost %.4f)\n', ...
+    fprintf('  Optimised GA Rig      median %.1f° | in-band %.1f%% | n_pairs %d (cost %.4f)\n', ...
         median(angGA), 100*fracGA, numel(angGA), gaCost);
     fprintf('  OptiTrack    median %.1f° | in-band %.1f%% | n_pairs %d\n', ...
         median(angOpti), 100*fracOpti, numel(angOpti));
@@ -147,72 +150,16 @@ function plotBaselineAngles_GAvsOptiTrack(varargin)
     else
         outName = opts.SaveAs;
     end
-    exportgraphics(fig, [outName '.pdf'], ...
-        'ContentType',     'vector', ...
-        'BackgroundColor', sty.ExportBgColor);
-    fprintf('Saved: %s.pdf\n', outName);
+    exportThesisFigure(fig, outName, ...
+        'Background', sty.ExportBgColor, 'Quiet', true);
+    fprintf('Saved: %s.{pdf,png}\n', outName);
 end
 
 
 %% ---- Local helpers ------------------------------------------------------
 
-function angles = pairwiseBaselineAngles(chrom, specs)
-% For each target point: find all cameras that see it; for every pair of
-% those cameras, compute the convergence angle of their rays AT THE POINT.
-% Result: concatenated 1-D array of angles in degrees over all (point,
-% pair) combinations.
-    numCams = specs.Cams;
-    [cameras, camCenters] = setupCameras(chrom, numCams, ...
-        specs.Resolution, specs.Focal, specs.FocalWide, specs.PrincipalPoint, specs.PixelSize);
-
-    resolution     = specs.Resolution;
-    TargetSpace    = specs.Target;
-    maxCameraRange     = specs.PreComputed.maxCameraRange;
-    maxCameraRangeWide = specs.PreComputed.maxCameraRangeWide;
-    focalWide          = specs.FocalWide;
-
-    nPts = size(TargetSpace, 1);
-
-    % Worst-case upper bound on pairs so we can preallocate
-    maxPairsPerPoint = numCams * (numCams - 1) / 2;
-    pool = nan(nPts * maxPairsPerPoint, 1);
-    head = 0;
-
-    for pt = 1:nPts
-        point = TargetSpace(pt, :);
-        [visCams, viewVecs] = findVisibleCameras(point, cameras, camCenters, ...
-            numCams, resolution, maxCameraRange, maxCameraRangeWide, focalWide);
-        nv = numel(visCams);
-        if nv < 2
-            continue;
-        end
-        % viewVecs is 3 x nv unit vectors from camera to point (i.e.
-        % the direction the ray travels TOWARDS the point). The angle
-        % at the point between two rays is the supplement of the angle
-        % between the two cam->point vectors, but for ray-convergence
-        % angle we want the included angle BETWEEN the two camera lines
-        % of sight — which is the angle between the vectors (point - cam)
-        % and (point - cam') i.e. the same as the angle between
-        % the cam->point unit vectors viewVecs(:,i) and viewVecs(:,j).
-        % Actually for triangulation, what we care about is the angle
-        % between the two cameras as seen from the point — which is the
-        % angle between (cam_i - point) and (cam_j - point), which is
-        % the angle between -viewVecs(:,i) and -viewVecs(:,j) = same as
-        % between viewVecs(:,i) and viewVecs(:,j). So acosd(dot) gives
-        % the triangulation angle directly.
-        for i = 1:(nv-1)
-            for j = (i+1):nv
-                c = dot(viewVecs(:,i), viewVecs(:,j));
-                c = max(min(c, 1), -1);
-                head = head + 1;
-                pool(head) = acosd(c);
-            end
-        end
-    end
-
-    angles = pool(1:head);
-end
-
+% pairwiseBaselineAngles now lives in Analysis/ so this figure and the
+% reported in-band percentages share one implementation.
 
 function [chrom, specs, cost] = loadBestGARun(opts)
     if ~isfile(opts.LogFile)

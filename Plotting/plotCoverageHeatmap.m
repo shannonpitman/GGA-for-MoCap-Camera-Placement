@@ -144,8 +144,11 @@ function plotCoverageHeatmap(varargin)
 
     %% Figure: 2 rows × nGridModes columns
     nCols = sum(hasResults);
-    figWidth_in  = sty.FigWidthFull * max(nCols/2, 1);
-    figHeight_in = sty.FigHeightTall * 1.3;       % extra height so 2-line titles clear colorbars
+    % One column per grid mode, each carrying a 3D scatter, a colorbar
+    % and its own label — at text width the headings collide, so scale
+    % off the double-width preset instead.
+    figWidth_in  = sty.FigWidthDouble * 0.42 * max(nCols, 1);
+    figHeight_in = sty.FigHeightTall * 1.05;      % the 3D row is wide and short at equal aspect
 
     fig = figure('Name', 'Coverage Heat Map Comparison', ...
         'Units', 'inches', ...
@@ -154,7 +157,9 @@ function plotCoverageHeatmap(varargin)
         'Color', sty.BackgroundColor);
 
     tl = tiledlayout(fig, 2, nCols, ...
-        'TileSpacing', 'compact', 'Padding', 'compact');
+        'TileSpacing', 'compact', 'Padding', 'loose');
+    % Loose, not compact: with the slab aspect ratio the 3D panels fill
+    % their tiles and their titles were riding up into the layout heading.
 
     %% First pass: find global max camera count for consistent colour scale
     globalMaxCams = 0;
@@ -209,7 +214,7 @@ function plotCoverageHeatmap(varargin)
         zeroPct    = 100 * sum(cameraCoverage == 0) / numPoints;
         twoPlusPct = 100 * sum(cameraCoverage >= 2) / numPoints;
         avgCov     = mean(cameraCoverage);
-        titleStr   = sprintf('%s: %d Cameras (Cost: %.4f)', ...
+        titleStr   = sprintf('%s, %d cams (J = %.4f)', ...
                               gridModeNames{gm}, numCams, sd.BestCost);
         fprintf('  %s stats: Avg=%.1f cams/pt | 0-cam=%.1f%% | 2+cam=%.1f%%\n', ...
                  gridModeNames{gm}, avgCov, zeroPct, twoPlusPct);
@@ -221,13 +226,13 @@ function plotCoverageHeatmap(varargin)
         colormap(ax3D, cmap);
         clim([0 globalMaxCams]);
         cb = colorbar;
-        cb.Label.String = 'Number of Visible Cameras';
-        cb.Label.FontSize = sty.FontSizeAxis;
+        cb.Label.String = 'Visible cameras';
+        cb.Label.FontSize = sty.FontSizeAnnot;
         cb.Label.FontName = sty.FontName;
         cb.Ticks = 0:globalMaxCams;
 
-        axis equal;
-        grid on;
+        setVolumeAspect(ax3D, TargetSpace);
+        grid(ax3D, 'on');
         xlabel(ax3D, 'X (m)', 'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
         ylabel(ax3D, 'Y (m)', 'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
         zlabel(ax3D, 'Z (m)', 'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
@@ -243,8 +248,8 @@ function plotCoverageHeatmap(varargin)
         axXY = nexttile(tl, plotIdx + nCols);
         plotMinCoverageByXY(axXY, TargetSpace, cameraCoverage, opts.MarkerSize, cmap, globalMaxCams);
         cb2 = colorbar(axXY);
-        cb2.Label.String = 'Min visible cameras (over Z)';
-        cb2.Label.FontSize = sty.FontSizeAxis;
+        cb2.Label.String = 'Min cameras over Z';
+        cb2.Label.FontSize = sty.FontSizeAnnot;
         cb2.Label.FontName = sty.FontName;
         cb2.Ticks = 0:globalMaxCams;
 
@@ -252,7 +257,7 @@ function plotCoverageHeatmap(varargin)
         grid(axXY, 'on');
         xlabel(axXY, 'X (m)', 'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
         ylabel(axXY, 'Y (m)', 'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
-        title(axXY, sprintf('%s: XY worst-case projection', gridModeNames{gm}), ...
+        title(axXY, sprintf('%s: XY worst-case', gridModeNames{gm}), ...
             'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName, ...
             'FontWeight', 'normal', 'Color', 'k');
         set(axXY, 'FontSize', sty.FontSizeTick, 'FontName', sty.FontName);
@@ -260,14 +265,15 @@ function plotCoverageHeatmap(varargin)
 
     % Overall figure title — force black so the tiledlayout title does
     % not export as faded grey.
+    % sgtitle rather than a tiledlayout title: with the slab aspect
+    % ratio the 3D axes fill their tiles and the layout stopped
+    % reserving space for its own heading, so the two collided.
     if nCols == 2
-        title(tl, 'UAV Coverage Heat Map: Uniform vs Normal Grid (3D scatter + XY worst-case)', ...
-            'FontSize', sty.FontSizeAxis + 2, 'FontWeight', 'bold', ...
-            'FontName', sty.FontName, 'Color', 'k');
+        thesisTitle(fig, ['UAV coverage heat map: uniform vs normal grid ' ...
+            '(3D scatter above, XY worst-case below)'], sty, 'MaxChars', 70);
     else
-        title(tl, 'UAV Coverage Heat Map (3D scatter + XY worst-case)', ...
-            'FontSize', sty.FontSizeAxis + 2, 'FontWeight', 'bold', ...
-            'FontName', sty.FontName, 'Color', 'k');
+        thesisTitle(fig, ['UAV coverage heat map ' ...
+            '(3D scatter above, XY worst-case below)'], sty, 'MaxChars', 70);
     end
 
     applyThesisStyle(fig);
@@ -282,10 +288,9 @@ function plotCoverageHeatmap(varargin)
     else
         outName = opts.SaveAs;
     end
-    exportgraphics(fig, [outName '.pdf'], ...
-        'ContentType',     'vector', ...
-        'BackgroundColor', sty.ExportBgColor);
-    fprintf('Heat map saved to: %s.pdf\n', outName);
+    exportThesisFigure(fig, outName, ...
+        'Background', sty.ExportBgColor, 'Quiet', true);
+    fprintf('Heat map saved to: %s.{pdf,png}\n', outName);
 end
 
 

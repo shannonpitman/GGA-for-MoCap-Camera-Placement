@@ -13,6 +13,8 @@ classdef ConfigAnalyser < handle
 %   cfg.evaluate()                          % Evaluate all 3 cost components
 %   cfg.snapToWalls()                       % Snap each camera to nearest wall
 %   cfg.roundAll(0.10, 5)                   % Round pos to 10cm, ori to 5 deg
+%   cfg.makeUpright()                       % Un-invert upside-down cameras
+%   cfg.snapOrientation(15)                 % Orientations to the nearest 15 deg
 %   cfg.moveCamera(3, [4 -2 2.5], [90 -30 0])  % Move camera 3
 %   cfg.compareOriginal()                   % Side-by-side cost comparison
 %   cfg.plotWithFOV()                       % 3D plot with FOV frustums
@@ -117,9 +119,15 @@ classdef ConfigAnalyser < handle
         %  PRINT CAMERA TABLE
         %  ============================================================
         function printCameras(obj)
-            fprintf('\n  %-5s %-6s  %-8s %-8s %-8s  %-8s %-8s %-8s\n', ...
-                'Cam', 'Lens', 'X(m)', 'Y(m)', 'Z(m)', 'Roll°', 'Pitch°', 'Yaw°');
-            fprintf('  %s\n', repmat('-', 1, 68));
+            % Tilt is the roll about the optical axis measured from level:
+            % 0 means the horizon is level in frame, +/-180 means the camera
+            % is inverted. The GA does not constrain it, so show it here.
+            info = cameraOrientationInfo(obj.currentChrom, obj.numCams);
+
+            fprintf('\n  %-5s %-6s  %-8s %-8s %-8s  %-8s %-8s %-8s  %-8s %-9s\n', ...
+                'Cam', 'Lens', 'X(m)', 'Y(m)', 'Z(m)', ...
+                'α(X)°', 'β(Y)°', 'γ(Z)°', 'Tilt°', 'Status');
+            fprintf('  %s\n', repmat('-', 1, 90));
 
             for c = 1:obj.numCams
                 idx = (c-1)*6 + 1;
@@ -132,8 +140,23 @@ classdef ConfigAnalyser < handle
                     lensStr = 'Narr';
                 end
 
-                fprintf('  %-5d %-6s  %-8.2f %-8.2f %-8.2f  %-8.1f %-8.1f %-8.1f\n', ...
-                    c, lensStr, pos(1), pos(2), pos(3), ori(1), ori(2), ori(3));
+                if info.Degenerate(c)
+                    status = 'vertical';
+                elseif info.Inverted(c)
+                    status = 'INVERTED';
+                else
+                    status = 'upright';
+                end
+
+                fprintf('  %-5d %-6s  %-8.2f %-8.2f %-8.2f  %-8.1f %-8.1f %-8.1f  %-8.1f %-9s\n', ...
+                    c, lensStr, pos(1), pos(2), pos(3), ori(1), ori(2), ori(3), ...
+                    info.TiltDeg(c), status);
+            end
+
+            nInv = nnz(info.Inverted & ~info.Degenerate);
+            if nInv > 0
+                fprintf(['  %d camera(s) upside down. cfg.makeUpright() rolls them 180° about\n' ...
+                         '  their optical axes, which leaves coverage and cost unchanged.\n'], nInv);
             end
             fprintf('\n');
         end
@@ -225,16 +248,50 @@ classdef ConfigAnalyser < handle
         function roundAll(obj, posStep, oriStepDeg)
         % roundAll(positionStep_m, orientationStep_deg)
         %   e.g. roundAll(0.10, 5) rounds to 10cm and 5 degrees
-            oriStepRad = deg2rad(oriStepDeg);
-            for c = 1:obj.numCams
-                idx = (c-1)*6 + 1;
-                obj.currentChrom(idx:idx+2) = ...
-                    round(obj.currentChrom(idx:idx+2) / posStep) * posStep;
-                obj.currentChrom(idx+3:idx+5) = ...
-                    round(obj.currentChrom(idx+3:idx+5) / oriStepRad) * oriStepRad;
-            end
-            fprintf('Rounded: positions to %.0fcm, orientations to %d degrees.\n\n', ...
+        %
+        % Snapping lives in snapChromosome so this, snapOrientation and the
+        % orientationSensitivity study all quantise identically.
+            [obj.currentChrom, rep] = snapChromosome(obj.currentChrom, ...
+                'OrientationStepDeg', oriStepDeg, 'PositionStep', posStep, ...
+                'NumCams', obj.numCams);
+            fprintf('Rounded: positions to %.0fcm, orientations to %g degrees.\n', ...
                 posStep*100, oriStepDeg);
+            fprintf(['  Max optical-axis shift %.2f deg (this is what moves coverage), ' ...
+                     'max move %.3f m.\n\n'], max(rep.AxisShiftDeg), max(rep.PosShift));
+            obj.printCameras();
+            obj.evaluate();
+        end
+
+        %% ============================================================
+        %  ROLL INVERTED CAMERAS UPRIGHT
+        %  ============================================================
+        function makeUpright(obj, mode)
+        % makeUpright()         roll inverted cameras 180 deg about their
+        %                       own optical axes — coverage-neutral
+        % makeUpright('level')  level every horizon instead; this DOES move
+        %                       the cost, because the sensor is not square
+        %
+        % The GA never constrains roll about the optical axis, so optimal
+        % solutions routinely hang cameras upside down. See README §6.1.
+            if nargin < 2 || isempty(mode), mode = 'flip'; end
+            [obj.currentChrom, rep] = uprightCameras(obj.currentChrom, ...
+                'Mode', mode, 'NumCams', obj.numCams, 'Verbose', true);
+            fprintf('%d of %d cameras rolled upright (mode: %s).\n\n', ...
+                rep.NumChanged, obj.numCams, rep.Mode);
+            obj.printCameras();
+            obj.evaluate();
+        end
+
+        %% ============================================================
+        %  SNAP ORIENTATIONS TO A MOUNTING GRID
+        %  ============================================================
+        function snapOrientation(obj, oriStepDeg)
+        % snapOrientation(stepDeg)  quantise orientations only, positions
+        %                           left untouched. e.g. snapOrientation(15)
+            [obj.currentChrom, ~] = snapChromosome(obj.currentChrom, ...
+                'OrientationStepDeg', oriStepDeg, 'NumCams', obj.numCams, ...
+                'Verbose', true);
+            fprintf('Orientations snapped to the nearest %g degrees.\n\n', oriStepDeg);
             obj.printCameras();
             obj.evaluate();
         end

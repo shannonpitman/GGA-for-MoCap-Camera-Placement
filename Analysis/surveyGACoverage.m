@@ -7,7 +7,7 @@ function results = surveyGACoverage(varargin)
 %   Loops over all matching GA runs in the log, computes per-target camera
 %   coverage for each (using perTargetCoverage), groups them by scenario
 %   (TargetType / GridMode / Spacing) and prints a table per scenario
-%   sorted by AVERAGE coverage (highest first). The OptiTrack ad-hoc rig is
+%   sorted by AVERAGE coverage (highest first). The Manually Posed Rig is
 %   appended to each scenario for reference.
 %
 %   This exists because plotHeatmap_GAvsOptiTrack only ever shows the
@@ -122,7 +122,7 @@ function results = surveyGACoverage(varargin)
             [~, ost] = perTargetCoverage(optiChrom, sd.Specifications);
             fprintf('  %s\n', repmat('-', 1, 78));
             fprintf('  %-32s %8s %7.2f %6.1f%% %6.1f%% %6.1f%%\n', ...
-                'OptiTrack ad-hoc (reference)', '--', ost.avg, ...
+                'Manually Posed Rig (reference)', '--', ost.avg, ...
                 ost.zeroPct, ost.onePct, ost.twoPlusPct);
         catch ME
             fprintf('  (OptiTrack reference unavailable: %s)\n', ME.message);

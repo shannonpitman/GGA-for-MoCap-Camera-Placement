@@ -1,6 +1,6 @@
 function plotAngleSensitivity(varargin)
 % PLOTANGLESENSITIVITY  Sensitivity of total cost to angular perturbations
-% of a single camera in the GA-best configuration.
+% of a single camera in the Optimised GA Rig configuration.
 %
 % =====================================================================
 % EXAMINER REVIEW
@@ -51,6 +51,8 @@ function plotAngleSensitivity(varargin)
     addParameter(p, 'SweepRange',   45,          @isnumeric);
     addParameter(p, 'SweepStep',    3,           @isnumeric);
     addParameter(p, 'ShowAllCams',  false,       @islogical);
+    addParameter(p, 'SlideFonts',   false,       @islogical);  % large text for projection
+    addParameter(p, 'FigSize',      [],          @isnumeric);  % [width height] in inches
     addParameter(p, 'SaveAs',       '',          @ischar);
     parse(p, varargin{:});
     opts = p.Results;
@@ -106,10 +108,12 @@ function plotAngleSensitivity(varargin)
     end
 
     %% Plot — 1x3 subplots
+    figSize = [sty.FigWidthDouble, sty.FigHeight + 0.4];
+    if ~isempty(opts.FigSize), figSize = opts.FigSize; end
     fig = figure('Name', sprintf('Angle sensitivity: %s, cam %d', ...
                                  ttStr, opts.CameraIndex), ...
         'Units', 'inches', ...
-        'Position', [0.5, 0.5, sty.FigWidthDouble, sty.FigHeight + 0.4], ...
+        'Position', [0.5, 0.5, figSize], ...
         'PaperPositionMode', 'auto', ...
         'Color', sty.BackgroundColor);
 
@@ -117,8 +121,11 @@ function plotAngleSensitivity(varargin)
     chosenCol  = sty.CostFuncColors(3,:);    % green for the highlighted camera
     otherCol   = [0.55 0.55 0.55];           % grey for other cameras
 
+    tl = tiledlayout(fig, 1, 3, 'TileSpacing', 'compact', 'Padding', 'compact');
+    axAll = gobjects(1, 3);
     for axis = 1:3
-        axSub = subplot(1, 3, axis);
+        axSub = nexttile(tl, axis);
+        axAll(axis) = axSub;
         hold(axSub, 'on');
 
         legendH = gobjects(0);
@@ -157,14 +164,10 @@ function plotAngleSensitivity(varargin)
         plot(axSub, 0, gaCost, 'o', ...
             'MarkerFaceColor', chosenCol, 'MarkerEdgeColor', 'k', ...
             'MarkerSize', sty.MarkerSize, 'HandleVisibility', 'off');
-        yL = ylim(axSub);
-        plot(axSub, [0 0], yL, '--', ...
-            'Color', [0.30 0.30 0.30 0.6], 'LineWidth', 0.8, ...
-            'HandleVisibility', 'off');
+        xline(axSub, 0, '--', 'Color', [0.30 0.30 0.30], 'Alpha', 0.6, ...
+            'LineWidth', 0.8, 'HandleVisibility', 'off');
 
         xlabel(axSub, sprintf('\\Delta%s (°)', axisNames{axis}), ...
-            'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
-        ylabel(axSub, 'Combined cost (CF3)', ...
             'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
         title(axSub, axisNames{axis}, ...
             'FontWeight', 'normal', ...
@@ -174,19 +177,52 @@ function plotAngleSensitivity(varargin)
         grid(axSub, 'on');
         xlim(axSub, [-opts.SweepRange opts.SweepRange]);
 
-        if axis == 3
+        if axis == 3 && ~opts.SlideFonts   % on a slide the title names the camera
             legend(axSub, legendH, legendL, ...
-                'Location', 'best', 'FontSize', sty.FontSizeLegend);
+                'Location', 'northeast', 'FontSize', sty.FontSizeLegend);
         end
         hold(axSub, 'off');
     end
 
-    sgtitle(sprintf('%s: Angle sensitivity of camera %d (GA-best, %s, sp=%.2f m, %d cams)', ...
-        ttStr, opts.CameraIndex, gmStr, opts.Spacing, opts.NumCameras), ...
-        'FontSize', sty.FontSizeTitle, 'FontWeight', 'bold', ...
-        'FontName', sty.FontName);
+    % Every panel starts at zero and shares one upper limit, so the three
+    % angles are read on the same scale under a single y-axis title.
+    yTop = 0;
+    for axis = 1:3
+        yTop = max(yTop, max(ylim(axAll(axis))));
+    end
+    for axis = 1:3
+        ylim(axAll(axis), [0 yTop]);
+    end
+    ylabel(tl, 'Combined cost (CF3)', ...
+        'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
+
+    if opts.SlideFonts
+        title(tl, sprintf('Sweeping camera %d of the optimised rig', opts.CameraIndex), ...
+            'FontSize', 21, 'FontWeight', 'bold', 'FontName', sty.FontName);
+    else
+        thesisTitle(tl, sprintf( ...
+            '%s: angle sensitivity of camera %d (Optimised GA Rig, %s grid, %.2f m, %d cams)', ...
+            ttStr, opts.CameraIndex, gmStr, opts.Spacing, opts.NumCameras), sty, ...
+            'MaxChars', 75);
+    end
 
     applyThesisStyle(fig);
+
+    % Large type for a projected slide, set last so nothing rescales it.
+    if opts.SlideFonts
+        slideX = {'\Delta\alpha (°)', '\Delta\beta (°)', '\Delta\gamma (°)'};
+        for axis = 1:3
+            a = axAll(axis);
+            set(a, 'FontSize', 18, 'XTick', [-40 0 40]);
+            xlabel(a, slideX{axis}, 'FontSize', 20, 'FontName', sty.FontName);
+            a.Title.FontSize = 21;
+            set(findobj(a, 'Type', 'line', 'LineStyle', '-'), 'LineWidth', 3);
+        end
+        tl.YLabel.String   = 'Combined cost {\itJ}';
+        tl.YLabel.FontSize = 20;
+        tl.YLabel.Color    = 'k';
+        tl.Title.Color     = 'k';
+    end
 
     %% Export
     if isempty(opts.SaveAs)
@@ -196,10 +232,9 @@ function plotAngleSensitivity(varargin)
     else
         outName = opts.SaveAs;
     end
-    exportgraphics(fig, [outName '.pdf'], ...
-        'ContentType',     'vector', ...
-        'BackgroundColor', sty.ExportBgColor);
-    fprintf('Saved: %s.pdf\n', outName);
+    exportThesisFigure(fig, outName, ...
+        'Background', sty.ExportBgColor, 'Quiet', true);
+    fprintf('Saved: %s.{pdf,png}\n', outName);
 end
 
 

@@ -186,10 +186,9 @@ function [coverageStats]= visualizeCameraCoverage(out, specs, varargin)
 
     % Export if requested
     if ~isempty(opts.SaveAs)
-        exportgraphics(fig, [opts.SaveAs '.pdf'], ...
-            'ContentType',     'vector', ...
-            'BackgroundColor', sty.ExportBgColor);
-        fprintf('Coverage figure saved to: %s.pdf\n', opts.SaveAs);
+        exportThesisFigure(fig, opts.SaveAs, ...
+            'Background', sty.ExportBgColor, 'Quiet', true);
+        fprintf('Coverage figure saved to: %s.{pdf,png}\n', opts.SaveAs);
     end
 
     % Print statistics

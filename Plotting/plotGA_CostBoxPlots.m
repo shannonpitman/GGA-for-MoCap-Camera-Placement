@@ -33,7 +33,7 @@ function plotGA_CostBoxPlots(varargin)
 %      0.000 the bracket reads "p < 0.001" instead.
 %   3. CATEGORICAL X-TICKS only at integer camera counts.
 %   4. Cross-target-type brackets removed by default (see above).
-%   5. OptiTrack ad-hoc baseline overlaid at the 7-cam position when
+%   5. Manually Posed Rig baseline overlaid at the 7-cam position when
 %      SplitBy='TargetType' and the data set has a single (GridMode,
 %      Spacing), letting the reader judge the GA's headroom.
 % =====================================================================
@@ -60,6 +60,12 @@ function plotGA_CostBoxPlots(varargin)
 %     'MatchSampleSize'   - true to random-subsample each group to
 %                           min(n) for visual comparability. Default:
 %                           false. Reports n actually plotted.
+%     'BrokenAxis'        - true to put the boxes on a zoomed linear
+%                           lower panel and the manual-rig markers on a
+%                           short upper panel, so whiskers stay resolved
+%                           even when the overlay is 10-80x higher.
+%                           Default: false (log axis instead).
+%     'FigHeight'         - figure height in inches (default: style)
 %     'SaveAs'            - Output filename prefix (default: auto)
 %     (all loadGARuns parameters are also accepted)
 
@@ -70,6 +76,8 @@ function plotGA_CostBoxPlots(varargin)
     addParameter(p, 'OptiTrackOverlay', true,         @islogical);
     addParameter(p, 'OptiTrackWeights', [0.5 0.5],    @(v) isnumeric(v) && numel(v)==2);
     addParameter(p, 'MatchSampleSize',  false,        @islogical);
+    addParameter(p, 'BrokenAxis',       false,        @islogical);
+    addParameter(p, 'FigHeight',        [],           @(x) isempty(x) || isnumeric(x));
     addParameter(p, 'SaveAs',           '',           @ischar);
     parse(p, varargin{:});
 
@@ -96,8 +104,10 @@ function plotGA_CostBoxPlots(varargin)
         cfRuns = runs([runs.CostFunctionType] == cf);
         if isempty(cfRuns), continue; end
 
+        figH = sty.FigHeight;
+        if ~isempty(opts.FigHeight), figH = opts.FigHeight; end
         fig = figure('Units', 'inches', ...
-            'Position', [1 1 sty.FigWidthFull sty.FigHeight], ...
+            'Position', [1 1 sty.FigWidthFull figH], ...
             'PaperPositionMode', 'auto', ...
             'Color', sty.BackgroundColor);
         ax = axes(fig);
@@ -306,7 +316,7 @@ function plotGA_CostBoxPlots(varargin)
                     % stays narrow enough not to cover the overlay
                     % marker. The numeric cost is still annotated
                     % alongside the marker in the figure caption.
-                    overlayLabels{end+1}  = 'OptiTrack ad-hoc UAV';
+                    overlayLabels{end+1}  = 'Manually Posed Rig UAV';
                 end
 
                 % UGV (TargetType==2) — red filled 5-point star
@@ -320,7 +330,7 @@ function plotGA_CostBoxPlots(varargin)
                         'MarkerSize',      sty.MarkerSizeLg + 4, ...
                         'LineStyle',       'none');
                     overlayHandles(end+1) = hUGV;                  %#ok<AGROW>
-                    overlayLabels{end+1}  = 'OptiTrack ad-hoc UGV';
+                    overlayLabels{end+1}  = 'Manually Posed Rig UGV';
                 end
             end
         end
@@ -338,10 +348,30 @@ function plotGA_CostBoxPlots(varargin)
             % of it. 35% of the box-data range is empirically enough
             % when the legend has up to ~4 rows.
             yPadFinal = 0.35 * (yLimFinal(2) - yLimFinal(1));
+        elseif doStats
+            % No overlay, but the significance brackets sit above the
+            % boxes and the legend sits above those. 30% clears both.
+            yPadFinal = 0.30 * (yLimFinal(2) - yLimFinal(1));
         else
             yPadFinal = 0.08 * (yLimFinal(2) - yLimFinal(1));
         end
         ylim(ax, [yLimFinal(1), yLimFinal(2) + yPadFinal]);
+
+        % Log axis when the ad-hoc overlay is an order of magnitude above
+        % the GA boxes. Under the utopia/nadir normalisation the ad-hoc rig
+        % scores 10-60x the GA, which on a linear axis flattens every box
+        % to a single line at the bottom of the plot.
+        allBoxData = cell2mat(cellfun(@(x) x(:), cellData(:), 'UniformOutput', false));
+        allBoxData = allBoxData(isfinite(allBoxData) & allBoxData > 0);
+        useBroken = opts.BrokenAxis && ~isempty(overlayHandles) && ~isempty(allBoxData);
+        if ~useBroken && ~isempty(allBoxData) && ~isempty(overlayHandles)
+            boxTop  = max(allBoxData);
+            axisTop = max(ylim(ax));
+            if boxTop > 0 && axisTop / boxTop > 6
+                set(ax, 'YScale', 'log');
+                ylim(ax, [min(allBoxData) * 0.6, axisTop * 3]);
+            end
+        end
 
         % --- Cam-block dividers ----------------------------------------
         % Faint vertical line at the midpoint between adjacent camera-
@@ -359,6 +389,42 @@ function plotGA_CostBoxPlots(varargin)
 
         hold(ax, 'off');
 
+        %% Broken axis: move the manual-rig markers to an upper panel
+        axTop = [];
+        if useBroken
+            bLo = min(allBoxData);  bHi = max(allBoxData);  bSpan = bHi - bLo;
+            ylim(ax, [max(0, bLo - 0.10*bSpan), bHi + 0.22*bSpan]);
+
+            axTop = axes(fig);
+            hold(axTop, 'on');
+            newH = copyobj(overlayHandles, axTop);
+            delete(overlayHandles);
+            overlayHandles = newH;
+            oy  = arrayfun(@(h) h.YData, overlayHandles);
+            ox  = arrayfun(@(h) h.XData, overlayHandles);
+            % Start at zero so the manual-rig values read on an honest
+            % scale; the headroom keeps the lower marker off the spine.
+            ylim(axTop, [-0.12 * max(oy), 1.3 * max(oy)]);
+            xlim(axTop, xlim(ax));
+            for k = 1:numel(overlayHandles)
+                text(axTop, ox(k) + 0.09, oy(k), sprintf('%.2f', oy(k)), ...
+                    'VerticalAlignment', 'middle', 'FontSize', sty.FontSizeAnnot, ...
+                    'FontName', sty.FontName, 'Color', 'k');
+            end
+            yTopLim = ylim(axTop);
+            for c = 1:(nCams-1)
+                xDiv = 0.5 * (tickPos(c) + tickPos(c+1));
+                plot(axTop, [xDiv xDiv], yTopLim, '-', ...
+                    'Color', [0.55 0.55 0.55 0.45], 'LineWidth', 0.6, ...
+                    'HandleVisibility', 'off');
+            end
+            set(axTop, 'XTick', tickPos, 'XTickLabel', [], ...
+                'FontSize', sty.FontSizeTick, 'FontName', sty.FontName, ...
+                'Box', 'on', 'TickDir', 'out');
+            grid(axTop, 'on');
+            hold(axTop, 'off');
+        end
+
         %% Legend
         legendH = [];
         legendL = {};
@@ -375,28 +441,66 @@ function plotGA_CostBoxPlots(varargin)
             legendL = [legendL, overlayLabels(:)'];
         end
         if ~isempty(legendH)
-            % Pin to top-right so the legend never covers the OptiTrack
-            % overlay markers, which sit above the 7-cam (middle) column.
-            legend(legendH, legendL, 'Location', 'northeast', ...
-                'FontSize', sty.FontSizeLegend);
+            % The OptiTrack overlay markers sit above the RIGHTMOST
+            % (7-cam) column, so northeast is exactly where they are.
+            % Park the legend on the left when an overlay is present.
+            if isempty(overlayHandles)
+                legLoc = 'northeast';
+            else
+                legLoc = 'northwest';
+            end
+            if useBroken
+                lg = legend(axTop, legendH, legendL, 'NumColumns', 2, ...
+                    'FontSize', sty.FontSizeLegend);
+            else
+                legend(legendH, legendL, 'Location', legLoc, ...
+                    'FontSize', sty.FontSizeLegend);
+            end
         end
 
         % Title — describe the test only if it was actually run
         % (no em-dashes; use a colon for the secondary clause)
         cfNameStr = sty.CostFuncNames{cf};
-        if doStats
-            titleStr = sprintf( ...
-                '%s: significance: Mann-Whitney U (* p<0.05, ** p<0.01, *** p<0.001)', ...
-                cfNameStr);
+        % filterDesc already names the cost function when the caller
+        % filtered on one, so do not print it twice.
+        descStr = prettifyFilterDesc(filterDesc);
+        if contains(descStr, sprintf('CF%d', cf))
+            titleStr = {descStr};
         else
-            titleStr = cfNameStr;
+            titleStr = {sprintf('CF%d (%s)', cf, cfNameStr), descStr};
         end
-        title(ax, titleStr, ...
-            'FontWeight', 'normal', ...
-            'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
+        if doStats
+            titleStr{end+1} = ...
+                'Mann-Whitney U:  * p<0.05,  ** p<0.01,  *** p<0.001';
+        end
+        if useBroken
+            sgtitle(fig, strjoin(titleStr, '  ·  '), 'FontWeight', 'normal', ...
+                'FontSize', sty.FontSizeAnnot, 'FontName', sty.FontName);
+        else
+            title(ax, titleStr, ...
+                'FontWeight', 'normal', ...
+                'FontSize', sty.FontSizeAnnot, 'FontName', sty.FontName);
+        end
 
         % --- Apply thesis style: white bg, black text/axes/ticks/legend ---
         applyThesisStyle(fig);
+
+        % --- Broken-axis layout (normalised figure units) ---------------
+        if useBroken
+            L = 0.13;  W = 0.82;
+            set(ax,    'Units', 'normalized', 'Position', [L 0.11 W 0.53]);
+            set(axTop, 'Units', 'normalized', 'Position', [L 0.70 W 0.13]);
+            lg.Units = 'normalized';
+            lg.Position(1) = L + (W - lg.Position(3)) / 2;
+            lg.Position(2) = 0.855;
+            % break marks on both spines
+            for xE = [L, L + W]
+                for yE = [0.64, 0.70]
+                    annotation(fig, 'line', xE + [-0.008 0.008], yE + [-0.01 0.01], ...
+                        'Color', 'k', 'LineWidth', 1.0);
+                end
+            end
+        end
 
         %% Export
         if isempty(opts.SaveAs)
@@ -404,10 +508,9 @@ function plotGA_CostBoxPlots(varargin)
         else
             outName = sprintf('%s_CF%d', opts.SaveAs, cf);
         end
-        exportgraphics(fig, [outName '.pdf'], ...
-            'ContentType',     'vector', ...
-            'BackgroundColor', sty.ExportBgColor);
-        fprintf('Saved: %s.pdf  [%s]\n', outName, cfNameStr);
+        exportThesisFigure(fig, outName, ...
+            'Background', sty.ExportBgColor, 'Quiet', true);
+        fprintf('Saved: %s.{pdf,png}  [%s]\n', outName, cfNameStr);
     end
 end
 

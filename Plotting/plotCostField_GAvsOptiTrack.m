@@ -1,6 +1,6 @@
 function plotCostField_GAvsOptiTrack(varargin)
 % PLOTCOSTFIELD_GAVSOPTITRACK  Per-point uncertainty + occlusion heatmaps
-% comparing the GA-best 7-camera configuration with the OptiTrack ad-hoc
+% comparing the Optimised GA Rig 7-camera configuration with the Manually Posed Rig
 % rig over the same target space.
 %
 % =====================================================================
@@ -59,7 +59,7 @@ function plotCostField_GAvsOptiTrack(varargin)
     optiSpecs.Cams = 7;
 
     %% Compute per-point cost terms for both
-    fprintf('Computing per-point uncertainty + occlusion for GA-best...\n');
+    fprintf('Computing per-point uncertainty + occlusion for Optimised GA Rig...\n');
     [uncGA,   occGA]   = perPointCosts(gaChrom,   specs);
     fprintf('Computing per-point uncertainty + occlusion for OptiTrack...\n');
     [uncOpti, occOpti] = perPointCosts(optiChrom, optiSpecs);
@@ -71,7 +71,7 @@ function plotCostField_GAvsOptiTrack(varargin)
     %  scaled to LaTeX text-width.
     fig = figure('Name', sprintf('Per-point cost field: %s', ttStr), ...
         'Units', 'inches', ...
-        'Position', [0.5, 0.5, sty.FigWidthFull, sty.FigHeightTall * 1.25], ...
+        'Position', [0.5, 0.5, sty.FigWidthFull, sty.FigHeightTall * 0.95], ...
         'PaperPositionMode', 'auto', ...
         'Color', sty.BackgroundColor);
 
@@ -88,12 +88,12 @@ function plotCostField_GAvsOptiTrack(varargin)
 
     % Use parula for both. Could swap for a sequential map if reviewers
     % prefer "low = green, high = red" — easy local change.
-    cmap = parula(64);
+    cmap = costColormap(256);
 
     panels = struct( ...
         'unc',  {uncGA,  uncOpti}, ...
         'occ',  {occGA,  occOpti}, ...
-        'name', {'GA-best', 'OptiTrack ad-hoc'});
+        'name', {'Optimised GA Rig', 'Manually Posed Rig'});
 
     for k = 1:2
         % ---- Top row: uncertainty ----
@@ -103,11 +103,11 @@ function plotCostField_GAvsOptiTrack(varargin)
         colormap(axU, cmap);
         clim(axU, [uncMin uncMax]);
         cb = colorbar(axU);
-        cb.Label.String = 'Per-point uncertainty';
-        cb.Label.FontSize = sty.FontSizeAxis;
+        cb.Label.String = 'Uncertainty (m)';
+        cb.Label.FontSize = sty.FontSizeAnnot;
         cb.Label.FontName = sty.FontName;
 
-        axis(axU, 'equal');  grid(axU, 'on');
+        setVolumeAspect(axU, TargetSpace);  grid(axU, 'on');
         xlabel(axU, 'X (m)'); ylabel(axU, 'Y (m)'); zlabel(axU, 'Z (m)');
         view(axU, opts.ViewAngle);
         title(axU, sprintf('Uncertainty: %s', panels(k).name), ...
@@ -125,11 +125,11 @@ function plotCostField_GAvsOptiTrack(varargin)
         colormap(axO, cmap);
         clim(axO, [occMin occMax]);
         cb2 = colorbar(axO);
-        cb2.Label.String = 'Per-point occlusion angle (deg)';
-        cb2.Label.FontSize = sty.FontSizeAxis;
+        cb2.Label.String = 'Occlusion Q (deg)';
+        cb2.Label.FontSize = sty.FontSizeAnnot;
         cb2.Label.FontName = sty.FontName;
 
-        axis(axO, 'equal');  grid(axO, 'on');
+        setVolumeAspect(axO, TargetSpace);  grid(axO, 'on');
         xlabel(axO, 'X (m)'); ylabel(axO, 'Y (m)'); zlabel(axO, 'Z (m)');
         view(axO, opts.ViewAngle);
         title(axO, sprintf('Occlusion: %s', panels(k).name), ...
@@ -141,10 +141,9 @@ function plotCostField_GAvsOptiTrack(varargin)
         set(axO, 'FontSize', sty.FontSizeTick, 'FontName', sty.FontName);
     end
 
-    title(tl, sprintf('%s per-point cost field: GA-best (CF3 = %.4f) vs OptiTrack (%s, sp = %.2f m)', ...
-        ttStr, gaCost, gmStr, opts.Spacing), ...
-        'FontSize', sty.FontSizeTitle, 'FontWeight', 'bold', ...
-        'FontName', sty.FontName, 'Color', 'k');
+    thesisTitle(tl, sprintf( ...
+        '%s cost field: Optimised GA Rig (J = %.4f) vs Manually Posed Rig (%s, %.2f m)', ...
+        ttStr, gaCost, gmStr, opts.Spacing), sty);
 
     applyThesisStyle(fig);
 
@@ -155,10 +154,9 @@ function plotCostField_GAvsOptiTrack(varargin)
     else
         outName = opts.SaveAs;
     end
-    exportgraphics(fig, [outName '.pdf'], ...
-        'ContentType',     'vector', ...
-        'BackgroundColor', sty.ExportBgColor);
-    fprintf('Saved: %s.pdf\n', outName);
+    exportThesisFigure(fig, outName, ...
+        'Background', sty.ExportBgColor, 'Quiet', true);
+    fprintf('Saved: %s.{pdf,png}\n', outName);
 end
 
 

@@ -1,4 +1,4 @@
-function chrom = buildOptiTrackChromosome()
+function [chrom, calibID] = buildOptiTrackChromosome()
 %BUILDOPTITRACKCHROMOSOME  Build the 1x42 chromosome for the OptiTrack rig.
 %   Reproduces the lab measurements supplied for the 7-camera OptiTrack
 %   ad-hoc rig and converts them into the GA's chromosome representation
@@ -51,10 +51,26 @@ function chrom = buildOptiTrackChromosome()
             -0.0314617   0.80705    0.589644;
              0.6361     -0.438878   0.634636];
 
+    % Lens allocation. setupCameras() binds lens type to chromosome slot:
+    % odd slots get the narrow (5.5 mm) lens, even slots the wide (3.5 mm).
+    % The physical rig does NOT follow calibration order that way: the
+    % four corner cameras (Motive IDs 2, 3, 6, 7) are narrow and the three
+    % mid-wall cameras (IDs 1, 4, 5) are wide. So the calibration cameras
+    % are re-ordered into slots such that every narrow camera lands in an
+    % odd slot and every wide camera in an even slot. calibID(i) is the
+    % Motive camera ID held in chromosome slot i (use it for labels).
+    calibWide = [1 4 5];
+    calibID   = [2 1 3 4 6 5 7];
+    slotIsWide = mod(1:7, 2) == 0;
+    assert(isequal(ismember(calibID, calibWide), slotIsWide), ...
+        'buildOptiTrackChromosome:lensMismatch', ...
+        'Slot order does not put the wide cameras (IDs 1, 4, 5) in even slots.');
+
     chrom = zeros(1, 6*7);
     for i = 1:7
-        p_world = T_transform * camPos(i,:)';
-        R_world = T_transform * R{i} * rotX180;
+        c = calibID(i);
+        p_world = T_transform * camPos(c,:)';
+        R_world = T_transform * R{c} * rotX180;
         eul     = rotm2eul(R_world, 'XYZ');     % [alpha beta gamma]
         chrom((i-1)*6 + (1:3)) = p_world';
         chrom((i-1)*6 + (4:6)) = eul;

@@ -6,7 +6,7 @@ function plotGA_WarmColdEffect(varargin)
 %   Warm-Start box side-by-side, with sample size annotated under
 %   each box and a combined Δ% + significance label above the
 %   bracket. At 7 cameras (and only when the data is filtered to a
-%   single TargetType) the OptiTrack ad-hoc baseline is overlaid as
+%   single TargetType) the Manually Posed Rig baseline is overlaid as
 %   a red marker for comparison.
 %
 % =====================================================================
@@ -20,7 +20,7 @@ function plotGA_WarmColdEffect(varargin)
 %
 % Strengths
 %   - Per-camera-count figures: each panel is self-contained and
-%     comparable to the OptiTrack ad-hoc baseline at the 7-cam case.
+%     comparable to the Manually Posed Rig baseline at the 7-cam case.
 %   - Δ% (median based) and the significance label are merged into a
 %     SINGLE line above the bracket so they cannot overlap.
 %   - Boxes only (no jittered scatter clutter); sample size annotated
@@ -65,6 +65,8 @@ function plotGA_WarmColdEffect(varargin)
     addParameter(p, 'MatchSampleSize',  'top',     @(s) ischar(s) || isstring(s));
     addParameter(p, 'OptiTrackOverlay', true,      @islogical);
     addParameter(p, 'OptiTrackWeights', [0.5 0.5], @(v) isnumeric(v) && numel(v)==2);
+    addParameter(p, 'FigHeight',        [],        @(x) isempty(x) || isnumeric(x));
+    addParameter(p, 'TightY',           false,     @islogical);
     addParameter(p, 'SaveAs',           '',        @ischar);
     parse(p, varargin{:});
 
@@ -148,8 +150,10 @@ function plotGA_WarmColdEffect(varargin)
         end
 
         %% Plot ----------------------------------------------------
+        figH = sty.FigHeight;
+        if ~isempty(opts.FigHeight), figH = opts.FigHeight; end
         fig = figure('Units', 'inches', ...
-            'Position', [1 1 sty.FigWidthFull sty.FigHeight], ...
+            'Position', [1 1 sty.FigWidthFull figH], ...
             'PaperPositionMode', 'auto', ...
             'Color', sty.BackgroundColor);
         ax = axes(fig);
@@ -166,6 +170,7 @@ function plotGA_WarmColdEffect(varargin)
         legendLabels  = {'Cold-Start', 'Warm-Start'};
 
         %% OptiTrack overlay (only on 7-cam panel) ------------------
+        yOT = [];
         if overlayEnabled && cam == 7
             try
                 otCost = evaluateOptiTrackCost( ...
@@ -192,7 +197,7 @@ function plotGA_WarmColdEffect(varargin)
                         'LineStyle',       'none');
                     legendHandles(end+1) = hOT;                           %#ok<AGROW>
                     legendLabels{end+1}  = sprintf( ...
-                        'OptiTrack ad-hoc %s (%.4f)', ttLabel, yOT);
+                        'Manually Posed Rig %s (%.4f)', ttLabel, yOT);
                 end
             catch evalErr
                 warning('OptiTrack overlay failed for %dC: %s', cam, evalErr.message);
@@ -202,6 +207,13 @@ function plotGA_WarmColdEffect(varargin)
         %% Annotations --------------------------------------------
         drawnow;
         yLim   = ylim(ax);
+        if opts.TightY
+            % Fit the axis to the data rather than to MATLAB's rounded
+            % ticks, so the tighter (warm) box is not squashed.
+            allPts = [coldPts(:); warmPts(:)];
+            if ~isempty(yOT), allPts(end+1) = yOT; end
+            yLim = [min(allPts), max(allPts)];
+        end
         yRange = yLim(2) - yLim(1);
         if yRange == 0, yRange = max(abs(yLim(2)), 1); end
 
@@ -212,25 +224,36 @@ function plotGA_WarmColdEffect(varargin)
         yBracket = topData + 0.06 * yRange;
         starsLbl = stats.sigStars(pVal);
         if isnan(deltaPct)
-            combinedLbl = sprintf('%s %s', starsLbl, formatPValue(pVal));
+            combinedLbl = '';
         else
-            combinedLbl = sprintf('\\Delta = %+.1f%%   %s %s', ...
-                                  deltaPct, starsLbl, formatPValue(pVal));
+            combinedLbl = sprintf('median %+.1f%%', -deltaPct);
         end
         stats.drawSigBracket(ax, xCold, xWarm, yBracket, combinedLbl, ...
                              sty.FontSizeAnnot);
 
         % n= annotations under the boxes
         yN = yLim(1) - 0.04 * yRange;
-        text(ax, xCold, yN, sprintf('n=%d', numel(coldPts)), ...
+        if opts.TightY
+            yNc = min(coldPts) - 0.03 * yRange;
+            yNw = min(warmPts) - 0.03 * yRange;
+        else
+            yNc = yN;  yNw = yN;
+        end
+        text(ax, xCold, yNc, sprintf('n=%d', numel(coldPts)), ...
             'HorizontalAlignment', 'center', 'VerticalAlignment', 'top', ...
             'FontSize', sty.FontSizeAnnot, 'FontName', sty.FontName, 'Color', 'k');
-        text(ax, xWarm, yN, sprintf('n=%d', numel(warmPts)), ...
+        text(ax, xWarm, yNw, sprintf('n=%d', numel(warmPts)), ...
             'HorizontalAlignment', 'center', 'VerticalAlignment', 'top', ...
             'FontSize', sty.FontSizeAnnot, 'FontName', sty.FontName, 'Color', 'k');
 
         % Expand limits to make room
-        ylim(ax, [yLim(1) - 0.12*yRange, yLim(2) + 0.20*yRange]);
+        % Generous top margin: the northeast legend and the significance
+        % bracket label both live up there and were touching.
+        if opts.TightY
+            ylim(ax, [yLim(1) - 0.14*yRange, yLim(2) + 0.22*yRange]);
+        else
+            ylim(ax, [yLim(1) - 0.12*yRange, yLim(2) + 0.45*yRange]);
+        end
 
         hold(ax, 'off');
 
@@ -244,14 +267,17 @@ function plotGA_WarmColdEffect(varargin)
         xlim(ax, [xCold - 0.7, xWarm + 0.7]);
         grid(ax, 'on');
 
-        legend(ax, legendHandles, legendLabels, ...
-               'Location', 'northeast', 'FontSize', sty.FontSizeLegend);
+        % The x tick labels already name the two boxes; only draw a
+        % legend when it adds something (the manual-rig overlay).
+        if ~opts.TightY || numel(legendHandles) > 2
+            legend(ax, legendHandles, legendLabels, ...
+                   'Location', 'northeast', 'FontSize', sty.FontSizeLegend);
+        end
 
-        title(ax, sprintf( ...
-            '%d cameras — Warm vs Cold start  (%s; */**/*** = p<.05/.01/.001)', ...
-            cam, testName), ...
+        title(ax, {sprintf('%d cameras: warm vs cold start', cam), ...
+                   prettifyFilterDesc(filterDesc)}, ...
             'FontWeight', 'normal', ...
-            'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
+            'FontSize', sty.FontSizeAnnot, 'FontName', sty.FontName);
 
         applyThesisStyle(fig);
 
@@ -266,10 +292,9 @@ function plotGA_WarmColdEffect(varargin)
         else
             outName = sprintf('%s_%dC', opts.SaveAs, cam);
         end
-        exportgraphics(fig, [outName '.pdf'], ...
-            'ContentType',     'vector', ...
-            'BackgroundColor', sty.ExportBgColor);
-        fprintf('  Saved: %s.pdf\n', outName);
+        exportThesisFigure(fig, outName, ...
+            'Background', sty.ExportBgColor, 'Quiet', true);
+        fprintf('  Saved: %s.{pdf,png}\n', outName);
     end
 end
 

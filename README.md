@@ -162,6 +162,7 @@ entries keep working even if the folders move.
 | Regenerate all thesis figures | `plotGARuns` |
 | Per-component cost breakdown | `reportCostBreakdown` |
 | Full 7-camera analysis suite | `analyseBest7CamConfigs` |
+| Camera roll + angle-quantisation study | `orientationSensitivity` |
 
 `analyseConfiguration` returns a handle you can poke at interactively:
 
@@ -169,14 +170,72 @@ entries keep working even if the folders move.
 cfg = analyseConfiguration('NumCameras', 7);
 cfg.printCameras()                              % list poses
 cfg.moveCamera(3, [4.0 -2.0 2.5], [])           % move camera 3, keep orientation
+cfg.makeUpright()                               % un-invert upside-down cameras
+cfg.snapOrientation(15)                         % orientations to the nearest 15°
 cfg.roundAll(0.10, 5)                           % snap to 10 cm / 5 degrees
 ```
 
-That last one matters in practice: it snaps an optimised layout to values a
-person can actually mount, and re-costs it so you can see what the rounding cost
-you.
+The last three matter in practice: they snap an optimised layout to values a
+person can actually mount, and re-cost it so you can see what that cost you.
+`printCameras` now also flags any camera the GA left hanging upside down — see
+§6.1.
 
 `plotGARuns` writes PDFs into `figures/`.
+
+### 6.1 Camera roll, and mounting to real angles
+
+Two things the GA does not constrain, both handled after the fact so that
+previously logged runs stay valid.
+
+**Cameras come out upside down.** Each camera's orientation genes are
+`[alpha beta gamma]`, and `setupCameras` builds `R = Rx(α)·Ry(β)·Rz(γ)`. Because
+`Rz` is applied last it acts about the camera's own +z, the optical axis — so
+**γ is a pure roll: changing it spins the image without moving where the camera
+looks.** The cost function only asks which target points land inside each image,
+so it is blind to γ, and optimal solutions routinely hang cameras inverted.
+
+`uprightCameras` fixes that by adding 180° to γ on the inverted cameras only. A
+180° image rotation maps the sensor rectangle onto itself, so the field of view
+is unchanged and coverage is preserved. One caveat, measured rather than assumed:
+the visibility test accepts `u ∈ [1, W]`, whose centre is `(W+1)/2 = 640.5`,
+while the principal point is `W/2 = 640`. The accepted band is half a pixel
+off-centre, so the flip shifts it by one pixel. In the 7-camera UAV case that
+changes exactly one (point, camera) pair out of 2835 and moves CF1 by ~5e-6.
+
+`uprightCameras(chrom, 'Mode', 'level')` is the stricter alternative — level every
+horizon rather than just un-invert. That one is **not** free: the sensor is
+1280×1024, so rolling by anything other than a multiple of 180° re-orients a
+non-square field of view.
+
+**Orientations are reported to machine precision.** `snapChromosome` quantises
+them to a mountable grid, and reports how far each camera actually turned,
+separating the optical-axis shift (which moves coverage) from roll (which
+essentially does not).
+
+Both are studied by **`orientationSensitivity`**:
+
+```matlab
+sweep = orientationSensitivity();                   % UAV, 7 cams
+sweep = orientationSensitivity('TargetType', 2);    % UGV
+```
+
+It prices three gene sets separately — `all`, `pointing` (α, β only) and `roll`
+(γ only) — across grid steps from 1° to 45°, and writes four figures to
+`figures/Sensitivity/Orientation/`.
+
+**Only the GA layout is snapped.** The ad-hoc rig is already mounted in the room;
+its poses are measurements of existing hardware, not a specification anyone has
+to realise with brackets and a protractor, so its quantisation penalty is a
+question about nothing. It is still evaluated once, as installed, and carried
+through as the benchmark the snapped optimum has to stay under to be worth
+building.
+
+Two warnings when reading the output. CF3 is utopia-shifted, so a good
+configuration sits near zero and small absolute changes look enormous in percent
+— absolute ΔCF3 and the ad-hoc benchmark are both printed alongside. And the
+penalty is not monotone in step size: snapping is not a small smooth
+perturbation, and CF2 counts points crossing discrete triangulation-angle
+thresholds, so the cost surface is genuinely rough at these scales.
 
 ### Comparing against the real (ad-hoc) OptiTrack rig
 
@@ -235,11 +294,14 @@ GeneticAlgorithm/
 │   └── visibility / triangulability helpers
 │
 ├── Geometry/               ► cameras, pyramids, target space, projection
+│   ├── cameraOrientationInfo.m  camera axes, horizon roll, inversion flags
+│   ├── uprightCameras.m         roll inverted cameras upright (see §6.1)
+│   └── snapChromosome.m         quantise poses to a mountable grid
 ├── Setup/                  ► setupProblem, setupGAparams,
 │                             setupHardwareSpecs, setupCostParams
 ├── Plotting/               ► plotGARuns + every plot helper
 ├── Analysis/               ► saving, loading, and the analysis entry points
-├── Sensitivity/            ► spacing sensitivity + OptiTrack chromosome
+├── Sensitivity/            ► spacing + orientation sensitivity, OptiTrack chromosome
 │
 ├── Results/                ► run outputs (TRACKED in git)
 ├── figures/                ► generated PDFs
@@ -275,6 +337,10 @@ runCameraOptimiser  (Run/)
   back to them.
 - The GA is stochastic. Repeat runs (`NumRepeats`) and compare distributions,
   not single runs.
+- The cost function is blind to roll about the optical axis, so **γ is
+  unconstrained and the GA will return inverted cameras.** That is not a bug in
+  the run; fix it after the fact with `uprightCameras` / `cfg.makeUpright()`.
+  See §6.1.
 
 ## 9. Troubleshooting
 

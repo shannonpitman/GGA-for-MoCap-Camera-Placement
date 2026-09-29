@@ -33,10 +33,25 @@ function applyThesisStyle(target, varargin)
         for k = 1:numel(axList)
             styleSingleAxes(axList(k));
         end
-        % sgtitle — colour the supertitle text black if present
-        st = findall(fig, 'Type', 'text', '-and', 'Tag', 'suptitle');
-        for k = 1:numel(st)
-            set(st(k), 'Color', 'k');
+        % sgtitle and tiledlayout titles. Neither is an axes child, so the
+        % loop above never reaches them and they export as MATLAB's
+        % default grey. Recolour any text parented directly to the figure
+        % or to a tiled layout, but only where it is still that default
+        % grey — a deliberately coloured callout must survive.
+        figText = findall(fig, 'Type', 'text');
+        for k = 1:numel(figText)
+            par = get(figText(k), 'Parent');
+            if isa(par, 'matlab.graphics.axis.Axes'), continue; end
+            c = get(figText(k), 'Color');
+            if strcmpi(get(figText(k), 'Tag'), 'suptitle') || ...
+               (isnumeric(c) && all(abs(c - [0.15 0.15 0.15]) < 0.05))
+                set(figText(k), 'Color', 'k');
+            end
+        end
+        for lay = findall(fig, 'Type', 'tiledlayout')'
+            if ~isempty(lay.Title) && isgraphics(lay.Title)
+                set(lay.Title, 'Color', 'k');
+            end
         end
         if incCB
             cbList = findall(fig, 'Type', 'colorbar');

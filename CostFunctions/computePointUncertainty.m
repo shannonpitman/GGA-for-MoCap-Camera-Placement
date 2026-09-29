@@ -57,7 +57,7 @@ function uncertainty = computePointUncertainty(point, cameras, cameraCentres, nu
     C0v_vert = cov(V_centered); %covariance matrix
 
     Eigs = eig(C0v_vert); %[eigenvectors, eigenvalues in a diagonal matrix]
-    uncertainty = sum(sqrt(abs(Eigs))); % uncertainty based on the trace of the cov matrix
+    uncertainty = sum(sqrt(abs(Eigs))); % uncertainty based on the sum of principal standard deviations of the cov matrix
     if ~isfinite(uncertainty)
         uncertainty = 0.5*penaltyUncertainty;
     end

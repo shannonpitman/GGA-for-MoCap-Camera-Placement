@@ -1,6 +1,6 @@
 function plotConfigFOV_GAvsOptiTrack(varargin)
-% Side-by-side camera-pose plot comparing the GA-best 7-camera
-% configuration with the OptiTrack ad-hoc arrangement for a single
+% Side-by-side camera-pose plot comparing the Optimised GA Rig 7-camera
+% configuration with the Manually Posed Rig arrangement for a single
 % scenario (UAV or UGV). Each camera is drawn as a small fixed-size
 % pyramid pointing along its optical axis, coloured by lens type
 % (narrow vs wide). The full FOV frustum is no longer drawn because it
@@ -33,6 +33,10 @@ function plotConfigFOV_GAvsOptiTrack(varargin)
     addParameter(p, 'ShowTarget',   true,     @islogical);
     addParameter(p, 'PyramidScale', 0.4,      @(x) isnumeric(x) && isscalar(x) && x > 0);
     addParameter(p, 'SaveAs',       '',       @ischar);
+    addParameter(p, 'CompareCostFunctions', false, @islogical);
+    addParameter(p, 'ZStretch',     1.0,      @isnumeric);   % >1 exaggerates height
+    addParameter(p, 'SlideFonts',   false,    @islogical);   % large text for projection
+    addParameter(p, 'ShowCamLabels', true,    @islogical);
     parse(p, varargin{:});
     opts = p.Results;
 
@@ -42,11 +46,17 @@ function plotConfigFOV_GAvsOptiTrack(varargin)
     ttStr   = ttNames{opts.TargetType};
     gmStr   = gmNames{opts.GridMode};
 
+    %% Optional mode: compare the three objectives' own best layouts
+    if opts.CompareCostFunctions
+        plotThreeObjectivePanels(opts, sty, ttStr, gmStr);
+        return;
+    end
+
     %% Load best GA run for the scenario
     [gaChrom, specs, gaCost] = loadBestGARun(opts);
 
     %% OptiTrack chromosome + cost on the same problem
-    optiChrom   = buildOptiTrackChromosome();
+    [optiChrom, optiIDs] = buildOptiTrackChromosome();
     optiOut     = evaluateOptiTrackCost( ...
         'TargetType', opts.TargetType, ...
         'GridMode',   opts.GridMode, ...
@@ -75,7 +85,7 @@ function plotConfigFOV_GAvsOptiTrack(varargin)
     drawCamerasAndVolume(ax1, gaChrom, specs, opts);
     % Per-axes title kept short (no cost number) so the lens legend
     % at northeast does not run into the heading. Cost moved to sgtitle.
-    title(ax1, sprintf('GA-best (%d cams)', specs.Cams), ...
+    title(ax1, sprintf('Optimised GA Rig (%d cams)', specs.Cams), ...
         'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName, ...
         'FontWeight', 'normal', 'Color', 'k');
     addLensLegend(ax1, sty);
@@ -85,20 +95,25 @@ function plotConfigFOV_GAvsOptiTrack(varargin)
     % camera count to 7 so setupCameras unpacks the right number of genes.
     optiSpecs       = specs;
     optiSpecs.Cams  = 7;
+    optiSpecs.CamLabels = optiIDs;   % label with Motive camera IDs
     drawCamerasAndVolume(ax2, optiChrom, optiSpecs, opts);
-    title(ax2, 'OptiTrack ad-hoc (7 cams)', ...
+    title(ax2, 'Manually Posed Rig (7 cams)', ...
         'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName, ...
         'FontWeight', 'normal', 'Color', 'k');
     addLensLegend(ax2, sty);
 
-    % Synchronise axes for an honest side-by-side
+    % Synchronise axes for an honest side-by-side, then widen a little:
+    % the "camN" labels are drawn to the right of each apex and were being
+    % clipped for cameras mounted on the far walls.
     linkprop([ax1 ax2], {'XLim','YLim','ZLim','View'});
     view(ax1, opts.ViewAngle);
+    xl = xlim(ax1); yl = ylim(ax1);
+    xlim(ax1, xl + [-1.8, 1.8]);
+    ylim(ax1, yl + [-1.8, 1.8]);
 
-    title(tl, sprintf('%s camera placement (Uniform grid, sp = %.2f m): GA-best cost %.4f vs OptiTrack %.4f', ...
-        ttStr, opts.Spacing, gaCost, optiCost), ...
-        'FontSize', sty.FontSizeTitle, 'FontWeight', 'bold', ...
-        'FontName', sty.FontName, 'Color', 'k');
+    thesisTitle(tl, sprintf( ...
+        '%s camera placement (%s grid, %.2f m): Optimised GA Rig J = %.4f vs Manually Posed Rig J = %.4f', ...
+        ttStr, gmStr, opts.Spacing, gaCost, optiCost), sty, 'MaxChars', 70);
 
     applyThesisStyle(fig);
 
@@ -109,10 +124,9 @@ function plotConfigFOV_GAvsOptiTrack(varargin)
     else
         outName = opts.SaveAs;
     end
-    exportgraphics(fig, [outName '.pdf'], ...
-        'ContentType',     'vector', ...
-        'BackgroundColor', sty.ExportBgColor);
-    fprintf('Saved: %s.pdf\n', outName);
+    exportThesisFigure(fig, outName, ...
+        'Background', sty.ExportBgColor, 'Quiet', true);
+    fprintf('Saved: %s.{pdf,png}\n', outName);
 end
 
 
@@ -180,6 +194,8 @@ function drawCamerasAndVolume(ax, chrom, specs, opts)
     narrowCol = [0.10 0.45 0.75];
     wideCol   = [0.85 0.40 0.10];
 
+    volCentre = mean(specs.Target, 1);     % label offset direction
+
     hold(ax, 'on');
 
     % --- Room-volume wireframe (gives the cameras spatial reference) ---
@@ -216,13 +232,30 @@ function drawCamerasAndVolume(ax, chrom, specs, opts)
             'MarkerEdgeColor', 'k', 'LineWidth', 0.6, ...
             'HandleVisibility', 'off');
         % Small label next to apex
-        text(ax, camCenters(1,i), camCenters(2,i), camCenters(3,i), ...
-            sprintf('  cam%d', i), 'Color', col_i, ...
-            'FontSize', 8, 'FontWeight', 'bold', ...
-            'HandleVisibility', 'off');
+        % Label pushed radially outward, away from the volume centre.
+        % Placed at the apex it was partly hidden behind the pose pyramid,
+        % which points inward; clipping off keeps it whole for cameras
+        % sitting on the axes boundary.
+        outward = camCenters(:,i) - volCentre(:);
+        if norm(outward) > 1e-6
+            outward = outward / norm(outward);
+        else
+            outward = [0; 0; 1];
+        end
+        % Lift in z as well: two cameras at similar height on the same
+        % wall would otherwise print their labels on top of each other.
+        if opts.ShowCamLabels
+            lblPos = camCenters(:,i) + 0.45 * outward + [0; 0; 0.40];
+            if isfield(specs, 'CamLabels'), camLbl = specs.CamLabels(i); else, camLbl = i; end
+            text(ax, lblPos(1), lblPos(2), lblPos(3), ...
+                sprintf('cam%d', camLbl), 'Color', col_i, ...
+                'FontSize', 9, 'FontWeight', 'bold', ...
+                'HorizontalAlignment', 'center', ...
+                'Clipping', 'off', 'HandleVisibility', 'off');
+        end
     end
 
-    axis(ax, 'equal');
+    daspect(ax, [1 1 1/opts.ZStretch]);
     grid(ax, 'on');
     xlabel(ax, 'X (m)'); ylabel(ax, 'Y (m)'); zlabel(ax, 'Z (m)');
     view(ax, opts.ViewAngle);
@@ -281,6 +314,7 @@ function addLensLegend(ax, sty)
 % legend without polluting the 3D scene.
     narrowCol = [0.10 0.45 0.75];
     wideCol   = [0.85 0.40 0.10];
+
     hold(ax, 'on');
     hN = plot3(ax, NaN, NaN, NaN, 's', ...
         'MarkerFaceColor', narrowCol, 'MarkerEdgeColor', 'k', ...
@@ -313,4 +347,95 @@ function drawBoxWire(ax, bb, col, lw, alpha)
             '-', 'Color', [col alpha], 'LineWidth', lw, ...
             'HandleVisibility', 'off');
     end
+end
+
+
+function plotThreeObjectivePanels(opts, sty, ttStr, gmStr)
+% Three-panel comparison: the best layout found when optimising for
+% resolution uncertainty alone (CF1), dynamic occlusion alone (CF2), and
+% the combined objective (CF3). Shows that the two error mechanisms pull
+% the network towards genuinely different geometries.
+
+    cfTitle = { 'Resolution uncertainty only', ...
+                'Dynamic occlusion only', ...
+                'Combined objective' };
+    cfTag   = { 'CF1', 'CF2', 'CF3' };
+    cfUnit  = { 'J_{res} = %.4f m', 'J_{occ} = %.1f deg', 'J = %.4f (normalised)' };
+
+    figH = sty.FigHeightWide + 0.6;
+    if opts.SlideFonts, figH = 6.2; end
+    fig = figure('Name', 'Objective comparison', ...
+        'Units', 'inches', ...
+        'Position', [0.5, 0.5, sty.FigWidthDouble * 1.35, figH], ...
+        'PaperPositionMode', 'auto', ...
+        'Color', sty.BackgroundColor);
+
+    tl  = tiledlayout(fig, 1, 3, 'TileSpacing', 'compact', 'Padding', 'loose');
+    axs = gobjects(1, 3);
+
+    for k = 1:3
+        o = opts;
+        o.CostFunction = k;
+        [chrom, specs, cost] = loadBestGARun(o);
+
+        axs(k) = nexttile(tl);
+        drawCamerasAndVolume(axs(k), chrom, specs, opts);
+        if opts.SlideFonts
+            % Title + subtitle keeps both lines centred (a two-line TeX
+            % title with subscripts left-aligns its second line).
+            slideUnit = { 'J_{res} = %.4f m', ['J_{occ} = %.1f' char(176)], 'J = %.3f' };
+            title(axs(k), cfTitle{k}, 'FontSize', 19, 'FontName', sty.FontName, ...
+                'FontWeight', 'bold', 'Color', 'k');
+            subtitle(axs(k), sprintf(slideUnit{k}, cost), 'FontSize', 17, ...
+                'FontName', sty.FontName, 'Color', 'k');
+        else
+            tStr = sprintf('%s (%s)\n%s', cfTitle{k}, cfTag{k}, ...
+                           sprintf(cfUnit{k}, cost));
+            title(axs(k), tStr, ...
+                'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName, ...
+                'FontWeight', 'normal', 'Color', 'k');
+        end
+    end
+
+    addLensLegend(axs(1), sty);
+
+    % Union of every panel's limits before linking, otherwise panels 2-3
+    % inherit panel 1's box and clip cameras mounted higher than its rig.
+    zAll = vertcat(axs.ZLim);
+    linkprop(axs, {'XLim','YLim','ZLim','View'});
+    zlim(axs(1), [min(zAll(:,1)), max(zAll(:,2))]);
+    view(axs(1), opts.ViewAngle);
+    xl = xlim(axs(1)); yl = ylim(axs(1));
+    xlim(axs(1), xl + [-1.8, 1.8]);
+    ylim(axs(1), yl + [-1.8, 1.8]);
+
+    if ~opts.SlideFonts   % on a slide, the frame title does this job
+        thesisTitle(tl, sprintf( ...
+            '%s, %s grid, %.2f m: the layout each objective asks for', ...
+            ttStr, gmStr, opts.Spacing), sty, 'MaxChars', 70);
+    end
+
+    applyThesisStyle(fig);
+
+    % Large type for a projected slide, set last so nothing rescales it.
+    if opts.SlideFonts
+        for k = 1:3
+            a = axs(k);
+            set(a, 'FontSize', 15, 'XTick', [-4 0 4], 'YTick', [-4 0 4], ...
+                   'ZTick', [0 2 4]);
+            a.XLabel.FontSize = 16;  a.YLabel.FontSize = 16;  a.ZLabel.FontSize = 16;
+            a.Title.FontSize  = 19;  a.Subtitle.FontSize = 17;
+        end
+        lg = findobj(fig, 'Type', 'legend');
+        set(lg, 'FontSize', 17);
+    end
+
+    outName = opts.SaveAs;
+    if isempty(outName)
+        outName = sprintf('ObjectiveComparison_%s_%dC_GM%d_sp%.0fcm', ...
+            ttStr, opts.NumCameras, opts.GridMode, opts.Spacing*100);
+    end
+    exportThesisFigure(fig, outName, ...
+        'Background', sty.ExportBgColor, 'Quiet', true);
+    fprintf('Saved: %s.{pdf,png}\n', outName);
 end

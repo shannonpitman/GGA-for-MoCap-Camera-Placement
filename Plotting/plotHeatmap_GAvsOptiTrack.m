@@ -1,5 +1,5 @@
 function plotHeatmap_GAvsOptiTrack(varargin)
-% PLOTHEATMAP_GAVSOPTITRACK  Coverage heat-map: GA best vs OptiTrack ad-hoc.
+% PLOTHEATMAP_GAVSOPTITRACK  Coverage heat-map: Optimised GA Rig vs Manually Posed Rig.
 %
 % =====================================================================
 % EXAMINER REVIEW
@@ -14,8 +14,8 @@ function plotHeatmap_GAvsOptiTrack(varargin)
 %
 % Layout (per scenario)
 %   2x2 figure:
-%     Top-Left : GA-best 3D scatter         | Top-Right : OptiTrack 3D
-%     Bot-Left : GA-best XY worst-case      | Bot-Right : OptiTrack XY
+%     Top-Left : Optimised GA Rig 3D scatter         | Top-Right : OptiTrack 3D
+%     Bot-Left : Optimised GA Rig XY worst-case      | Bot-Right : OptiTrack XY
 %   Within a scenario the four panels share a single colour scale of
 %   [0 .. globalMax(visibleCams)] so colours are directly comparable
 %   left-to-right. Scenarios are NOT scaled against each other (UGV's
@@ -116,7 +116,7 @@ function plotHeatmap_GAvsOptiTrack(varargin)
     gaChrom = sd.BestSolution.Chromosome;
 
     fprintf(['plotHeatmap_GAvsOptiTrack: %s scenario, GM=%s, sp=%.2f m, ' ...
-             'CF=%d, %d cams.\n  GA-best run: %s (Cost=%.4f)\n'], ...
+             'CF=%d, %d cams.\n  Optimised GA Rig run: %s (Cost=%.4f)\n'], ...
              ttStr, gmStr, opts.Spacing, opts.CostFunction, ...
              opts.NumCameras, bestMat, gaCost);
 
@@ -150,8 +150,12 @@ function plotHeatmap_GAvsOptiTrack(varargin)
     %% Figure layout — 2 rows x 2 cols, shared scale within scenario.
     %  Switched to tiledlayout so the two-line panel titles and the
     %  colorbars stop colliding on the top row.
+    %  The 3D row plots an 8 x 8 x 4 m volume at equal aspect, so it is
+    %  inherently wide and short; the XY row is square. Sizing the figure
+    %  to 1.05x the tall preset keeps the two rows close together instead
+    %  of leaving a band of white between them.
     figW = sty.FigWidthFull;            % side-by-side cols
-    figH = sty.FigHeightTall * 1.3;     % extra height for title clearance
+    figH = sty.FigHeightTall * 1.05;
 
     fig = figure('Name', sprintf('Coverage: GA vs OptiTrack: %s', ttStr), ...
         'Units', 'inches', ...
@@ -161,15 +165,19 @@ function plotHeatmap_GAvsOptiTrack(varargin)
 
     tl = tiledlayout(fig, 2, 2, ...
         'TileSpacing', 'compact', 'Padding', 'compact');
+    % Loose, not compact: with the slab aspect ratio the 3D panels fill
+    % their tiles and their titles were riding up into the layout heading.
 
     globalMaxCams = max([numCamsGA, numCamsOpti, max(covGA), max(covOpti)]);
-    cmap = parula(max(globalMaxCams + 1, 2));
+    % Few cameras = red (bad), many = green (good); same hues as the
+    % cost fields, and no yellow, which washes out on a projector.
+    cmap = flipud(costColormap(max(globalMaxCams + 1, 2)));
 
     % Pre-pack panels so we can use one loop
     panels(1).chrom = gaChrom;    panels(1).cov = covGA;
-    panels(1).name  = 'GA-best';   panels(1).cost = gaCost;
+    panels(1).name  = 'Optimised GA Rig';   panels(1).cost = gaCost;
     panels(2).chrom = optiChrom;  panels(2).cov = covOpti;
-    panels(2).name  = 'OptiTrack ad-hoc'; panels(2).cost = optiCostVal;
+    panels(2).name  = 'Manually Posed Rig'; panels(2).cost = optiCostVal;
 
     TargetSpace = specs.Target;
 
@@ -197,17 +205,23 @@ function plotHeatmap_GAvsOptiTrack(varargin)
         clim(ax3D, [0 globalMaxCams]);
         cb = colorbar(ax3D);
         cb.Label.String   = 'Visible cameras';
-        cb.Label.FontSize = sty.FontSizeAxis;
+        cb.Label.FontSize = sty.FontSizeAnnot;
         cb.Label.FontName = sty.FontName;
         cb.Ticks          = 0:globalMaxCams;
 
-        axis(ax3D, 'equal');
+        setVolumeAspect(ax3D, TargetSpace);
         grid(ax3D, 'on');
         xlabel(ax3D, 'X (m)', 'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
         ylabel(ax3D, 'Y (m)', 'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
         zlabel(ax3D, 'Z (m)', 'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
         view(ax3D, opts.ViewAngle);
-        title(ax3D, sprintf('%s (Cost: %.4f)', name, c0), ...
+        % The scenario lives in the panel titles rather than a figure-wide
+        % heading: an axes title always positions itself correctly, whereas
+        % both sgtitle and a tiledlayout title stopped reserving vertical
+        % space once the slab aspect ratio let the 3D axes fill their tiles,
+        % and printed straight over these.
+        title(ax3D, {sprintf('%s / %s grid (%.2f m)', ttStr, gmStr, opts.Spacing), ...
+                     sprintf('%s: J = %.4f', name, c0)}, ...
             'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName, ...
             'FontWeight', 'normal', 'Color', 'k');
         set(ax3D, 'FontSize', sty.FontSizeTick, 'FontName', sty.FontName);
@@ -216,28 +230,27 @@ function plotHeatmap_GAvsOptiTrack(varargin)
         axXY = nexttile(tl, k + 2);
         plotMinCoverageByXY(axXY, TargetSpace, cov, opts.MarkerSize, cmap, globalMaxCams);
         cb2 = colorbar(axXY);
-        cb2.Label.String   = 'Min visible cameras (over Z)';
-        cb2.Label.FontSize = sty.FontSizeAxis;
+        cb2.Label.String   = 'Min cameras over Z';
+        cb2.Label.FontSize = sty.FontSizeAnnot;
         cb2.Label.FontName = sty.FontName;
         cb2.Ticks          = 0:globalMaxCams;
 
+        % Pin both XY panels to the target extent. Leaving MATLAB to pick
+        % limits gave the two panels different y-ranges, which makes the
+        % side-by-side comparison misread at a glance.
         axis(axXY, 'equal');
+        pad = 0.5;
+        xlim(axXY, [min(TargetSpace(:,1)) - pad, max(TargetSpace(:,1)) + pad]);
+        ylim(axXY, [min(TargetSpace(:,2)) - pad, max(TargetSpace(:,2)) + pad]);
         grid(axXY, 'on');
         xlabel(axXY, 'X (m)', 'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
         ylabel(axXY, 'Y (m)', 'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
-        title(axXY, sprintf('%s: XY worst-case', name), ...
+        title(axXY, {name, 'XY worst case'}, ...
             'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName, ...
             'FontWeight', 'normal', 'Color', 'k');
         set(axXY, 'FontSize', sty.FontSizeTick, 'FontName', sty.FontName);
     end
 
-    % Force black title — tiledlayout titles ignore applyThesisStyle's
-    % 'suptitle'-tag lookup and otherwise default to a faded grey in
-    % exported PDFs.
-    title(tl, sprintf('%s coverage: GA-best vs OptiTrack ad-hoc (%s, sp = %.2f m, %d cams)', ...
-        ttStr, gmStr, opts.Spacing, opts.NumCameras), ...
-        'FontSize', sty.FontSizeTitle, 'FontWeight', 'bold', ...
-        'FontName', sty.FontName, 'Color', 'k');
 
     applyThesisStyle(fig);
 
@@ -248,10 +261,9 @@ function plotHeatmap_GAvsOptiTrack(varargin)
     else
         outName = opts.SaveAs;
     end
-    exportgraphics(fig, [outName '.pdf'], ...
-        'ContentType',     'vector', ...
-        'BackgroundColor', sty.ExportBgColor);
-    fprintf('Saved: %s.pdf\n', outName);
+    exportThesisFigure(fig, outName, ...
+        'Background', sty.ExportBgColor, 'Quiet', true);
+    fprintf('Saved: %s.{pdf,png}\n', outName);
 end
 
 
@@ -365,7 +377,7 @@ end
 
 
 function short = stripCostFromName(name)
-% Title for XY panels: keep prefix ("GA-best" / "OptiTrack ad-hoc") and
+% Title for XY panels: keep prefix ("Optimised GA Rig" / "Manually Posed Rig") and
 % drop the parenthetical cost so the bottom titles read clean.
     pos = strfind(name, ' (');
     if isempty(pos)

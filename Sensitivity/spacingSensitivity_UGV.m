@@ -18,7 +18,7 @@ function sweep = spacingSensitivity_UGV(varargin)
 %                                      'TolerancePct', 10)
 %
 %   NOTES:
-%     * Loads the GA-best CF3 7-cam UGV chromosome from GGA_RunsLog.mat.
+%     * Loads the Optimised GA Rig CF3 7-cam UGV chromosome from GGA_RunsLog.mat.
 %       Falls back to the UAV-best chromosome with a warning if no UGV
 %       CF3 runs are logged yet.
 %     * Pass the recommended x-y spacing back into batchRunGA via the
@@ -56,7 +56,7 @@ function sweep = spacingSensitivity_UGV(varargin)
     %% Configurations
     try
         [gaChrom, bestRun] = loadBestCF3Config(opts.numCams, opts.targetType, opts.targetMode);
-        opts.configs(1).name       = sprintf('GA-best CF3 UGV (logged cost=%.5f)', bestRun.BestCost);
+        opts.configs(1).name       = sprintf('Optimised GA Rig CF3 UGV (logged cost=%.5f)', bestRun.BestCost);
         opts.configs(1).chromosome = gaChrom;
     catch ME
         if strcmp(ME.identifier, 'loadBestCF3Config:NoMatch')
@@ -64,7 +64,7 @@ function sweep = spacingSensitivity_UGV(varargin)
                      'Falling back to the UAV-best chromosome - re-run a ' ...
                      'UGV CF3 batch and re-evaluate this sweep when available.']);
             [gaChrom, bestRun] = loadBestCF3Config(opts.numCams, 1, opts.targetMode);
-            opts.configs(1).name = sprintf('GA-best CF3 UAV-fallback (cost=%.5f)', ...
+            opts.configs(1).name = sprintf('Optimised GA Rig CF3 UAV-fallback (cost=%.5f)', ...
                                            bestRun.BestCost);
             opts.configs(1).chromosome = gaChrom;
         else
@@ -72,7 +72,7 @@ function sweep = spacingSensitivity_UGV(varargin)
         end
     end
 
-    opts.configs(2).name       = 'OptiTrack ad-hoc';
+    opts.configs(2).name       = 'Manually Posed Rig';
     opts.configs(2).chromosome = buildOptiTrackChromosome();
 
     %% Run

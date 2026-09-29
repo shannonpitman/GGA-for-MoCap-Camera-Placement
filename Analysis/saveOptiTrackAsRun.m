@@ -1,5 +1,5 @@
 function saveOptiTrackAsRun(varargin)
-%SAVEOPTITRACKASRUN  Persist the OptiTrack ad-hoc 7-cam config to Results/.
+%SAVEOPTITRACKASRUN  Persist the Manually Posed Rig 7-cam config to Results/.
 %
 %   saveOptiTrackAsRun() builds the OptiTrack chromosome via
 %   buildOptiTrackChromosome, evaluates it at the standard 0.5 m UAV
@@ -71,7 +71,7 @@ function saveOptiTrackAsRun(varargin)
     [cameras, CamCenters] = setupCameras(chrom, numCams, ...
         specs.Resolution, specs.Focal, specs.FocalWide, specs.PrincipalPoint, specs.PixelSize);
 
-    fprintf('\nEvaluating OptiTrack ad-hoc rig (N=%d points)...\n', specs.NumPoints);
+    fprintf('\nEvaluating Manually Posed Rig (N=%d points)...\n', specs.NumPoints);
     tStart = tic;
     costUnc = resUncertainty(specs, cameras, CamCenters);
     costOcc = dynamicOcclusion(specs, cameras, CamCenters);

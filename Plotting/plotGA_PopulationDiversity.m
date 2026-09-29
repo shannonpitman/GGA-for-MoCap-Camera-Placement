@@ -226,12 +226,16 @@ function plotGA_PopulationDiversity(varargin)
     legend(legendHandles, legendLabels, ...
         'Location', 'northeast', 'FontSize', sty.FontSizeLegend);
 
+    % Always name the instance in the title: this figure is generated once
+    % per (cost function x target type x grid mode x cameras) cell, and
+    % without it the exported PNGs are indistinguishable from each other.
+    titleLines = {prettifyFilterDesc(filterDesc)};
     if any(proxyUsed)
-        title(ax, ...
-          'Diversity computed as cost-spread proxy: (avg − best) / avg', ...
-          'FontWeight', 'normal', 'FontSize', sty.FontSizeAxis, ...
-          'FontName', sty.FontName);
+        titleLines{end+1} = ...
+            'Diversity computed as cost-spread proxy: (avg - best) / avg';
     end
+    title(ax, titleLines, 'FontWeight', 'normal', ...
+        'FontSize', sty.FontSizeAxis, 'FontName', sty.FontName);
 
     applyThesisStyle(fig);
 
@@ -252,8 +256,7 @@ function plotGA_PopulationDiversity(varargin)
     else
         outName = opts.SaveAs;
     end
-    exportgraphics(fig, [outName '.pdf'], ...
-        'ContentType',     'vector', ...
-        'BackgroundColor', sty.ExportBgColor);
-    fprintf('Saved: %s.pdf\n', outName);
+    exportThesisFigure(fig, outName, ...
+        'Background', sty.ExportBgColor, 'Quiet', true);
+    fprintf('Saved: %s.{pdf,png}\n', outName);
 end

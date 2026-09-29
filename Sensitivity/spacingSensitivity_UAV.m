@@ -1,7 +1,7 @@
 function sweep = spacingSensitivity_UAV()
 %SPACINGSENSITIVITY_UAV  Grid-spacing sensitivity sweep for UAV target space.
 %
-%   Compares the GA-best CF3 7-cam configuration against the OptiTrack
+%   Compares the Optimised GA Rig CF3 7-cam configuration against the OptiTrack
 %   ad-hoc rig over the full UAV flight envelope, sweeping grid spacings
 %   from 0.1 m (microUAV marker spacing) to 2.0 m.
 %
@@ -26,10 +26,10 @@ function sweep = spacingSensitivity_UAV()
 
     %% Configurations
     [gaChrom, bestRun] = loadBestCF3Config(opts.numCams, opts.targetType, opts.targetMode);
-    opts.configs(1).name       = sprintf('GA-best CF3 (logged cost=%.5f)', bestRun.BestCost);
+    opts.configs(1).name       = sprintf('Optimised GA Rig CF3 (logged cost=%.5f)', bestRun.BestCost);
     opts.configs(1).chromosome = gaChrom;
 
-    opts.configs(2).name       = 'OptiTrack ad-hoc';
+    opts.configs(2).name       = 'Manually Posed Rig';
     opts.configs(2).chromosome = buildOptiTrackChromosome();
 
     %% Run

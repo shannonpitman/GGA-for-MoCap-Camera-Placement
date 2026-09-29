@@ -119,10 +119,9 @@ applyThesisStyle(fig1);
 
 % Export as vector PDF (replaces legacy PNG)
 plotFilename = sprintf('%dCams_Run_%s_convergence', specs.Cams, dateTimeStr);
-exportgraphics(fig1, [plotFilename '.pdf'], ...
-    'ContentType',     'vector', ...
-    'BackgroundColor', sty.ExportBgColor);
-fprintf('Convergence plot saved to: %s.pdf\n', plotFilename);
+exportThesisFigure(fig1, plotFilename, ...
+    'Background', sty.ExportBgColor, 'Quiet', true);
+fprintf('Convergence plot saved to: %s.{pdf,png}\n', plotFilename);
 
 % =====================================================================
 % Camera Visualisation Figure
@@ -178,8 +177,7 @@ hold off
 applyThesisStyle(fig2);
 
 cameraPlotFilename = sprintf('%dCams_Run_%s_cameras', specs.Cams, dateTimeStr);
-exportgraphics(fig2, [cameraPlotFilename '.pdf'], ...
-    'ContentType',     'vector', ...
-    'BackgroundColor', sty.ExportBgColor);
-fprintf('Camera plot saved to: %s.pdf\n', cameraPlotFilename);
+exportThesisFigure(fig2, cameraPlotFilename, ...
+    'Background', sty.ExportBgColor, 'Quiet', true);
+fprintf('Camera plot saved to: %s.{pdf,png}\n', cameraPlotFilename);
 end

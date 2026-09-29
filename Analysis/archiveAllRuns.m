@@ -9,7 +9,7 @@ function summary = archiveAllRuns(varargin)
 %   Why: the camera FOV bug (PixelSize not passed to CentralCamera) means
 %   every existing GA run was optimised against an unphysically wide FOV
 %   (~99°/122°). After the fix, the cost function changes magnitude and
-%   the GA-best chromosomes become apples-to-oranges versus future runs.
+%   the Optimised GA Rig chromosomes become apples-to-oranges versus future runs.
 %   This helper moves the ENTIRE result tree out of the way under
 %   Archive/<timestamped tag>/ so the next batch starts fresh.
 %

@@ -1,4 +1,4 @@
-function analyseConfiguration(varargin)
+function cfg = analyseConfiguration(varargin)
 % ANALYSECONFIGURATION  Analyse and tweak the best GA camera configuration.
 %
 % Loads the best CF3 (combined cost) result for a given condition, displays
@@ -12,6 +12,9 @@ function analyseConfiguration(varargin)
 %   analyseConfiguration('TargetType', 2)               % Best UGV result
 %   analyseConfiguration('GridMode', 2)                 % Best Normal grid result
 %   analyseConfiguration('RunFile', '7Cams_Run_X.mat')  % Specific result file
+%
+% Returns a struct of function handles for interactive tweaking. Call it
+% without an output to just print and plot the loaded configuration.
 %
 % After loading, use the returned handle to tweak and re-evaluate:
 %
@@ -27,6 +30,17 @@ function analyseConfiguration(varargin)
 %
 %   % Round all positions to nearest 10cm and orientations to nearest 5 degrees
 %   cfg.roundAll(0.10, 5)
+%
+%   % Fix cameras the GA left hanging upside down. The GA never constrains
+%   % roll about the optical axis, so optimal solutions routinely invert
+%   % cameras. This adds 180 degrees to the roll gene of those cameras,
+%   % which spins the image without moving the optical axis, so coverage
+%   % and cost are unchanged.
+%   cfg.makeUpright()
+%   cfg.makeUpright('level')      % stricter: level every horizon (does move cost)
+%
+%   % Snap orientations to the nearest mountable angle, keeping cameras upright
+%   cfg.snapOrientation(15)
 %
 %   % Snap all cameras to nearest wall (perimeter)
 %   cfg.snapToWalls()
@@ -146,6 +160,10 @@ function analyseConfiguration(varargin)
 
     cfg.roundAll = @(posStep, oriStepDeg) roundAllFn(posStep, oriStepDeg);
 
+    cfg.makeUpright = @(varargin) makeUprightFn(varargin{:});
+
+    cfg.snapOrientation = @(oriStepDeg) snapOrientationFn(oriStepDeg);
+
     cfg.snapToWalls = @() snapToWallsFn();
 
     cfg.evaluate = @() evaluateCurrentFn();
@@ -179,16 +197,42 @@ function analyseConfiguration(varargin)
     end
 
     function roundAllFn(posStep, oriStepDeg)
-        oriStepRad = deg2rad(oriStepDeg);
-        for c = 1:numCams
-            idx = (c-1)*6 + 1;
-            % Round positions
-            currentChrom(idx:idx+2) = round(currentChrom(idx:idx+2) / posStep) * posStep;
-            % Round orientations
-            currentChrom(idx+3:idx+5) = round(currentChrom(idx+3:idx+5) / oriStepRad) * oriStepRad;
-        end
-        fprintf('Rounded: positions to %.0fcm, orientations to %d degrees.\n', posStep*100, oriStepDeg);
+        % Snapping lives in snapChromosome so this, snapOrientation and the
+        % orientationSensitivity study all quantise identically.
+        [currentChrom, rep] = snapChromosome(currentChrom, ...
+            'OrientationStepDeg', oriStepDeg, 'PositionStep', posStep, ...
+            'NumCams', numCams);
+        fprintf('Rounded: positions to %.0fcm, orientations to %g degrees.\n', ...
+            posStep*100, oriStepDeg);
+        fprintf('  Max camera rotation %.2f deg (optical axis moved %.2f deg), max move %.3f m.\n', ...
+            max(rep.GeodesicDeg), max(rep.AxisShiftDeg), max(rep.PosShift));
         printCameraTable(currentChrom, numCams, 'CURRENT (after rounding)');
+        evaluateAllCosts(currentChrom, specs);
+    end
+
+    function makeUprightFn(mode)
+        % Roll inverted cameras upright about their own optical axes.
+        if nargin < 1 || isempty(mode), mode = 'flip'; end
+        [currentChrom, rep] = uprightCameras(currentChrom, ...
+            'Mode', mode, 'NumCams', numCams, 'Verbose', true);
+        fprintf('%d of %d cameras rolled upright (mode: %s).\n', ...
+            rep.NumChanged, numCams, rep.Mode);
+        if strcmp(rep.Mode, 'flip')
+            fprintf(['  Flip mode changes gamma by 180 deg only, so the optical axis ' ...
+                     'and\n  field of view are untouched — the costs below should be ' ...
+                     'unchanged.\n']);
+        end
+        printCameraTable(currentChrom, numCams, ['CURRENT (upright: ' rep.Mode ')']);
+        evaluateAllCosts(currentChrom, specs);
+    end
+
+    function snapOrientationFn(oriStepDeg)
+        % Orientation-only quantisation, positions left alone.
+        [currentChrom, rep] = snapChromosome(currentChrom, ...
+            'OrientationStepDeg', oriStepDeg, 'NumCams', numCams, 'Verbose', true);
+        fprintf('Orientations snapped to the nearest %g degrees.\n', oriStepDeg);
+        printCameraTable(currentChrom, numCams, ...
+            sprintf('CURRENT (orientations on %g deg grid)', oriStepDeg));
         evaluateAllCosts(currentChrom, specs);
     end
 
@@ -274,13 +318,14 @@ function analyseConfiguration(varargin)
         fprintf(fid, '  Dynamic Occlusion:      %.6f\n', twkOcc);
         fprintf(fid, '  Combined:               %.6f\n\n', twkComb);
 
-        fprintf(fid, '%-5s  %-8s %-8s %-8s  %-8s %-8s %-8s  %-10s\n', ...
-            'Cam', 'X(m)', 'Y(m)', 'Z(m)', 'Roll', 'Pitch', 'Yaw', 'Wall');
+        fprintf(fid, '%-5s  %-8s %-8s %-8s  %-8s %-8s %-8s  %-8s %-10s %-10s\n', ...
+            'Cam', 'X(m)', 'Y(m)', 'Z(m)', 'a(X)', 'b(Y)', 'g(Z)', 'Tilt', 'Mounting', 'Wall');
 
-        fprintf(fid, '%s\n', repmat('-', 1, 75));
+        fprintf(fid, '%s\n', repmat('-', 1, 95));
 
         vol = opts.Volume;
         wallTol = 0.15; % 15cm tolerance for wall assignment
+        info = cameraOrientationInfo(currentChrom, numCams);
 
         for c = 1:numCams
             idx = (c-1)*6 + 1;
@@ -296,13 +341,34 @@ function analyseConfiguration(varargin)
             else, wallStr = 'Interior';
             end
 
-            fprintf(fid, '%-5d  %-8.2f %-8.2f %-8.2f  %-8.1f %-8.1f %-8.1f  %-10s\n', ...
-                c, pos(1), pos(2), pos(3), ori(1), ori(2), ori(3), wallStr);
+            if info.Degenerate(c)
+                mountStr = 'vertical';
+            elseif info.Inverted(c)
+                mountStr = 'INVERTED';
+            else
+                mountStr = 'upright';
+            end
+
+            fprintf(fid, '%-5d  %-8.2f %-8.2f %-8.2f  %-8.1f %-8.1f %-8.1f  %-8.1f %-10s %-10s\n', ...
+                c, pos(1), pos(2), pos(3), ori(1), ori(2), ori(3), ...
+                info.TiltDeg(c), mountStr, wallStr);
+        end
+
+        nInv = nnz(info.Inverted & ~info.Degenerate);
+        if nInv > 0
+            fprintf(fid, '\n*** %d camera(s) marked INVERTED must be mounted upside down. ***\n', nInv);
+            fprintf(fid, '    Run cfg.makeUpright() before exporting to remove this: it rolls\n');
+            fprintf(fid, '    them 180 deg about their own optical axes, which leaves the field\n');
+            fprintf(fid, '    of view, the coverage and the cost unchanged.\n');
         end
 
         fprintf(fid, '\nNotes:\n');
         fprintf(fid, '- Positions in metres relative to room origin\n');
-        fprintf(fid, '- Orientations in degrees (Roll, Pitch, Yaw — XYZ Euler)\n');
+        fprintf(fid, '- Orientations in degrees: intrinsic XYZ Euler angles a, b, g, as\n');
+        fprintf(fid, '  R = Rx(a)*Ry(b)*Rz(g). Because Rz is applied last, g is a roll\n');
+        fprintf(fid, '  about the optical axis and does not change where the camera looks.\n');
+        fprintf(fid, '- Tilt is the roll measured from level: 0 = horizon level in frame,\n');
+        fprintf(fid, '  +/-180 = upside down.\n');
         fprintf(fid, '- Wall assignment based on %.0fcm tolerance\n', wallTol*100);
         fprintf(fid, '- Use OptiTrack Motive reprojection overlay to fine-align\n');
 
@@ -323,16 +389,35 @@ end
 %  ====================================================================
 
 function printCameraTable(chrom, numCams, label)
-    fprintf('\n  %-5s  %-8s %-8s %-8s  %-8s %-8s %-8s\n', ...
-        'Cam', 'X(m)', 'Y(m)', 'Z(m)', 'Roll°', 'Pitch°', 'Yaw°');
-    fprintf('  %s\n', repmat('-', 1, 60));
+    % Tilt is the roll about the optical axis measured from level: 0 means
+    % the horizon is level in frame, +/-180 means the camera is inverted.
+    % The GA does not constrain it, so it is worth seeing at a glance.
+    info = cameraOrientationInfo(chrom, numCams);
+
+    fprintf('\n  %-5s  %-8s %-8s %-8s  %-8s %-8s %-8s  %-8s %-9s\n', ...
+        'Cam', 'X(m)', 'Y(m)', 'Z(m)', 'α(X)°', 'β(Y)°', 'γ(Z)°', 'Tilt°', 'Status');
+    fprintf('  %s\n', repmat('-', 1, 82));
 
     for c = 1:numCams
         idx = (c-1)*6 + 1;
         pos = chrom(idx:idx+2);
         ori = rad2deg(chrom(idx+3:idx+5));
-        fprintf('  %-5d  %-8.2f %-8.2f %-8.2f  %-8.1f %-8.1f %-8.1f\n', ...
-            c, pos(1), pos(2), pos(3), ori(1), ori(2), ori(3));
+        if info.Degenerate(c)
+            status = 'vertical';
+        elseif info.Inverted(c)
+            status = 'INVERTED';
+        else
+            status = 'upright';
+        end
+        fprintf('  %-5d  %-8.2f %-8.2f %-8.2f  %-8.1f %-8.1f %-8.1f  %-8.1f %-9s\n', ...
+            c, pos(1), pos(2), pos(3), ori(1), ori(2), ori(3), ...
+            info.TiltDeg(c), status);
+    end
+
+    nInv = nnz(info.Inverted & ~info.Degenerate);
+    if nInv > 0
+        fprintf(['  %d camera(s) upside down. cfg.makeUpright() rolls them 180° about\n' ...
+                 '  their optical axes, which leaves coverage and cost unchanged.\n'], nInv);
     end
     fprintf('  [%s]\n\n', label);
 end

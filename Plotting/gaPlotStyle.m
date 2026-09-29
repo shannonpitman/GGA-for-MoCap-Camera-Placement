@@ -4,7 +4,8 @@ function s = gaPlotStyle()
 %   plotGA_* functions. Centralised here so every figure is consistent.
 %
 %   Designed for a single-column thesis layout (~160 mm text width).
-%   Figures exported as vector PDF via exportgraphics.
+%   Figures exported as vector PDF *and* 300 dpi PNG via
+%   exportThesisFigure — PDF for LaTeX, PNG for Word and slides.
 %
 %   THESIS STYLE LOCK: every plotGA_* function ends with a call to
 %   applyThesisStyle(fig) which forces white background + black text,
@@ -72,7 +73,7 @@ s.TargetNames    = {'UAV', 'UGV'};
 s.GridNames      = {'Uniform', 'Normal'};
 
 %% Export settings
-s.ExportFormat   = 'pdf';        % vector output for LaTeX
+s.ExportFormat   = {'pdf', 'png'};  % vector for LaTeX, raster for Word
 s.ExportDPI      = 300;          % fallback if exporting raster
 s.ExportBgColor  = 'white';      % exportgraphics BackgroundColor
 end
