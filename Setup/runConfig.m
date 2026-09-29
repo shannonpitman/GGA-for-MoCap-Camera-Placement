@@ -45,8 +45,12 @@ function cfg = runConfig(preset, varargin)
     cfg.CamLowerBounds = [-5 -4.5 0   -pi -pi/2 -pi];
     cfg.CamUpperBounds = [ 5  4.5 4.8  pi  pi/2  pi];
 
-    % Mountable regions (filled in by the preset below; see projectToMount)
-    cfg.Mount = struct('Regions', {{}});
+    % Mountable camera positions (see mountRegions):
+    %   Model 'walls_ceiling_tripod' | 'walls_ceiling' | 'tripod' | 'box'
+    %   TripodHeight [zMin zMax] tripod head height range [m]
+    %   Regions: custom region struct array; overrides Model when non-empty
+    cfg.Mount = struct('Model', 'walls_ceiling_tripod', ...
+                       'TripodHeight', [0.3 2.5], 'Regions', []);
 
     % Cost function
     cfg.Weights = [0.5 0.5];                 % [resolution, occlusion]
@@ -67,6 +71,7 @@ function cfg = runConfig(preset, varargin)
 
         case 'lowcost_tripod'
             cfg.Hardware = 'lowcost';
+            cfg.Mount.Model = 'tripod';
 
         otherwise
             error('runConfig:UnknownPreset', ...

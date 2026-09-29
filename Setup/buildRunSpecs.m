@@ -52,6 +52,7 @@ function [specs, problem, params] = buildRunSpecs(cfg, numCams, costFunctionType
     end
 
     specs.SectionCentres = generateSectionCentres(numCams, volume);
+    specs.MountRegions   = mountRegions(cfg);
     specs.UseNormTable = p.Results.UseNormTable;
     specs = setupCostParams(specs);
 

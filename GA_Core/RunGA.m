@@ -4,6 +4,11 @@ function out = RunGA(problem, params, specs)
     SectionCentres = specs.SectionCentres;
     warmStartUsed = specs.warmStart;
     warmStartChromosome = specs.warmChromosomes;
+    if isfield(specs, 'MountRegions')
+        mountRegions = specs.MountRegions;   % see mountRegions / projectToMount
+    else
+        mountRegions = [];
+    end
 
     % Problem 
     CostFunction = problem.CostFunction;
@@ -37,11 +42,11 @@ function out = RunGA(problem, params, specs)
 
     for i = 1:nPop
         % Generate Guided Random Solution 
-        chromosomes(i,:) = initialPopulation(VarMin, VarMax, SectionCentres, numCams);
+        chromosomes(i,:) = initialPopulation(VarMin, VarMax, SectionCentres, numCams, mountRegions);
     end
     if warmStartUsed
         for i = 1:size(warmStartChromosome,1)
-            chromosomes(i,:)= warmStartChromosome(i,:);
+            chromosomes(i,:)= enforceMount(warmStartChromosome(i,:), mountRegions);
         end
     end
     %Evaluate in Parallel
@@ -127,6 +132,7 @@ function out = RunGA(problem, params, specs)
    
             popc(l).Chromosome = max(popc(l).Chromosome, VarMin); % if greater than VarMin -> unchanged
             popc(l).Chromosome = min(popc(l).Chromosome, VarMax);
+            popc(l).Chromosome = enforceMount(popc(l).Chromosome, mountRegions); % mountable positions only
             % Evaluation 
         end
 

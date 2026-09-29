@@ -1,14 +1,22 @@
-function Chromosome = initialPopulation(VarMin, VarMax,  SectionCentres, numCams)
+function Chromosome = initialPopulation(VarMin, VarMax,  SectionCentres, numCams, mountRegions)
 % This function generates a guided inital population where the randomised
 % camera locations are placed on random boundary faces oriented towards the (proportional to amount of
 % cameras) subdivided workspace 
     Chromosome = zeros(1, 6*numCams);
     camPositions = zeros(numCams, 3);
     
+    % Positions: uniform within a random mountable region (mountRegions).
+    % Without regions, the legacy rule: a random face of the search box.
+    useMount = nargin >= 5 && ~isempty(mountRegions);
+
     %Pregenerate random values 
     faceIDs = randi(5,1, numCams);
     
     for c = 1:numCams
+        if useMount
+            camPositions(c,:) = sampleMount(mountRegions);
+            continue;
+        end
         chosenFace = faceIDs(c);
         
         switch chosenFace
