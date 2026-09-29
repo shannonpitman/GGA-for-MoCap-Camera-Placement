@@ -10,6 +10,6 @@ params.beta = 1;
 params.pC = cfg.CrossoverFraction; %probability of crossover 
 params.gamma = 0.1;
 params.mu = cfg.MutationRate; %probability of mutation
-params.sigma = cfg.MutationSigma;
+params.sigma = [repmat(cfg.MutationSigmaPos, 1, 3), repmat(cfg.MutationSigmaRot, 1, 3)]; % per camera: [m m m rad rad rad]
 params.Tournamentsize = cfg.TournamentSize;
 params.elitismDelay = 0; %MaxIt/3; % prioritise diversity initially 

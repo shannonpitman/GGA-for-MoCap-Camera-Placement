@@ -61,8 +61,10 @@ function cfg = runConfig(preset, varargin)
     cfg.PopulationSize  = [];                % [] = numCams * genesPerCam * 10
     cfg.PopulationScale = 10;
     cfg.CrossoverFraction = 1;
-    cfg.MutationRate    = 0.5;               % per-gene probability
-    cfg.MutationSigma   = 0.1;
+    cfg.MutationRate     = 0.5;              % per-gene probability
+    cfg.MutationSigmaPos = 0.1;              % position step s.d. [m]
+    cfg.MutationSigmaRot = 0.1;              % rotation-vector step s.d. [rad]
+    % (tuned values from ParameterTesting/tuneMutation go here)
     cfg.TournamentSize  = 3;
 
     %% Preset-specific values
