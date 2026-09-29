@@ -121,6 +121,7 @@ function sweep = orientationSensitivity(varargin)
     addParameter(p, 'TolerancePct',     2,     @isnumeric);
     addParameter(p, 'AdHocReference',   true,  @islogical);
     addParameter(p, 'Plot',             true,  @islogical);
+    addParameter(p, 'Preset',           'optitrack_lab', @ischar);   % see runConfig
     parse(p, varargin{:});
     opts = p.Results;
 
@@ -129,13 +130,8 @@ function sweep = orientationSensitivity(varargin)
 
     if opts.TargetType == 2
         modeTag = 'UGV';
-        volume  = [-4 4; -4 4; 0 opts.UGVmaxHeight];
-        targetSpacing = [opts.Spacing, opts.Spacing, ...
-                         min(opts.UGVzSpacing, opts.UGVmaxHeight)];
     else
         modeTag = 'UAV';
-        volume  = [-4 4; -4 4; 0 4];
-        targetSpacing = opts.Spacing;
     end
 
     %% Snap variants -----------------------------------------------------
@@ -149,25 +145,17 @@ function sweep = orientationSensitivity(varargin)
     variants = allVariants(keep);
     nV = numel(variants);
 
-    %% Specs — identical pipeline to runCameraOptimiser -----------------
-    specs = setupHardwareSpecs(numCams);
-    specs.WeightUncertainty = opts.WeightUnc;
-    specs.WeightOcclusion   = opts.WeightOcc;
-    specs.TargetType        = opts.TargetType;
-    specs.TargetMode        = opts.GridMode;
-    specs.Target            = generateTargetSpace(volume, opts.GridMode, targetSpacing);
-    specs.NumPoints         = size(specs.Target, 1);
-    specs.spacing           = opts.Spacing;
+    %% Specs and search bounds — same builder as the GA runs, so snapping
+    %% can never leave the feasible set
+    run = runConfig(opts.Preset, 'UGV_MaxHeight', opts.UGVmaxHeight, ...
+        'UGV_ZSpacing', opts.UGVzSpacing, 'Weights', [opts.WeightUnc, opts.WeightOcc]);
+    [specs, problem] = buildRunSpecs(run, numCams, 3, opts.TargetType, opts.GridMode, opts.Spacing);
+    volume = run.Volume;
     if opts.TargetType == 2
-        specs.spacingZ = opts.UGVzSpacing;
+        volume(3, :) = [0, run.UGV_MaxHeight];
     end
-    specs = setupCostParams(specs);
-
-    %% Search bounds, so snapping can never leave the feasible set ------
-    cameraLowerBounds = [-5 -4.5 0  -pi -pi/2 -pi];
-    cameraUpperBounds = [ 5  4.5 4.8 pi  pi/2  pi];
-    VarMin = repmat(cameraLowerBounds, 1, numCams);
-    VarMax = repmat(cameraUpperBounds, 1, numCams);
+    VarMin = problem.VarMin;
+    VarMax = problem.VarMax;
 
     %% Configurations ---------------------------------------------------
     [gaChrom, bestRun] = loadBestCF3Config(numCams, opts.TargetType, opts.GridMode);

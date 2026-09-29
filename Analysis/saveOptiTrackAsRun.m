@@ -39,33 +39,17 @@ function saveOptiTrackAsRun(varargin)
     addParameter(p, 'TargetMode', 1,                  @(x) any(x == [1 2]));
     addParameter(p, 'WeightUnc',  0.5,                @isnumeric);
     addParameter(p, 'WeightOcc',  0.5,                @isnumeric);
+    addParameter(p, 'Preset',     'optitrack_lab',    @ischar);   % see runConfig
     parse(p, varargin{:});
     opt = p.Results;
 
-    if opt.TargetType == 2
-        opt.Volume(3,:) = [0, 0.5];           % UGV slab
-        if opt.Spacing > 0.25
-            warning('saveOptiTrackAsRun:UGVspacing', ...
-                'Spacing %.2f m is too coarse for UGV slab; using 0.25 m.', opt.Spacing);
-            opt.Spacing = 0.25;
-        end
-    end
-
-    %% Build chromosome + specs
+    %% Build chromosome + specs (same builder as the GA runs; the UGV slab
+    %% uses the runConfig slab height and z spacing)
     numCams = 7;
     chrom = buildOptiTrackChromosome();
 
-    specs = setupHardwareSpecs(numCams);
-    specs.WeightUncertainty = opt.WeightUnc;
-    specs.WeightOcclusion   = opt.WeightOcc;
-    specs.TargetType        = opt.TargetType;
-    specs.TargetMode        = opt.TargetMode;
-    specs.Target            = generateTargetSpace(opt.Volume, opt.TargetMode, opt.Spacing);
-    specs.NumPoints         = size(specs.Target, 1);
-    specs.spacing           = opt.Spacing;
-    specs                   = setupCostParams(specs);
-    specs.warmStart         = false;
-    specs.warmChromosomes   = [];
+    run = runConfig(opt.Preset, 'Volume', opt.Volume, 'Weights', [opt.WeightUnc, opt.WeightOcc]);
+    specs = buildRunSpecs(run, numCams, 3, opt.TargetType, opt.TargetMode, opt.Spacing);
 
     %% Evaluate cost components
     [cameras, CamCenters] = setupCameras(chrom, numCams, ...

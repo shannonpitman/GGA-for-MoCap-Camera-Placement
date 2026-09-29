@@ -11,32 +11,41 @@ function batchRunGA(varargin)
 addProjectPaths();
 
 %% Inputs
+% Defaults come from runConfig. Pass 'Preset' to switch setup (e.g.
+% batchRunGA('Preset','lowcost_tripod')); any other runConfig field (Volume,
+% Hardware, Weights, MutationRate, ...) can also be overridden by name.
+presetArg = find(strcmpi(varargin(1:2:end), 'Preset'), 1);
+if isempty(presetArg)
+    preset = 'optitrack_lab';
+else
+    preset = varargin{2*presetArg};
+end
+base = runConfig(preset);
+
 p = inputParser;
+p.KeepUnmatched = true;
+addParameter(p, 'Preset', preset, @ischar);
 
 % Experimental design
-addParameter(p, 'CameraRange', [6 7 8], @isnumeric);
-addParameter(p, 'CostFunctions', [1 2 3], @isnumeric);
-addParameter(p, 'TargetTypes', [1 2], @isnumeric); % 1=UAV, 2=UGV
-addParameter(p, 'GridModes', [1 2], @isnumeric); % 1=Uniform, 2=Normal
-addParameter(p, 'Spacings', [1.0], @isnumeric); % metres (x-y on the grid)
-addParameter(p, 'UGV_MaxHeight', 0.5, @isnumeric);
-% UGV z-axis spacing is decoupled from x-y. Default 0.25 m gives 3 z-layers
-% on a 0.5 m slab (z = [0, 0.25, 0.5]). x-y spacing is governed by Spacings
-% so UGV x-y can match UAV without forcing 33x33 in-plane resolution.
-addParameter(p, 'UGV_ZSpacing', 0.25, @(x) isnumeric(x) && isscalar(x) && x > 0);
-addParameter(p, 'NumRepeats', 5, @isnumeric);
-addParameter(p, 'SkipWarmStart', false, @islogical);
+addParameter(p, 'CameraRange',   base.CameraRange,   @isnumeric);
+addParameter(p, 'CostFunctions', base.CostFunctions, @isnumeric);
+addParameter(p, 'TargetTypes',   base.TargetTypes,   @isnumeric); % 1=UAV, 2=UGV
+addParameter(p, 'GridModes',     base.GridModes,     @isnumeric); % 1=Uniform, 2=Normal
+addParameter(p, 'Spacings',      base.Spacings,      @isnumeric); % metres (x-y on the grid)
+addParameter(p, 'UGV_MaxHeight', base.UGV_MaxHeight, @isnumeric);
+% UGV z-axis spacing is decoupled from x-y (default 3 z-layers on a 0.5 m slab).
+addParameter(p, 'UGV_ZSpacing',  base.UGV_ZSpacing,  @(x) isnumeric(x) && isscalar(x) && x > 0);
+addParameter(p, 'NumRepeats',    base.NumRepeats,    @isnumeric);
+addParameter(p, 'SkipWarmStart', base.SkipWarmStart, @islogical);
 
-% GA parameters
-% PopulationSize [] => auto-scale per run as numCams * params-per-camera * 10
-% (= problem.nVar * 10). Pass a numeric value to force a fixed population.
-addParameter(p, 'MaxGenerations', 100,  @isnumeric);
-addParameter(p, 'PopulationSize', [],   @(x) isempty(x) || isnumeric(x));
+% GA parameters. PopulationSize [] => numCams * params-per-camera * PopulationScale.
+addParameter(p, 'MaxGenerations', base.MaxGenerations, @isnumeric);
+addParameter(p, 'PopulationSize', base.PopulationSize, @(x) isempty(x) || isnumeric(x));
 
-% Workspace volume & mounting constraints
-addParameter(p, 'Volume', [-4 4; -4 4; 0 4], @isnumeric);
-addParameter(p, 'CamLowerBounds', [-5 -4.5 0  -pi -pi/2 -pi], @isnumeric);
-addParameter(p, 'CamUpperBounds', [ 5  4.5 4.8 pi  pi/2  pi], @isnumeric);
+% Workspace volume & camera search box
+addParameter(p, 'Volume',         base.Volume,         @isnumeric);
+addParameter(p, 'CamLowerBounds', base.CamLowerBounds, @isnumeric);
+addParameter(p, 'CamUpperBounds', base.CamUpperBounds, @isnumeric);
 
 % Execution control
 addParameter(p, 'DryRun', false, @islogical);
@@ -46,7 +55,14 @@ addParameter(p, 'OutputDir', '', @ischar);
 addParameter(p, 'SuppressPlots',  true, @islogical);
 
 parse(p, varargin{:});
-cfg = p.Results;
+
+% Full run configuration = preset + every override. Unmatched names must be
+% runConfig fields (runConfig errors on anything else).
+unmatched = [fieldnames(p.Unmatched), struct2cell(p.Unmatched)].';
+cfg = runConfig(preset, unmatched{:});
+for f = fieldnames(p.Results).'
+    cfg.(f{1}) = p.Results.(f{1});
+end
 
 %% Tests
 % Cold-start runs first, then warm-start runs (which reference cold results).
@@ -203,75 +219,20 @@ for runIdx = startIdx:totalRuns
     try
         numCams = s.NumCams;
         costFunctionType = s.CostFunc;
-        targetType = s.TargetType;
-        targetMode = s.GridMode;
-        spacing = s.Spacing;
         warmStartUsed = s.WarmStart;
-        volume = cfg.Volume;
-        if targetType == 2
-            % UGV floor-slab volume
-            volume(3,:) = [0, cfg.UGV_MaxHeight];
-            % Anisotropic spacing for UGV: x-y honour the swept Spacing,
-            % z is held fixed (default 3 layers on a 0.5 m slab). This was
-            % previously clamped to UGV_MaxHeight/2 isotropic, which forced
-            % the in-plane grid to 0.25 m and made UGV runs ~7x slower than
-            % UAV. See generateTargetSpace for the vector-spacing contract.
-            zSp = min(cfg.UGV_ZSpacing, cfg.UGV_MaxHeight); % safety clamp
-            targetSpacing = [spacing, spacing, zSp];   % vector, for grid build
-        else
-            targetSpacing = spacing;                   % scalar, isotropic
-        end
-        
-        specs = setupHardwareSpecs(numCams);
-        
-        % Warm-start chromosomes
+
+        % Target space, hardware, cost params, bounds and GA params
+        [specs, problem, params] = buildRunSpecs(cfg, numCams, costFunctionType, ...
+            s.TargetType, s.GridMode, s.Spacing);
+
+        % Warm-start chromosomes: best seed plus one heavily mutated copy
         if warmStartUsed && ~isempty(s.WarmSeedChromosome)
             seedChrom = s.WarmSeedChromosome;
-            problem_temp = setupProblem(numCams, costFunctionType, ...
-                cfg.CamUpperBounds, cfg.CamLowerBounds);
             perturbed = Mutate(seedChrom, 1, 0.5);
-            perturbed = max(perturbed, problem_temp.VarMin);
-            perturbed = min(perturbed, problem_temp.VarMax);
+            perturbed = min(max(perturbed, problem.VarMin), problem.VarMax);
             specs.warmStart = true;
             specs.warmChromosomes = [seedChrom; perturbed];
-        else
-            specs.warmStart = false;
-            specs.warmChromosomes = [];
         end
-        
-        % Cost function weights
-        specs.WeightUncertainty = 0.5;
-        specs.WeightOcclusion   = 0.5;
-        
-        % Target space
-        specs.TargetType = targetType;
-        specs.TargetMode = targetMode;
-        specs.Target = generateTargetSpace(volume, targetMode, targetSpacing);
-        specs.NumPoints = size(specs.Target, 1);
-        specs.spacing = spacing;                 % scalar x-y; kept for log
-        if targetType == 2
-            specs.spacingZ = zSp;                % UGV z spacing (info only)
-        end
-        
-        % Section centres
-        specs.SectionCentres = generateSectionCentres(numCams, volume);
-        
-        % Cost parameters
-        specs = setupCostParams(specs);
-        
-        % Problem definition
-        problem = setupProblem(numCams, costFunctionType, ...
-            cfg.CamUpperBounds, cfg.CamLowerBounds);
-        
-        % GA parameters. Population scales with chromosome length unless a
-        % fixed PopulationSize was supplied: nPop = numCams * numParams * 10.
-        numParams = numel(cfg.CamLowerBounds);
-        if isempty(cfg.PopulationSize)
-            popSize = numCams * numParams * 10;
-        else
-            popSize = cfg.PopulationSize;
-        end
-        params = setupGAparams(cfg.MaxGenerations, popSize);
         
         %% Run GA 
         tic;

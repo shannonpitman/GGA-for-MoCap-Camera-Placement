@@ -45,6 +45,7 @@ function out = evaluateOptiTrackCost(varargin)
     addParameter(p, 'WeightUnc',    0.5,  @isnumeric);
     addParameter(p, 'WeightOcc',    0.5,  @isnumeric);
     addParameter(p, 'Verbose',      false,@islogical);
+    addParameter(p, 'Preset',       'optitrack_lab', @ischar);   % see runConfig
     parse(p, varargin{:});
     opts = p.Results;
 
@@ -53,7 +54,7 @@ function out = evaluateOptiTrackCost(varargin)
     if isempty(cache)
         cache = containers.Map('KeyType', 'char', 'ValueType', 'any');
     end
-    cacheKey = sprintf('TT%d_GM%d_sp%.4f_wu%.3f_wo%.3f', ...
+    cacheKey = sprintf('%s_TT%d_GM%d_sp%.4f_wu%.3f_wo%.3f', opts.Preset, ...
         opts.TargetType, opts.GridMode, opts.Spacing, ...
         opts.WeightUnc, opts.WeightOcc);
     if isKey(cache, cacheKey)
@@ -66,29 +67,10 @@ function out = evaluateOptiTrackCost(varargin)
 
     numCams = 7;
 
-    %% Volume + target-space spacing per target type ------------------
-    if opts.TargetType == 2
-        volume = [-4 4; -4 4; 0 opts.UGVmaxHeight];
-        targetSpacing = [opts.Spacing, opts.Spacing, ...
-                         min(opts.UGVzSpacing, opts.UGVmaxHeight)];
-    else
-        volume = [-4 4; -4 4; 0 4];
-        targetSpacing = opts.Spacing;
-    end
-
-    %% Specs ----------------------------------------------------------
-    specs = setupHardwareSpecs(numCams);
-    specs.WeightUncertainty = opts.WeightUnc;
-    specs.WeightOcclusion   = opts.WeightOcc;
-    specs.TargetType        = opts.TargetType;
-    specs.TargetMode        = opts.GridMode;
-    specs.Target            = generateTargetSpace(volume, opts.GridMode, targetSpacing);
-    specs.NumPoints         = size(specs.Target, 1);
-    specs.spacing           = opts.Spacing;
-    if opts.TargetType == 2
-        specs.spacingZ = opts.UGVzSpacing;
-    end
-    specs = setupCostParams(specs);
+    %% Specs: same builder as the GA runs
+    run = runConfig(opts.Preset, 'UGV_MaxHeight', opts.UGVmaxHeight, ...
+        'UGV_ZSpacing', opts.UGVzSpacing, 'Weights', [opts.WeightUnc, opts.WeightOcc]);
+    specs = buildRunSpecs(run, numCams, 3, opts.TargetType, opts.GridMode, opts.Spacing);
 
     %% Chromosome + cameras ------------------------------------------
     chrom = buildOptiTrackChromosome();

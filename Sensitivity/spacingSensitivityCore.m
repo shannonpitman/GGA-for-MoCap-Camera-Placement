@@ -45,7 +45,8 @@ function sweep = spacingSensitivityCore(opts)
     projectRoot = fileparts(fileparts(mfilename('fullpath')));   % .../<root>
 
     %% Hardware spec (used for ALL configurations to isolate spacing effect)
-    specs = setupHardwareSpecs(opts.numCams);
+    if ~isfield(opts, 'hardware'), opts.hardware = 'optitrack'; end
+    specs = setupHardwareSpecs(opts.numCams, opts.hardware);
     specs.WeightUncertainty = opts.weightUnc;
     specs.WeightOcclusion   = opts.weightOcc;
     specs.TargetType        = opts.targetType;

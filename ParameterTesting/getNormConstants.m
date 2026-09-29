@@ -31,6 +31,7 @@ function nc = getNormConstants(varargin)
         if isfield(s,'TargetMode'), leading = [leading, {'GridMode',   s.TargetMode}]; end
         if isfield(s,'Cams'),       leading = [leading, {'NumCameras', s.Cams}];       end
         if isfield(s,'spacing'),    leading = [leading, {'Spacing',    s.spacing}];    end
+        if isfield(s,'RunConfig'),  leading = [leading, {'File', normTableFile(s.RunConfig.Preset)}]; end
         varargin = [leading, varargin(2:end)];
     end
 

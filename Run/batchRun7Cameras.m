@@ -30,6 +30,7 @@ function results = batchRun7Cameras(varargin)
 
     %% Inputs
     p = inputParser;
+    addParameter(p, 'Preset',          'optitrack_lab', @ischar);   % see runConfig
     addParameter(p, 'CostFunctions',   [1 2 3], @isnumeric);
     addParameter(p, 'NumColdRepeats',  5,       @isnumeric);
     addParameter(p, 'NumWarmRepeats',  5,       @isnumeric);
@@ -50,6 +51,12 @@ function results = batchRun7Cameras(varargin)
     cfg = p.Results;
 
     numCams = 7;
+
+    % Hardware, mount model, weights and GA settings from runConfig; the
+    % workspace/bounds/budget arguments above override the preset.
+    run = runConfig(cfg.Preset, 'Volume', cfg.Volume, ...
+        'CamLowerBounds', cfg.CamLowerBounds, 'CamUpperBounds', cfg.CamUpperBounds, ...
+        'MaxGenerations', cfg.MaxGenerations, 'PopulationSize', cfg.PopulationSize);
 
     % Population scales with chromosome length unless a fixed PopulationSize
     % was supplied: nPop = numCams * numParams * 10 (7 cams -> 420).
@@ -86,11 +93,6 @@ function results = batchRun7Cameras(varargin)
         return;
     end
 
-    %% Set up the (mostly fixed) per-run inputs once
-    volume   = cfg.Volume;
-    if cfg.TargetType == 2
-        volume(3,:) = [0 0.5];
-    end
     spacing  = cfg.Spacing;
 
     %% Suppress figures inside RunGA / visualizeCameraCoverage
@@ -120,13 +122,8 @@ function results = batchRun7Cameras(varargin)
             fprintf('  cold rep %d/%d  [%d/%d total]\n', ...
                 r, cfg.NumColdRepeats, runIdxAll, nTotal);
 
-            specs = makeSpecs(numCams, cfType, cfg, volume, spacing);
-            specs.warmStart       = false;
-            specs.warmChromosomes = [];
-
-            problem = setupProblem(numCams, cfType, ...
-                cfg.CamUpperBounds, cfg.CamLowerBounds);
-            params  = setupGAparams(cfg.MaxGenerations, popSize);
+            [specs, problem, params] = buildRunSpecs(run, numCams, cfType, ...
+                cfg.TargetType, cfg.GridMode, spacing);
 
             tic;
             out = RunGA(problem, params, specs);
@@ -169,17 +166,13 @@ function results = batchRun7Cameras(varargin)
                 fprintf('  warm rep %d/%d  [%d/%d total]   seed: %s (%.6f)\n', ...
                     r, cfg.NumWarmRepeats, runIdxAll, nTotal, seedFrom, seedCost);
 
-                specs = makeSpecs(numCams, cfType, cfg, volume, spacing);
-
-                problem  = setupProblem(numCams, cfType, ...
-                    cfg.CamUpperBounds, cfg.CamLowerBounds);
+                [specs, problem, params] = buildRunSpecs(run, numCams, cfType, ...
+                    cfg.TargetType, cfg.GridMode, spacing);
                 perturb  = Mutate(seed, 1, 0.5);
                 perturb  = max(perturb, problem.VarMin);
                 perturb  = min(perturb, problem.VarMax);
                 specs.warmStart       = true;
                 specs.warmChromosomes = [seed; perturb];
-
-                params = setupGAparams(cfg.MaxGenerations, popSize);
 
                 tic;
                 out = RunGA(problem, params, specs);
@@ -221,21 +214,6 @@ function results = batchRun7Cameras(varargin)
     totalSec = toc(batchTic);
     fprintf('\n  BATCH COMPLETE — %.1f min wall time\n', totalSec/60);
     printSummary(results);
-end
-
-
-% =====================================================================
-function specs = makeSpecs(numCams, cfType, cfg, volume, spacing) %#ok<INUSL>
-    specs = setupHardwareSpecs(numCams);
-    specs.WeightUncertainty = 0.5;
-    specs.WeightOcclusion   = 0.5;
-    specs.TargetType        = cfg.TargetType;
-    specs.TargetMode        = cfg.GridMode;
-    specs.Target            = generateTargetSpace(volume, cfg.GridMode, spacing);
-    specs.NumPoints         = size(specs.Target, 1);
-    specs.spacing           = spacing;
-    specs.SectionCentres    = generateSectionCentres(numCams, volume);
-    specs                   = setupCostParams(specs);
 end
 
 

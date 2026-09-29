@@ -43,7 +43,7 @@ function normTable = buildNormFromBatch(schedule, cfg, varargin)
 
     projectRoot = addProjectPaths();
     if isempty(o.OutFile)
-        o.OutFile = fullfile(projectRoot, 'Results', 'normTable.mat');
+        o.OutFile = normTableFile(getfielddef(cfg, 'Preset', 'optitrack_lab'));
     end
     if ~isfolder(fileparts(o.OutFile))
         mkdir(fileparts(o.OutFile));
@@ -162,34 +162,16 @@ end
 
 %% Helpers
 function specs = buildInstanceSpecs(numCams, tt, gm, sp, cfg)
-% Mirror the specs construction in batchRunGA's main loop so the cross-eval
-% is on an identical target space / geometry.
-    volume = getfielddef(cfg, 'Volume', [-4 4; -4 4; 0 4]);
-    maxH   = getfielddef(cfg, 'UGV_MaxHeight', 0.5);
-    zSpc   = getfielddef(cfg, 'UGV_ZSpacing', 0.25);
-
-    if tt == 2
-        volume(3, :)  = [0, maxH];
-        zSp           = min(zSpc, maxH);
-        targetSpacing = [sp, sp, zSp];
-    else
-        targetSpacing = sp;
+% Same builder as batchRunGA's main loop (buildRunSpecs), so the cross-eval
+% is on an identical target space / geometry / hardware. Older batch logs
+% without a Preset field are treated as the lab preset.
+    run = runConfig(getfielddef(cfg, 'Preset', 'optitrack_lab'));
+    for f = fieldnames(run).'
+        if isfield(cfg, f{1})
+            run.(f{1}) = cfg.(f{1});
+        end
     end
-
-    specs = setupHardwareSpecs(numCams);
-    specs.WeightUncertainty = 0.5;
-    specs.WeightOcclusion   = 0.5;
-    specs.TargetType = tt;
-    specs.TargetMode = gm;
-    specs.Target = generateTargetSpace(volume, gm, targetSpacing);
-    specs.NumPoints = size(specs.Target, 1);
-    specs.spacing = sp;
-    if tt == 2
-        specs.spacingZ = zSp;
-    end
-    specs.SectionCentres = generateSectionCentres(numCams, volume);
-    specs.UseNormTable = false;   % must not depend on the file we are writing
-    specs = setupCostParams(specs);
+    specs = buildRunSpecs(run, numCams, 3, tt, gm, sp, 'UseNormTable', false);
 end
 
 function val = evalComponent(chrom, specs, which)
