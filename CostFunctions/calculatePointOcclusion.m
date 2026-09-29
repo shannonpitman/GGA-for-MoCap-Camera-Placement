@@ -1,26 +1,31 @@
 function Q = calculatePointOcclusion(visibleCams, camViewVectors, minAngle, maxAngle)
-% Calculate occlusion angle for a single point
-% Q= Sum of angles for which target point is not visible in two triangulable views
+% Occlusion error for a single target point (Rahimian & Kearney 2017, Eq. 1)
+%   E = 360 + u  if no camera sees the point (u = 360)
+%   E = 360      if exactly one camera sees it
+%   E = Q        otherwise, where Q is the sum of occluder orientations for
+%                which the point is not visible in two triangulable views
+%
+% visibleCams    - indices of cameras with the point in FOV and range
+% camViewVectors - 3 x k unit view vectors, column i belongs to visibleCams(i)
 
     numVisible = length(visibleCams);
-    
-    %Need at least 2 cameras to triangulate
-    if numVisible < 2
-        Q = 360; % Maximum error
-        if numVisible < 1
-            Q = Q + 360;  %Further penalty if no cameras see the point (based on paper) 
-        return;
-        end
-    end
-    
-    horizViewVectors = camViewVectors(1:2, :); % Project view vectors onto horizontal plane
-    norms = vecnorm(horizViewVectors);
-    validIdx = norms > 0;
-    horizViewVectors(:, validIdx) = horizViewVectors(:, validIdx) ./ norms(validIdx);
-    
-    viewAngles = atan2d(horizViewVectors(2, :), horizViewVectors(1, :)); % Calculate angles in horizontal plane [degrees]
-    viewAngles = mod(viewAngles, 360); % Convert to 0-360 range
-    viewAngles = sort(viewAngles);
 
-    Q = calculateOccludedSections(viewAngles, camViewVectors, minAngle, maxAngle); % Process each section between camera views
+    if numVisible < 1
+        Q = 720;   % 360 + u, u = 360 (paper, Sec. 3.4)
+        return;
+    elseif numVisible < 2
+        Q = 360;
+        return;
+    end
+
+    % Horizontal direction of each view vector [deg]. Angles stay in the
+    % same column order as camViewVectors so indices always match.
+    horiz = camViewVectors(1:2, :);
+    viewAngles = mod(atan2d(horiz(2, :), horiz(1, :)), 360);
+
+    % A camera straight above/below the point lies on the occluder's axis
+    % and is never occluded (paper, Sec. 3.4).
+    onAxis = vecnorm(horiz) < 1e-9;
+
+    Q = calculateOccludedSections(viewAngles, onAxis, camViewVectors, minAngle, maxAngle);
 end
