@@ -163,36 +163,12 @@ end
 %% ---- Local helpers ------------------------------------------------------
 
 function [unc, occ] = perPointCosts(chrom, specs)
-% Evaluate uncertainty and occlusion at every target point.
-    numCams = specs.Cams;
-    [cameras, camCenters] = setupCameras(chrom, numCams, ...
-        specs.Resolution, specs.Focal, specs.FocalWide, specs.PrincipalPoint, specs.PixelSize);
-
-    resolution         = specs.Resolution;
-    TargetSpace        = specs.Target;
-    adjacentSurfaces   = specs.PreComputed.adjacentSurfaces;
-    du                 = specs.PreComputed.du;
-    dv                 = specs.PreComputed.dv;
-    penaltyUncertainty = specs.PreComputed.penaltyUncertainty;
-    w2                 = specs.PreComputed.w2;
-    minTriangAngle     = specs.PreComputed.minTriangAngle;
-    maxTriangAngle     = specs.PreComputed.maxTriangAngle;
-    maxCameraRange     = specs.PreComputed.maxCameraRange;
-    maxCameraRangeWide = specs.PreComputed.maxCameraRangeWide;
-    focalWide          = specs.FocalWide;
-
-    nPts = size(TargetSpace, 1);
-    unc  = zeros(nPts, 1);
-    occ  = zeros(nPts, 1);
-
-    parfor pt = 1:nPts
-        point = TargetSpace(pt, :);
-        unc(pt) = computePointUncertainty(point, cameras, camCenters, ...
-            numCams, adjacentSurfaces, du, dv, penaltyUncertainty, w2, resolution);
-        [visCams, viewVecs] = findVisibleCameras(point, cameras, camCenters, ...
-            numCams, resolution, maxCameraRange, maxCameraRangeWide, focalWide);
-        occ(pt) = calculatePointOcclusion(visCams, viewVecs, minTriangAngle, maxTriangAngle);
-    end
+% Per-point values straight from the cost functions, so the plotted field
+% uses exactly the same visibility and penalties as the GA.
+    [cameras, camCenters] = setupCameras(chrom, specs.Cams, specs.Resolution, ...
+        specs.Focal, specs.FocalWide, specs.PrincipalPoint, specs.PixelSize);
+    [~, unc] = resUncertainty(specs, cameras, camCenters);
+    [~, occ] = dynamicOcclusion(specs, cameras, camCenters);
 end
 
 

@@ -1,4 +1,5 @@
-function occlusionError = dynamicOcclusion(specs, cameras, CamCenters)
+function [occlusionError, occlusionAngles] = dynamicOcclusion(specs, cameras, CamCenters)
+% Second output: per-point occlusion angle Q [deg], for cost-field plots.
 %   Based on probabilistic model from Rahimian & Kearney 2017 paper
 %   Considers all possible orientations of vertical occluder
 % occlusionError= Mean occlusion angle across all target points

@@ -1,4 +1,5 @@
-function errorVolume = resUncertainty(specs, cameras, CamCenters)
+function [errorVolume, uncertainties] = resUncertainty(specs, cameras, CamCenters)
+% Second output: per-point uncertainty [m], for cost-field plots.
 %Computes total uncertainty due to image quantisation over a 3D target
 %Space for a given chromosome (camera arrangement) 
     numCams = specs.Cams;
@@ -18,8 +19,11 @@ function errorVolume = resUncertainty(specs, cameras, CamCenters)
 
     % Batched projection of every point through every camera, done once
     % here instead of numPoints*numCams per-point project() calls inside the
-    % loop. Returns U, V, visMask (all numPoints x numCams).
-    [U, V, visMask] = projectAllPoints(cameras, TargetSpace, CamCenters, resolution);
+    % loop. Visibility is the shared FOV + range test used by the occlusion
+    % term and the coverage statistics. Returns U, V, visMask (numPoints x numCams).
+    [visMask, ~, U, V] = projectVisibilityOcclusion(cameras, TargetSpace, CamCenters, ...
+        resolution, specs.PreComputed.maxCameraRange, specs.PreComputed.maxCameraRangeWide, ...
+        specs.FocalWide);
 
     parfor p =1:numPoints
         uncertainties(p) = computePointUncertainty(TargetSpace(p,:), cameras, CamCenters, ...

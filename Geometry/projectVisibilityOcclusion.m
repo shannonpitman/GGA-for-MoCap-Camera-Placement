@@ -1,4 +1,4 @@
-function [visMask, viewUnit] = projectVisibilityOcclusion(cameras, TargetSpace, camCentres, resolution, maxRange, maxRangeWide, FocalWide)
+function [visMask, viewUnit, U, V] = projectVisibilityOcclusion(cameras, TargetSpace, camCentres, resolution, maxRange, maxRangeWide, FocalWide)
 %PROJECTVISIBILITYOCCLUSION  Batched visibility + view vectors for the
 %   dynamic-occlusion cost. Vectorised replacement for the per-point
 %   projection/range work inside findVisibleCameras.
@@ -15,9 +15,13 @@ function [visMask, viewUnit] = projectVisibilityOcclusion(cameras, TargetSpace, 
 %     visMask  - N x numCams logical visibility
 %     viewUnit - N x numCams x 3 unit vectors from camera centre to point
 %                (zero where dist == 0; only used where visMask is true)
+%     U, V     - N x numCams projected pixel coordinates (from projectAllPoints)
+%
+%   This is the single visibility test for both cost terms and the
+%   coverage statistics: FOV + in front of camera + effective range.
 
     % Image-plane + in-front visibility (shared with the uncertainty path).
-    [~, ~, inImage] = projectAllPoints(cameras, TargetSpace, camCentres, resolution);
+    [U, V, inImage] = projectAllPoints(cameras, TargetSpace, camCentres, resolution);
 
     numCams = numel(cameras);
     N       = size(TargetSpace, 1);

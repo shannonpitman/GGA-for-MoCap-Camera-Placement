@@ -38,47 +38,10 @@ function [cov, stats] = perTargetCoverage(chromosome, specs)
     [cameras, camCenters] = setupCameras(chromosome, numCams, resolution, ...
         focalLength, focalLengthWide, principalPoint, specs.PixelSize);
 
-    % World-frame optical axis (+Z column of each camera's rotation matrix).
-    opticAxes = zeros(3, numCams);
-    for c = 1:numCams
-        Rcw = cameras{c}.T.rotm;
-        opticAxes(:, c) = Rcw(:, 3);
-    end
-
-    cov = zeros(nPts, 1);
-    for pt = 1:nPts
-        point    = T(pt, :);
-        visCount = 0;
-        for c = 1:numCams
-            % (c) In front of camera
-            viewVec = point(:) - camCenters(:, c);
-            depth   = dot(viewVec, opticAxes(:, c));
-            if depth <= 0
-                continue;
-            end
-
-            % (a) Inside image plane
-            uv = cameras{c}.project(point);
-            if ~(uv(1) >= 1 && uv(1) <= resolution(1) && ...
-                 uv(2) >= 1 && uv(2) <= resolution(2))
-                continue;
-            end
-
-            % (b) Within effective range
-            distance = norm(viewVec);
-            if cameras{c}.f == focalWide
-                effRange = maxRangeWide;
-            else
-                effRange = maxRange;
-            end
-            if distance > effRange || distance <= 0
-                continue;
-            end
-
-            visCount = visCount + 1;
-        end
-        cov(pt) = visCount;
-    end
+    % Shared FOV + in-front + range test (same as both cost functions)
+    visMask = projectVisibilityOcclusion(cameras, T, camCenters, resolution, ...
+        maxRange, maxRangeWide, focalWide);
+    cov = sum(visMask, 2);
 
     if nargout > 1
         stats.avg        = mean(cov);

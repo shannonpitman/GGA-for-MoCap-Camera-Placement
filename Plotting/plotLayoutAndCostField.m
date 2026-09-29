@@ -203,20 +203,12 @@ end
 
 
 function [unc, occ] = localPerPointCosts(chrom, specs)
-    numCams = specs.Cams;
-    [cameras, camCenters] = setupCameras(chrom, numCams, specs.Resolution, ...
+% Per-point values straight from the cost functions, so the plotted field
+% uses exactly the same visibility and penalties as the GA.
+    [cameras, camCenters] = setupCameras(chrom, specs.Cams, specs.Resolution, ...
         specs.Focal, specs.FocalWide, specs.PrincipalPoint, specs.PixelSize);
-    P = specs.PreComputed;  res = specs.Resolution;  T = specs.Target;
-    fw = specs.FocalWide;   n = size(T,1);
-    unc = zeros(n,1);  occ = zeros(n,1);
-    parfor pt = 1:n
-        point = T(pt,:);
-        unc(pt) = computePointUncertainty(point, cameras, camCenters, numCams, ...
-            P.adjacentSurfaces, P.du, P.dv, P.penaltyUncertainty, P.w2, res);
-        [vc, vv] = findVisibleCameras(point, cameras, camCenters, numCams, res, ...
-            P.maxCameraRange, P.maxCameraRangeWide, fw);
-        occ(pt) = calculatePointOcclusion(vc, vv, P.minTriangAngle, P.maxTriangAngle);
-    end
+    [~, unc] = resUncertainty(specs, cameras, camCenters);
+    [~, occ] = dynamicOcclusion(specs, cameras, camCenters);
 end
 
 
