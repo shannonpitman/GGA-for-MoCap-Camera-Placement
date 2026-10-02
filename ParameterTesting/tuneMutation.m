@@ -4,10 +4,13 @@ function result = tuneMutation(varargin)
 %   result = tuneMutation()            % full study (simulation machine)
 %   result = tuneMutation('Quick', true)   % 2-minute smoke test
 %
-%   Three parameters are tuned together:
-%     MutationRate      mu       per-gene mutation probability   [0.05, 0.6]
-%     MutationSigmaPos  s_pos    position step s.d. [m]          [0.02, 0.5]
-%     MutationSigmaRot  s_rot    rotation-vector step s.d.       [1, 30] deg
+%   Three parameters are tuned together (default ranges narrowed from the
+%   2026-09-30 Mac pilot, Results/Tuning/MacPilot):
+%     MutationRate      mu       per-gene mutation probability   [0.02, 0.3]
+%     MutationSigmaPos  s_pos    position step s.d. [m]          [0.1, 0.5]
+%     MutationSigmaRot  s_rot    rotation-vector step s.d.       [1, 10] deg
+%   The 1/L rule (mu = 1/numGenes = 0.024 at 7 cameras) lies inside the
+%   mu range.
 %
 %   STAGE 1 - search. Bayesian optimisation (bayesopt, expected improvement)
 %   over the three parameters. Each evaluation runs the GA on one scenario
@@ -16,8 +19,9 @@ function result = tuneMutation(varargin)
 %   (common random numbers), so differences come from the parameters, not
 %   the draw.
 %
-%   STAGE 2 - validation. The best ValidateTop candidates from stage 1 and
-%   the current runConfig setting are re-run at the full budget
+%   STAGE 2 - validation. The best ValidateTop candidates from stage 1, the
+%   ExtraCandidates (default: the pilot winner) and the current runConfig
+%   setting are re-run at the full budget
 %   (FullGenerations) for ValidateSeeds seeds each. The recommendation is
 %   the candidate with the lowest median final J; the IQR is reported so a
 %   lucky median is visible.
@@ -41,6 +45,11 @@ function result = tuneMutation(varargin)
 %     'ValidateTop'     candidates re-run in stage 2   3
 %     'ValidateSeeds'   seeds per stage-2 candidate    5
 %     'FullGenerations' stage-2 budget               100
+%     'RateRange'       mu search range                [0.02 0.3]
+%     'SigmaPosRange'   s_pos search range [m]         [0.1 0.5]
+%     'SigmaRotDegRange' s_rot search range [deg]      [1 10]
+%     'ExtraCandidates' struct array (Label, MutationRate, MutationSigmaPos,
+%                       SigmaRotDeg) validated in stage 2; default = pilot winner
 %     'Quick'           tiny smoke-test settings     false
 
     addProjectPaths();
@@ -58,6 +67,11 @@ function result = tuneMutation(varargin)
     addParameter(p, 'ValidateSeeds',   5,    @isnumeric);
     addParameter(p, 'FullGenerations', 100,  @isnumeric);
     addParameter(p, 'PopulationSize',  [],   @(x) isempty(x) || isnumeric(x));
+    addParameter(p, 'RateRange',        [0.02 0.3], @isnumeric);
+    addParameter(p, 'SigmaPosRange',    [0.1 0.5],  @isnumeric);
+    addParameter(p, 'SigmaRotDegRange', [1 10],     @isnumeric);
+    addParameter(p, 'ExtraCandidates', struct('Label', 'pilot', 'MutationRate', 0.114, ...
+        'MutationSigmaPos', 0.406, 'SigmaRotDeg', 4.2), @isstruct);
     addParameter(p, 'Quick',           false, @islogical);
     addParameter(p, 'OutputDir',       '',   @ischar);
     parse(p, varargin{:});
@@ -80,14 +94,16 @@ function result = tuneMutation(varargin)
         o.NumCameras, o.TargetType, o.GridMode, o.Spacing);
     fprintf('  Stage 1: %d bayesopt evaluations x %d seeds x %d generations\n', ...
         o.MaxEvaluations, o.NumSeeds, o.Generations);
-    fprintf('  Stage 2: top %d + current setting x %d seeds x %d generations\n\n', ...
-        o.ValidateTop, o.ValidateSeeds, o.FullGenerations);
+    fprintf('  Search ranges: mu [%g %g], s_pos [%g %g] m, s_rot [%g %g] deg\n', ...
+        o.RateRange, o.SigmaPosRange, o.SigmaRotDegRange);
+    fprintf('  Stage 2: top %d + %d extra + current setting x %d seeds x %d generations\n\n', ...
+        o.ValidateTop, numel(o.ExtraCandidates), o.ValidateSeeds, o.FullGenerations);
 
     %% Stage 1: Bayesian optimisation
     vars = [ ...
-        optimizableVariable('MutationRate',     [0.05 0.6]), ...
-        optimizableVariable('MutationSigmaPos', [0.02 0.5], 'Transform', 'log'), ...
-        optimizableVariable('SigmaRotDeg',      [1 30],     'Transform', 'log')];
+        optimizableVariable('MutationRate',     o.RateRange,        'Transform', 'log'), ...
+        optimizableVariable('MutationSigmaPos', o.SigmaPosRange,    'Transform', 'log'), ...
+        optimizableVariable('SigmaRotDeg',      o.SigmaRotDegRange, 'Transform', 'log')];
 
     evalLog = struct('MutationRate', {}, 'MutationSigmaPos', {}, 'SigmaRotDeg', {}, ...
                      'MedianJ', {}, 'Costs', {}, 'FinalDiversity', {}, 'Seconds', {});
@@ -121,6 +137,11 @@ function result = tuneMutation(varargin)
         e = evalLog(top(k));
         cands(end+1) = struct('Label', sprintf('tuned #%d', k), 'MutationRate', e.MutationRate, ...
             'MutationSigmaPos', e.MutationSigmaPos, 'SigmaRotDeg', e.SigmaRotDeg); %#ok<AGROW>
+    end
+    for k = 1:numel(o.ExtraCandidates)
+        x = o.ExtraCandidates(k);
+        cands(end+1) = struct('Label', x.Label, 'MutationRate', x.MutationRate, ...
+            'MutationSigmaPos', x.MutationSigmaPos, 'SigmaRotDeg', x.SigmaRotDeg); %#ok<AGROW>
     end
     cands(end+1) = struct('Label', 'current', 'MutationRate', base.MutationRate, ...
         'MutationSigmaPos', base.MutationSigmaPos, 'SigmaRotDeg', rad2deg(base.MutationSigmaRot));

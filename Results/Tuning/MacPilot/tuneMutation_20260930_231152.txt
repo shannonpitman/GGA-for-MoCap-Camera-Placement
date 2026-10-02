@@ -1,0 +1,23 @@
+tuneMutation summary
+====================
+Preset optitrack_lab, 7 cameras, TT1 GM1 spacing 1.00 m
+Stage 1: 10 evaluations x 2 seeds x 30 generations
+Stage 2: 1 seeds x 100 generations
+
+Stage 1 (sorted by median J)
+  mu=0.114  s_pos=0.406 m  s_rot=  4.2 deg  median J 0.69232
+  mu=0.117  s_pos=0.413 m  s_rot=  4.3 deg  median J 0.69780
+  mu=0.105  s_pos=0.354 m  s_rot=  3.8 deg  median J 0.70442
+  mu=0.053  s_pos=0.466 m  s_rot= 11.6 deg  median J 0.70822
+  mu=0.131  s_pos=0.115 m  s_rot= 26.3 deg  median J 0.73135
+  mu=0.562  s_pos=0.367 m  s_rot=  2.8 deg  median J 0.74163
+  mu=0.085  s_pos=0.044 m  s_rot=  3.4 deg  median J 0.74372
+  mu=0.276  s_pos=0.491 m  s_rot=  5.9 deg  median J 0.76269
+  mu=0.218  s_pos=0.265 m  s_rot= 28.3 deg  median J 0.82065
+  mu=0.524  s_pos=0.124 m  s_rot= 14.4 deg  median J 0.93326
+
+Stage 2 validation
+  tuned #1  mu=0.114 s_pos=0.406 m s_rot=  4.2 deg | median J 0.57033  IQR 0.00000
+  current   mu=0.500 s_pos=0.100 m s_rot=  5.7 deg | median J 0.58574  IQR 0.00000
+
+RECOMMENDED (tuned #1): MutationRate = 0.114, MutationSigmaPos = 0.406, MutationSigmaRot = 0.0730 rad (4.2 deg)

@@ -1,0 +1,8 @@
+A/B parameterisation: 6 cams, pop 120, 30 generations, 5 repeats, TT1 GM1 sp 1.00
+  repeat 1: rotvec 1.03452 | euler 0.97852
+  repeat 2: rotvec 1.02571 | euler 0.99100
+  repeat 3: rotvec 1.03481 | euler 0.98594
+  repeat 4: rotvec 1.04075 | euler 0.94070
+  repeat 5: rotvec 0.92203 | euler 0.96863
+rotvec median 1.03452 (IQR 0.03650) | euler median 0.97852 (IQR 0.02556)
+rotvec better in 1 of 5; Wilcoxon signed-rank p = 0.188
