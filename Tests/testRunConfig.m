@@ -23,8 +23,8 @@ function testLabPresetMatchesLegacySpecs(tc)
             verifyEqual(tc, problem.VarMin, repmat([-5 -4.5 0 -pi -pi -pi], 1, 7));
             verifyEqual(tc, problem.VarMax, repmat([ 5  4.5 4.8 pi pi pi], 1, 7));
             verifyEqual(tc, params.nPop, 420);
-            verifyEqual(tc, [params.mu, params.Tournamentsize, params.pC], [0.5 3 1]);
-            verifyEqual(tc, params.sigma, repmat(0.1, 1, 6));
+            verifyEqual(tc, [params.mu, params.Tournamentsize, params.pC], [0.3 3 1]);
+            verifyEqual(tc, params.sigma, [0.165 0.165 0.165 repmat(deg2rad(3.3), 1, 3)]);
         end
     end
 end

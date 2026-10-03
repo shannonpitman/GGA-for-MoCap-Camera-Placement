@@ -61,10 +61,13 @@ function cfg = runConfig(preset, varargin)
     cfg.PopulationSize  = [];                % [] = numCams * genesPerCam * 10
     cfg.PopulationScale = 10;
     cfg.CrossoverFraction = 1;
-    cfg.MutationRate     = 0.5;              % per-gene probability
-    cfg.MutationSigmaPos = 0.1;              % position step s.d. [m]
-    cfg.MutationSigmaRot = 0.1;              % rotation-vector step s.d. [rad]
-    % (tuned values from ParameterTesting/tuneMutation go here)
+    % Mutation, tuned with ParameterTesting/tuneMutation (2026-10-02, simulation
+    % machine, Results/Tuning/tuneMutation_20261002_180137): best validated
+    % setting "tuned #1" (mu 0.294, 0.165 m, 3.3 deg; median J 0.576, IQR 0.012
+    % vs 0.629 / 0.056 for the previous 0.5 / 0.1 / 0.1). mu rounded to 0.3.
+    cfg.MutationRate     = 0.3;              % per-gene probability
+    cfg.MutationSigmaPos = 0.165;            % position step s.d. [m]
+    cfg.MutationSigmaRot = deg2rad(3.3);     % rotation-vector step s.d. [rad]
     cfg.TournamentSize  = 3;
 
     %% Preset-specific values
