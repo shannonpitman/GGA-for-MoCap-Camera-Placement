@@ -103,6 +103,7 @@ function plotGA_Convergence(varargin)
     addParameter(p, 'AnnotFontSize',  [],       @(x) isempty(x) || isnumeric(x));
     addParameter(p, 'AxisFontSize',   [],       @(x) isempty(x) || isnumeric(x));
     addParameter(p, 'TickFontSize',   [],       @(x) isempty(x) || isnumeric(x));
+    addParameter(p, 'CompactLegend',  false,    @islogical);
     addParameter(p, 'SaveAs',         '',       @ischar);
     parse(p, varargin{:});
 
@@ -395,6 +396,9 @@ function meta = renderConvergencePanel(ax, runs, titleStr, opts, sty)
     legendHandles = hCentral;
     legendLabels  = {sprintf('Best cost %s (%s, n = %d)', ...
                               centralLbl, envLabel, nValid)};
+    if opts.CompactLegend
+        legendLabels = {sprintf('Best cost, %s (IQR)', centralLbl)};
+    end
 
     % Envelope boundary lines
     plotFn(ax, gens, bestUpper, '-', ...
@@ -416,6 +420,7 @@ function meta = renderConvergencePanel(ax, runs, titleStr, opts, sty)
         legendHandles(end+1) = hTopTen;
         legendLabels{end+1}  = sprintf('Top-10 avg %s (n = %d)', ...
                                         centralLbl, size(topTenHists,1));
+        if opts.CompactLegend, legendLabels{end} = 'Top-10 average'; end
     end
 
     % Population average (optional)
@@ -449,9 +454,13 @@ function meta = renderConvergencePanel(ax, runs, titleStr, opts, sty)
         hBest = yline(ax, overallBest, '-.', ...
             'Color', [0.7 0.15 0.15], 'LineWidth', sty.LineWidth, ...
             'Alpha', 0.8);
-        legendHandles(end+1) = hBest;
-        legendLabels{end+1}  = sprintf('%s = %.4f', ...
-                                        capitalise(bestRefLbl), overallBest);
+        if opts.CompactLegend
+            hBest.HandleVisibility = 'off';
+        else
+            legendHandles(end+1) = hBest;
+            legendLabels{end+1}  = sprintf('%s = %.4f', ...
+                                            capitalise(bestRefLbl), overallBest);
+        end
     end
 
     % Best-run trace (red)
@@ -463,6 +472,7 @@ function meta = renderConvergencePanel(ax, runs, titleStr, opts, sty)
         legendHandles(end+1) = hBestRun;
         legendLabels{end+1}  = sprintf('Best run trace: run %d/%d (final = %.4f)', ...
                                         overallBestRunIdx, nValid, bestTrace(end));
+        if opts.CompactLegend, legendLabels{end} = 'Best run'; end
 
         % Endpoint marker
         plot(ax, nGen, bestTrace(end), 'o', ...
@@ -477,6 +487,9 @@ function meta = renderConvergencePanel(ax, runs, titleStr, opts, sty)
         % or spill into the neighbouring panel.
         calloutText = sprintf('Run %d/%d: final %.4f', ...
                               overallBestRunIdx, nValid, bestTrace(end));
+        if opts.CompactLegend
+            calloutText = sprintf('Best: %.3f', bestTrace(end));
+        end
         xCallout = nGen;
         yCallout = bestTrace(end) * 0.965;
         text(ax, xCallout, yCallout, calloutText, ...
@@ -489,14 +502,16 @@ function meta = renderConvergencePanel(ax, runs, titleStr, opts, sty)
 
     % Robustness as a no-line legend entry — name the strategy so
     % the comparison reference is unambiguous (cold-vs-cold, warm-vs-warm).
-    hRob = plot(ax, NaN, NaN, 'LineStyle', 'none', 'Marker', 'none');
-    legendHandles(end+1) = hRob;
-    legendLabels{end+1}  = sprintf('Within %.0f%% of %s: %d/%d (%.0f%%)', ...
-                                    100*tol, bestRefLbl, ...
-                                    nWithin, nValid, pctWithin);
+    if ~opts.CompactLegend
+        hRob = plot(ax, NaN, NaN, 'LineStyle', 'none', 'Marker', 'none');
+        legendHandles(end+1) = hRob;
+        legendLabels{end+1}  = sprintf('Within %.0f%% of %s: %d/%d (%.0f%%)', ...
+                                        100*tol, bestRefLbl, ...
+                                        nWithin, nValid, pctWithin);
+    end
 
     % Initial-population marker
-    if opts.AnnotateInit
+    if opts.AnnotateInit && ~opts.CompactLegend
         if centralStat == "median"
             initCentral = median(bestHists(:,1));
         else

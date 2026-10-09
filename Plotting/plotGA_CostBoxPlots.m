@@ -464,10 +464,11 @@ function plotGA_CostBoxPlots(varargin)
         % filterDesc already names the cost function when the caller
         % filtered on one, so do not print it twice.
         descStr = prettifyFilterDesc(filterDesc);
-        if contains(descStr, sprintf('CF%d', cf))
+        cfPretty = prettifyFilterDesc(sprintf('CF%d', cf));
+        if contains(descStr, cfPretty)
             titleStr = {descStr};
         else
-            titleStr = {sprintf('CF%d (%s)', cf, cfNameStr), descStr};
+            titleStr = {cfPretty, descStr};
         end
         if doStats
             titleStr{end+1} = ...

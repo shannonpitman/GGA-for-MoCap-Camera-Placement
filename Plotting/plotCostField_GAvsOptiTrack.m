@@ -142,8 +142,8 @@ function plotCostField_GAvsOptiTrack(varargin)
     end
 
     thesisTitle(tl, sprintf( ...
-        '%s cost field: Optimised GA Rig (J = %.4f) vs Manually Posed Rig (%s, %.2f m)', ...
-        ttStr, gaCost, gmStr, opts.Spacing), sty);
+        '%s cost field: Optimised GA Rig (J = %.4f) vs Manually Posed Rig (%s grid)', ...
+        ttStr, gaCost, gmStr), sty);
 
     applyThesisStyle(fig);
 

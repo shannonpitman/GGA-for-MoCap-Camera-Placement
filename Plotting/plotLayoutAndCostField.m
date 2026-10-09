@@ -22,6 +22,8 @@ function plotLayoutAndCostField(varargin)
     addParameter(p, 'MarkerSize',   16,  @isnumeric);
     addParameter(p, 'FigHeight',    6.6, @isnumeric);
     addParameter(p, 'SaveAs',       '',  @ischar);
+    addParameter(p, 'CostOnly',     false, @islogical); % 2x2: fields only, no poses
+    addParameter(p, 'FigWidth',     13.0, @isnumeric);
     parse(p, varargin{:});
     o = p.Results;
 
@@ -42,8 +44,12 @@ function plotLayoutAndCostField(varargin)
     [uncOpti, occOpti] = localPerPointCosts(optiChrom, optiSpecs);
 
     fig = figure('Name', 'Layout and cost field', 'Units', 'inches', ...
-        'Position', [0.5 0.5 13.0 o.FigHeight], ...
+        'Position', [0.5 0.5 o.FigWidth o.FigHeight], ...
         'PaperPositionMode', 'auto', 'Color', sty.BackgroundColor);
+    if o.CostOnly
+        localCostOnly(fig, specs.Target, {uncGA, uncOpti}, {occGA, occOpti}, o, sty, outNameFor(o, ttStr));
+        return;
+    end
     tl = tiledlayout(fig, 2, 3, 'TileSpacing', 'compact', 'Padding', 'compact');
 
     T      = specs.Target;
@@ -234,4 +240,49 @@ function localPosePyramid(ax, apex, axisDir, rightV, upV, len, halfBase, col)
     patch(ax, 'XData', b(1,:), 'YData', b(2,:), 'ZData', b(3,:), ...
           'FaceColor', col, 'FaceAlpha', 0.20, ...
           'EdgeColor', col, 'LineWidth', 0.5);
+end
+
+
+function n = outNameFor(o, ttStr)
+    n = o.SaveAs;
+    if isempty(n)
+        n = sprintf('CostField_%s_%dC_GM%d', ttStr, o.NumCameras, o.GridMode);
+    end
+end
+
+
+function localCostOnly(fig, T, uncs, occs, o, sty, outName)
+% 2 x 2 cost fields. Rows: optimised, manual. Columns: resolution
+% uncertainty, dynamic occlusion. One colour bar per column, shared by
+% both rows so the rigs compare directly. Row labels are left to the
+% slide, which already names them.
+    tl = tiledlayout(fig, 2, 2, 'TileSpacing', 'tight', 'Padding', 'tight');
+    uncMax = max([uncs{1}; uncs{2}]);
+    occMax = max([occs{1}; occs{2}]);
+    ax = gobjects(2, 2);
+    for k = 1:2
+        ax(k,1) = nexttile(tl);
+        localScatter(ax(k,1), T, uncs{k}, [0 uncMax], o);
+        title(ax(k,1), sprintf('Mean %.3f m', mean(uncs{k})), ...
+            'FontWeight', 'normal', 'Color', 'k');
+        ax(k,2) = nexttile(tl);
+        localScatter(ax(k,2), T, occs{k}, [0 occMax], o);
+        title(ax(k,2), sprintf('Mean %.0f%s', mean(occs{k}), char(176)), ...
+            'FontWeight', 'normal', 'Color', 'k');
+    end
+    cb1 = colorbar(ax(2,1), 'Location', 'southoutside');
+    cb1.Label.String = 'Uncertainty (m)';
+    cb2 = colorbar(ax(2,2), 'Location', 'southoutside');
+    cb2.Label.String = ['Occlusion (' char(176) ')'];
+    applyThesisStyle(fig);
+    for a = ax(:)'
+        set(a, 'FontSize', 14, 'XTick', [-4 0 4], 'YTick', [-4 0 4], 'ZTick', [0 2 4]);
+        a.XLabel.FontSize = 15;  a.YLabel.FontSize = 15;  a.ZLabel.FontSize = 15;
+        a.Title.FontSize = 19;
+    end
+    for c = [cb1 cb2]
+        c.FontSize = 14;  c.Label.FontSize = 16;
+    end
+    exportThesisFigure(fig, outName, 'Background', sty.ExportBgColor, 'Quiet', true);
+    fprintf('Saved: %s.{pdf,png}\n', outName);
 end

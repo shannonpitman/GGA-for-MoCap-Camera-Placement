@@ -18,6 +18,13 @@ function plotConfigFOV_GAvsOptiTrack(varargin)
 %   'PyramidScale' - length (m) of each pose pyramid along its optical
 %                    axis. Default 0.4 m. Base width = PyramidScale/2.
 %   'SaveAs'       - output filename without extension.
+%   'Overlay'      - true draws both rigs on one axes, coloured by rig
+%                    (optimised green, manual red, as in the baseline-angle
+%                    figure) instead of by lens type. For slides.
+%   'ShowTitles'   - false drops the per-panel objective names in the
+%                    CompareCostFunctions figure (keeps the cost line), so
+%                    a second row on a slide does not repeat the headers.
+%   'FigSize'      - [width height] in inches; [] keeps the default.
 
     %% Parse inputs
     defaultLog = fullfile(fileparts(fileparts(mfilename('fullpath'))), 'Results', 'Logs', 'GGA_RunsLog.mat');
@@ -37,6 +44,9 @@ function plotConfigFOV_GAvsOptiTrack(varargin)
     addParameter(p, 'ZStretch',     1.0,      @isnumeric);   % >1 exaggerates height
     addParameter(p, 'SlideFonts',   false,    @islogical);   % large text for projection
     addParameter(p, 'ShowCamLabels', true,    @islogical);
+    addParameter(p, 'Overlay',      false,    @islogical);
+    addParameter(p, 'ShowTitles',   true,     @islogical);
+    addParameter(p, 'FigSize',      [],       @isnumeric);
     parse(p, varargin{:});
     opts = p.Results;
 
@@ -49,6 +59,12 @@ function plotConfigFOV_GAvsOptiTrack(varargin)
     %% Optional mode: compare the three objectives' own best layouts
     if opts.CompareCostFunctions
         plotThreeObjectivePanels(opts, sty, ttStr, gmStr);
+        return;
+    end
+
+    %% Optional mode: both rigs on one axes, coloured by rig
+    if opts.Overlay
+        plotOverlay(opts, sty);
         return;
     end
 
@@ -112,8 +128,8 @@ function plotConfigFOV_GAvsOptiTrack(varargin)
     ylim(ax1, yl + [-1.8, 1.8]);
 
     thesisTitle(tl, sprintf( ...
-        '%s camera placement (%s grid, %.2f m): Optimised GA Rig J = %.4f vs Manually Posed Rig J = %.4f', ...
-        ttStr, gmStr, opts.Spacing, gaCost, optiCost), sty, 'MaxChars', 70);
+        '%s camera placement (%s grid): Optimised GA Rig J = %.4f vs Manually Posed Rig J = %.4f', ...
+        ttStr, gmStr, gaCost, optiCost), sty, 'MaxChars', 70);
 
     applyThesisStyle(fig);
 
@@ -198,15 +214,21 @@ function drawCamerasAndVolume(ax, chrom, specs, opts)
 
     hold(ax, 'on');
 
+    % Overlay mode passes a single colour for the whole rig and draws the
+    % room and target points only once.
+    colOverride = [];
+    if isfield(opts, 'ColOverride'), colOverride = opts.ColOverride; end
+    drawScene = ~isfield(opts, 'DrawScene') || opts.DrawScene;
+
     % --- Room-volume wireframe (gives the cameras spatial reference) ---
-    if isfield(specs, 'Target') && ~isempty(specs.Target)
+    if drawScene && isfield(specs, 'Target') && ~isempty(specs.Target)
         T = specs.Target;
         bb = [min(T,[],1); max(T,[],1)];   % 2x3 [x;y;z] bounds
         drawBoxWire(ax, bb, [0.30 0.30 0.30], 0.6, 0.9);
     end
 
     % --- Optional target point cloud (drawn first so cameras sit on top) ---
-    if opts.ShowTarget && isfield(specs, 'Target')
+    if drawScene && opts.ShowTarget && isfield(specs, 'Target')
         T = specs.Target;
         plot3(ax, T(:,1), T(:,2), T(:,3), '.', ...
             'Color', [0.55 0.55 0.55 0.45], 'MarkerSize', 3, ...
@@ -220,6 +242,7 @@ function drawCamerasAndVolume(ax, chrom, specs, opts)
         else
             col_i = narrowCol;
         end
+        if ~isempty(colOverride), col_i = colOverride; end
         R    = cameras{i}.T.rotm;        % camera-to-world rotation
         axisDir = R(:, 3);               % optical axis (camera +Z) in world
         rightV  = R(:, 1);
@@ -358,19 +381,23 @@ function plotThreeObjectivePanels(opts, sty, ttStr, gmStr)
 
     cfTitle = { 'Resolution uncertainty only', ...
                 'Dynamic occlusion only', ...
-                'Combined objective' };
+                'Combined cost' };
     cfTag   = { 'CF1', 'CF2', 'CF3' };
     cfUnit  = { 'J_{res} = %.4f m', 'J_{occ} = %.1f deg', 'J = %.4f (normalised)' };
 
+    figW = sty.FigWidthDouble * 1.35;
     figH = sty.FigHeightWide + 0.6;
     if opts.SlideFonts, figH = 6.2; end
+    if ~isempty(opts.FigSize), figW = opts.FigSize(1); figH = opts.FigSize(2); end
     fig = figure('Name', 'Objective comparison', ...
         'Units', 'inches', ...
-        'Position', [0.5, 0.5, sty.FigWidthDouble * 1.35, figH], ...
+        'Position', [0.5, 0.5, figW, figH], ...
         'PaperPositionMode', 'auto', ...
         'Color', sty.BackgroundColor);
 
-    tl  = tiledlayout(fig, 1, 3, 'TileSpacing', 'compact', 'Padding', 'loose');
+    pad = 'loose';
+    if opts.SlideFonts, pad = 'tight'; end
+    tl  = tiledlayout(fig, 1, 3, 'TileSpacing', 'tight', 'Padding', pad);
     axs = gobjects(1, 3);
 
     for k = 1:3
@@ -380,7 +407,12 @@ function plotThreeObjectivePanels(opts, sty, ttStr, gmStr)
 
         axs(k) = nexttile(tl);
         drawCamerasAndVolume(axs(k), chrom, specs, opts);
-        if opts.SlideFonts
+        if opts.SlideFonts && ~opts.ShowTitles
+            % Lower row of a slide: the cost line only, no header.
+            slideUnit = { 'J_{res} = %.4f m', ['J_{occ} = %.1f' char(176)], 'J = %.3f' };
+            title(axs(k), sprintf(slideUnit{k}, cost), 'FontSize', 17, ...
+                'FontName', sty.FontName, 'FontWeight', 'normal', 'Color', 'k');
+        elseif opts.SlideFonts
             % Title + subtitle keeps both lines centred (a two-line TeX
             % title with subscripts left-aligns its second line).
             slideUnit = { 'J_{res} = %.4f m', ['J_{occ} = %.1f' char(176)], 'J = %.3f' };
@@ -397,7 +429,7 @@ function plotThreeObjectivePanels(opts, sty, ttStr, gmStr)
         end
     end
 
-    addLensLegend(axs(1), sty);
+    if opts.ShowTitles, addLensLegend(axs(1), sty); end
 
     % Union of every panel's limits before linking, otherwise panels 2-3
     % inherit panel 1's box and clip cameras mounted higher than its rig.
@@ -411,8 +443,8 @@ function plotThreeObjectivePanels(opts, sty, ttStr, gmStr)
 
     if ~opts.SlideFonts   % on a slide, the frame title does this job
         thesisTitle(tl, sprintf( ...
-            '%s, %s grid, %.2f m: the layout each objective asks for', ...
-            ttStr, gmStr, opts.Spacing), sty, 'MaxChars', 70);
+            '%s, %s grid: the layout each objective asks for', ...
+            ttStr, gmStr), sty, 'MaxChars', 70);
     end
 
     applyThesisStyle(fig);
@@ -424,7 +456,11 @@ function plotThreeObjectivePanels(opts, sty, ttStr, gmStr)
             set(a, 'FontSize', 15, 'XTick', [-4 0 4], 'YTick', [-4 0 4], ...
                    'ZTick', [0 2 4]);
             a.XLabel.FontSize = 16;  a.YLabel.FontSize = 16;  a.ZLabel.FontSize = 16;
-            a.Title.FontSize  = 19;  a.Subtitle.FontSize = 17;
+            if opts.ShowTitles
+                a.Title.FontSize  = 19;  a.Subtitle.FontSize = 17;
+            else
+                a.Title.FontSize  = 17;
+            end
         end
         lg = findobj(fig, 'Type', 'legend');
         set(lg, 'FontSize', 17);
@@ -437,5 +473,61 @@ function plotThreeObjectivePanels(opts, sty, ttStr, gmStr)
     end
     exportThesisFigure(fig, outName, ...
         'Background', sty.ExportBgColor, 'Quiet', true);
+    fprintf('Saved: %s.{pdf,png}\n', outName);
+end
+
+
+function plotOverlay(opts, sty)
+% Optimised and manual rigs on one set of axes. Colour is the rig, not
+% the lens, matching the baseline-angle histogram (green vs red).
+    gaCol   = sty.CostFuncColors(3,:);
+    manCol  = [0.85 0.10 0.10];
+
+    [gaChrom, specs] = loadBestGARun(opts);
+    [optiChrom, optiIDs] = buildOptiTrackChromosome();
+    optiSpecs = specs;  optiSpecs.Cams = 7;  optiSpecs.CamLabels = optiIDs;
+
+    figSz = [6.6 6.0];
+    if ~isempty(opts.FigSize), figSz = opts.FigSize; end
+    fig = figure('Name', 'Camera poses: overlay', 'Units', 'inches', ...
+        'Position', [0.5 0.5 figSz], 'PaperPositionMode', 'auto', ...
+        'Color', sty.BackgroundColor);
+    ax = axes(fig);
+
+    o = opts;  o.ShowCamLabels = false;
+    o.ColOverride = gaCol;   o.DrawScene = true;
+    drawCamerasAndVolume(ax, gaChrom, specs, o);
+    hold(ax, 'on');
+    o.ColOverride = manCol;  o.DrawScene = false;
+    drawCamerasAndVolume(ax, optiChrom, optiSpecs, o);
+    hold(ax, 'on');
+
+    hG = plot3(ax, NaN, NaN, NaN, 's', 'MarkerFaceColor', gaCol, ...
+        'MarkerEdgeColor', 'k', 'MarkerSize', 11, 'LineStyle', 'none');
+    hM = plot3(ax, NaN, NaN, NaN, 's', 'MarkerFaceColor', manCol, ...
+        'MarkerEdgeColor', 'k', 'MarkerSize', 11, 'LineStyle', 'none');
+    hold(ax, 'off');
+    lg = legend(ax, [hG hM], {'Optimised', 'Manual'}, 'Location', 'northeast');
+    set(lg, 'Color', 'w', 'EdgeColor', 'k', 'TextColor', 'k');
+
+    view(ax, opts.ViewAngle);
+    axis(ax, 'tight');
+    xl = xlim(ax); yl = ylim(ax); zl = zlim(ax);
+    xlim(ax, xl + [-0.3 0.3]);  ylim(ax, yl + [-0.3 0.3]);
+    zlim(ax, [min(0, zl(1)) zl(2) + 0.2]);
+
+    applyThesisStyle(fig);
+    if opts.SlideFonts
+        set(ax, 'FontSize', 16, 'XTick', -4:2:4, 'YTick', -4:2:4, 'ZTick', 0:2:4);
+        ax.XLabel.FontSize = 18;  ax.YLabel.FontSize = 18;  ax.ZLabel.FontSize = 18;
+        lg.FontSize = 20;
+    end
+
+    outName = opts.SaveAs;
+    if isempty(outName)
+        outName = sprintf('ConfigOverlay_%s_%dC_GM%d', ...
+            sty.TargetNames{opts.TargetType}, opts.NumCameras, opts.GridMode);
+    end
+    exportThesisFigure(fig, outName, 'Background', sty.ExportBgColor, 'Quiet', true);
     fprintf('Saved: %s.{pdf,png}\n', outName);
 end

@@ -47,6 +47,8 @@ function plotBaselineAngles_GAvsOptiTrack(varargin)
     addParameter(p, 'NumBins',      36,          @isnumeric);
     addParameter(p, 'Normalise',    'probability', @ischar);
     addParameter(p, 'SaveAs',       '',          @ischar);
+    addParameter(p, 'SlideFonts',   false,       @islogical);  % large text, short labels
+    addParameter(p, 'FigSize',      [],          @isnumeric);  % [w h] inches
     parse(p, varargin{:});
     opts = p.Results;
 
@@ -72,9 +74,11 @@ function plotBaselineAngles_GAvsOptiTrack(varargin)
     maxTri = specs.PreComputed.maxTriangAngle;
 
     %% Plot
+    figSz = [sty.FigWidthFull, sty.FigHeight + 0.4];
+    if ~isempty(opts.FigSize), figSz = opts.FigSize; end
     fig = figure('Name', sprintf('Baseline angles: %s', ttStr), ...
         'Units', 'inches', ...
-        'Position', [0.5, 0.5, sty.FigWidthFull, sty.FigHeight + 0.4], ...
+        'Position', [0.5, 0.5, figSz], ...
         'PaperPositionMode', 'auto', ...
         'Color', sty.BackgroundColor);
     ax = axes(fig);
@@ -135,6 +139,22 @@ function plotBaselineAngles_GAvsOptiTrack(varargin)
     xlim(ax, [0 180]);
 
     applyThesisStyle(fig);
+
+    % Slide version: short labels, large type, one headline line.
+    if opts.SlideFonts
+        hGA.DisplayName   = 'Optimised';
+        hOpti.DisplayName = 'Manual';
+        title(ax, sprintf('In band: optimised %.0f%%, manual %.0f%%', ...
+            100*fracGA, 100*fracOpti), ...
+            'FontWeight', 'bold', 'FontSize', 19, 'FontName', sty.FontName, 'Color', 'k');
+        subtitle(ax, '');
+        xlabel(ax, ['Angle between camera pair (' char(176) ')']);
+        ylabel(ax, 'Fraction of pairs');
+        set(ax, 'FontSize', 16, 'XTick', 0:30:180);
+        ax.XLabel.FontSize = 18;  ax.YLabel.FontSize = 18;
+        lgd = findobj(fig, 'Type', 'legend');
+        set(lgd, 'FontSize', 18);
+    end
 
     fprintf('\n%s — baseline-angle summary (CF3, %dC, %s, sp=%.2f m):\n', ...
         ttStr, opts.NumCameras, gmStr, opts.Spacing);

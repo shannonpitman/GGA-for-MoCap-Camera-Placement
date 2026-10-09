@@ -2,7 +2,7 @@ function pretty = prettifyFilterDesc(desc)
 %PRETTIFYFILTERDESC  Turn a loadGARuns filter tag into a readable heading.
 %
 %   prettifyFilterDesc('7C_CF3_TT1_GM1_sp100cm')
-%     -> '7 cameras  .  CF3 (Combined)  .  UAV  .  Uniform grid  .  1.00 m spacing'
+%     -> '7 cameras  .  Combined cost  .  UAV  .  Uniform grid'
 %
 %   loadGARuns returns a compact tag naming the instance a figure was
 %   built from. Every per-instance figure needs that instance spelled out
@@ -15,7 +15,7 @@ function pretty = prettifyFilterDesc(desc)
 %   See also loadGARuns, thesisTitle.
     tokens = strsplit(desc, '_');
     parts  = strings(1, 0);
-    cfNames = {'Resolution Uncertainty', 'Dynamic Occlusion', 'Combined'};
+    cfNames = {'Resolution uncertainty', 'Dynamic occlusion', 'Combined cost'};
     ttNames = {'UAV', 'UGV'};
     gmNames = {'Uniform grid', 'Normal grid'};
     for k = 1:numel(tokens)
@@ -26,7 +26,7 @@ function pretty = prettifyFilterDesc(desc)
         elseif startsWith(t, 'CF')
             n = str2double(t(3:end));
             if n>=1 && n<=numel(cfNames)
-                parts(end+1) = sprintf('CF%d (%s)', n, cfNames{n});          %#ok<AGROW>
+                parts(end+1) = cfNames{n};                                  %#ok<AGROW>
             else
                 parts(end+1) = t;                                           %#ok<AGROW>
             end
@@ -45,8 +45,9 @@ function pretty = prettifyFilterDesc(desc)
                 parts(end+1) = t;                                           %#ok<AGROW>
             end
         elseif startsWith(t, 'sp') && endsWith(t, 'cm')
-            num = str2double(t(3:end-2));
-            parts(end+1) = sprintf('%.2f m spacing', num/100);              %#ok<AGROW>
+            % Grid spacing is fixed at 1 m for every reported run, so it
+            % is left out of headings.
+            continue;
         else
             parts(end+1) = string(t);                                       %#ok<AGROW>
         end
