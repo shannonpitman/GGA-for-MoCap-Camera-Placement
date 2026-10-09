@@ -1,0 +1,38 @@
+mountingSensitivity summary
+===========================
+Preset optitrack_lab, TT2 GM1, spacing 1.00 m, 200 draws
+Unperturbed: J 0.18567 | J_res 0.00540 m | J_occ 60.60 deg | >=2 cams 100.0%
+Manual rig:  J 22.94762 | J_res 0.06085 m | J_occ 162.89 deg | >=2 cams 93.0%
+
+Gene ranking at achievable tolerance (1 cm / 1 deg):
+  pan   mean |dJ| 0.01486
+  tilt  mean |dJ| 0.01147
+  ry    mean |dJ| 0.01117
+  rz    mean |dJ| 0.01115
+  rx    mean |dJ| 0.01013
+  roll  mean |dJ| 0.00803
+  z     mean |dJ| 0.00319
+  x     mean |dJ| 0.00201
+  y     mean |dJ| 0.00057
+
+Hypothesis (d = dJ_orientation - dJ_position, paired draws):
+  J    median d +0.07778  CI [+0.06772, +0.08716]  P(d>0) 0.99  sign p 2.5e-58  -> orientation worse
+  Jres median d +0.00014  CI [+0.00013, +0.00016]  P(d>0) 0.99  sign p 2.5e-56  -> orientation worse
+  Jocc median d +4.42577  CI [+3.92351, +5.19747]  P(d>0) 0.98  sign p 1.66e-54  -> orientation worse
+
+Monte Carlo:
+  position    pos  0.50 cm ang  0.00 deg | J median 0.19365 P90 0.21015 | J_res median 0.00542 | J_occ median 60.99 | >=2 cams 100.0%
+  position    pos  1.00 cm ang  0.00 deg | J median 0.20444 P90 0.22718 | J_res median 0.00544 | J_occ median 61.59 | >=2 cams 100.0%
+  position    pos  2.00 cm ang  0.00 deg | J median 0.22320 P90 0.27764 | J_res median 0.00548 | J_occ median 62.47 | >=2 cams 100.0%
+  position    pos  5.00 cm ang  0.00 deg | J median 0.27440 P90 1.53703 | J_res median 0.00558 | J_occ median 65.29 | >=2 cams 100.0%
+  position    pos 10.00 cm ang  0.00 deg | J median 0.34204 P90 2.84239 | J_res median 0.00571 | J_occ median 68.77 | >=2 cams 100.0%
+  orientation pos  0.00 cm ang  0.50 deg | J median 0.23764 P90 0.29808 | J_res median 0.00550 | J_occ median 63.95 | >=2 cams 100.0%
+  orientation pos  0.00 cm ang  1.00 deg | J median 0.28309 P90 1.54010 | J_res median 0.00559 | J_occ median 66.13 | >=2 cams 100.0%
+  orientation pos  0.00 cm ang  2.00 deg | J median 0.36198 P90 2.77437 | J_res median 0.00574 | J_occ median 69.78 | >=2 cams 100.0%
+  orientation pos  0.00 cm ang  5.00 deg | J median 1.67201 P90 5.49883 | J_res median 0.00891 | J_occ median 80.99 | >=2 cams 99.6%
+  orientation pos  0.00 cm ang 10.00 deg | J median 5.51846 P90 16.98622 | J_res median 0.01830 | J_occ median 106.25 | >=2 cams 98.4%
+  both        pos  0.50 cm ang  0.50 deg | J median 0.24112 P90 0.30760 | J_res median 0.00551 | J_occ median 64.02 | >=2 cams 100.0%
+  both        pos  1.00 cm ang  1.00 deg | J median 0.28905 P90 1.55290 | J_res median 0.00560 | J_occ median 66.20 | >=2 cams 100.0%
+  both        pos  2.00 cm ang  2.00 deg | J median 0.36248 P90 2.85524 | J_res median 0.00574 | J_occ median 69.63 | >=2 cams 100.0%
+  both        pos  5.00 cm ang  5.00 deg | J median 1.67745 P90 5.54416 | J_res median 0.00892 | J_occ median 80.95 | >=2 cams 99.6%
+  both        pos 10.00 cm ang 10.00 deg | J median 5.11194 P90 18.04128 | J_res median 0.01713 | J_occ median 107.30 | >=2 cams 98.6%
