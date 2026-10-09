@@ -1,0 +1,29 @@
+Re-run summary (2026-10-05 to 2026-10-07, simulation machine, 480 runs)
+Fixed occlusion sweep, shared FOV+range visibility, mount regions (walls+ceiling+tripod),
+rotation-vector genes, tuned mutation (mu 0.3, 0.165 m, 3.3 deg).
+CF1/CF2: 10 cold + 10 warm per scenario; CF3: 10 cold + 10 warm per scenario.
+
+== CF3 combined cost J (median [IQR]; Wilcoxon rank-sum cold vs warm) ==
+6C UAV/Uniform cold 0.3197 [0.0272] | warm 0.1103 [0.0073] | best 0.0982 | p < 0.001
+6C UAV/Normal  cold 0.1930 [0.0653] | warm 0.0805 [0.0067] | best 0.0775 | p < 0.001
+6C UGV/Uniform cold 0.4760 [0.1382] | warm 0.2735 [0.0170] | best 0.2585 | p < 0.001
+6C UGV/Normal  cold 0.3654 [0.1183] | warm 0.2344 [0.0171] | best 0.2022 | p < 0.001
+7C UAV/Uniform cold 0.4069 [0.1294] | warm 0.1310 [0.0316] | best 0.1207 | p < 0.001
+7C UAV/Normal  cold 0.2938 [0.1209] | warm 0.0611 [0.0095] | best 0.0456 | p < 0.001
+7C UGV/Uniform cold 0.3120 [0.0298] | warm 0.1916 [0.0126] | best 0.1857 | p < 0.001
+7C UGV/Normal  cold 0.3986 [0.0526] | warm 0.3071 [0.0242] | best 0.2403 | p < 0.001
+
+== Best CF3 rig vs manual rig (raw objectives, 7 cameras) ==
+UAV/Uniform GA: Jres 0.0071 m, Jocc 96.4 deg, unseen 0.0% | manual: 0.2423 m, 255.0 deg, unseen 7.7% | res 34.2x, occ 2.65x
+UAV/Normal  GA: Jres 0.0072 m, Jocc 79.2 deg, unseen 0.0% | manual: 0.2325 m, 236.5 deg, unseen 6.7% | res 32.4x, occ 2.99x
+UGV/Uniform GA: Jres 0.0054 m, Jocc 60.6 deg, unseen 0.0% | manual: 0.0608 m, 162.9 deg, unseen 0.0% | res 11.3x, occ 2.69x
+UGV/Normal  GA: Jres 0.0053 m, Jocc 62.1 deg, unseen 0.0% | manual: 0.0543 m, 141.9 deg, unseen 0.0% | res 10.2x, occ 2.28x
+(6-camera best rigs: Jres 0.0057-0.0081 m, Jocc 80.5-126.0 deg, unseen 0%)
+
+== 6 vs 7 cameras (raw objectives, all 20 CF3 runs per scenario; Wilcoxon rank-sum) ==
+UAV/Uniform Jocc 6C 130.3 vs 7C 104.8 (p 9e-08) | Jres 6C 0.0082 vs 7C 0.0071 (p 7e-08)
+UAV/Normal  Jocc 6C 116.0 vs 7C 84.4  (p 3e-07) | Jres 6C 0.0081 vs 7C 0.0072 (p 7e-08)
+UGV/Uniform Jocc 6C 84.9  vs 7C 61.6  (p 7e-07) | Jres 6C 0.0060 vs 7C 0.0055 (p 7e-08)
+UGV/Normal  Jocc 6C 102.4 vs 7C 67.4  (p 8e-08) | Jres 6C 0.0058 vs 7C 0.0055 (p 1e-05)
+
+Note: CF3 J uses per-scenario utopia/nadir constants, so compare J only within a scenario.
