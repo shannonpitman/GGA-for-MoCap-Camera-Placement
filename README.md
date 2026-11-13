@@ -75,7 +75,7 @@ The settings that matter, all in the `%% User Inputs` block:
 | `costFunctionType` | `1` = resolution uncertainty, `2` = dynamic occlusion, `3` = combined | `3` |
 | `maxGenerations` | GA generations | `100` |
 | `populationSize` | auto-scales as `numCams × 6 × 10` | `420` for 7 cams |
-| `warmStartUsed` / `warmStartBestSol` | seed from a previous chromosome | `false` |
+| `warmStartUsed` | seed from the condition's seed archive (see below) | `false` |
 
 For `costFunctionType = 3` the two weights must sum to 1:
 
@@ -92,6 +92,35 @@ and convergence plots, and **saves automatically** (see §5).
 
 > **Warm start:** only ever seed from a *post-bugfix* chromosome. Earlier runs
 > were optimised against a corrupted cost surface and will mislead the GA.
+
+#### Warm-start seed archive (2026-11)
+
+Every saved run (cold or warm) adds its best solution and the top
+`ArchiveFraction` (10%) of its final population to
+`Results/SeedArchive/<preset>/<condition>.mat` (`WarmStart/updateSeedArchive`).
+A warm run injects `WarmSeedCount` seeds (default 21 = 5% of a 7-camera
+population; `[]` uses `WarmSeedFraction`) chosen by `WarmSeedMode`:
+
+- `'top_n'`: the best archived solutions, skipping any whose camera
+  positions are within `WarmSeedMinDist` (0.25 m, mean after matching
+  cameras) of a seed already taken: a diversity constraint. Short pools are
+  topped up with the best skipped solutions.
+- `'best_mutant'`: the old scheme: best solution plus mutated copies.
+
+`backfillSeedArchive()` fills the lab archive from the re-run results (safe to
+repeat). `abWarmStart` compares the two modes at 10 and 21 seeds;
+`reportABWarmStart` reports it. Archives are only valid for the cost code
+that produced them: after a cost-function change, move `Results/SeedArchive`
+aside.
+
+#### Hardware presets
+
+`runConfig('openmv_lab')` models OpenMV RT1062 cameras (OV5640 at full
+2592 x 1944, f = 2327 px, 58.2 x 45.3 deg FOV, one lens, 8 m range) in the
+same lab volume and mounts, sweeping 6-10 cameras on the UAV uniform grid.
+Non-lab presets save runs to `Results/<preset>/<N>Cams/`, log a `Preset`
+field (filter with `loadGARuns('Preset', ...)`), and keep their own CF3
+normalisation table. Full sweep: `runFullRerun('Preset','openmv_lab')`.
 
 ### Batch sweep — `batchRunGA`
 

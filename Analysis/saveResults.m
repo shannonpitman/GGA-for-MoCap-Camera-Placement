@@ -1,6 +1,11 @@
-function saveResults(out, specs, params, elapsedTime, costFunctionType, warmStartUsed, coverageStats)
+function [matFilename, matFullPath] = saveResults(out, specs, params, elapsedTime, costFunctionType, warmStartUsed, coverageStats)
 % Outputs three files: data saved in a .mat, a .txt summary, and NB data
-% collated for later comparison in a .mat log file
+% collated for later comparison in a .mat log file. Also adds the run's best
+% solution and the top cfg.ArchiveFraction of its final population to the
+% warm-start seed archive (Results/SeedArchive/<preset>/<condition>.mat).
+%
+% Run files go to Results/<N>Cams/ for the lab preset and to
+% Results/<preset>/<N>Cams/ for any other preset (see runResultsDir).
 
 currentDateTime = datetime('now');
     dateTimeStr = string(currentDateTime, 'yyyyMMdd_HHmmSS');
@@ -24,6 +29,28 @@ currentDateTime = datetime('now');
     saveData.Timestamp = currentDateTime;
     saveData.CoverageStats = coverageStats;
 
+    [preset, hardware] = presetOf(specs);
+    saveData.Preset   = preset;
+    saveData.Hardware = hardware;
+
+    % What this run started from (warm runs) ...
+    saveData.WarmSeeds = specs.warmChromosomes;
+    if isfield(specs, 'WarmSeedInfo')
+        saveData.WarmSeedInfo = specs.WarmSeedInfo;
+    end
+    saveData.NumSeedsInjected = size(specs.warmChromosomes, 1) * logical(warmStartUsed);
+
+    % ... and the best part of where it ended (later warm starts draw on it).
+    archiveFrac = 0.10;
+    if isfield(specs, 'RunConfig') && isfield(specs.RunConfig, 'ArchiveFraction')
+        archiveFrac = specs.RunConfig.ArchiveFraction;
+    end
+    if isfield(out, 'pop') && ~isempty(out.pop)
+        nTop = max(1, min(numel(out.pop), round(archiveFrac * numel(out.pop))));
+        saveData.FinalTopK.Chromosomes = vertcat(out.pop(1:nTop).Chromosome);
+        saveData.FinalTopK.Costs       = [out.pop(1:nTop).Cost].';
+    end
+
     % Per-camera breakdown
     for i = 1:specs.Cams
         chromStart = (i-1)*6 + 1;
@@ -37,7 +64,7 @@ currentDateTime = datetime('now');
     %% MAT file (written into Results/<N>Cams/, RunFilename stays a basename
     %  so existing log entries that store basenames keep resolving.)
     projectRoot = fileparts(fileparts(mfilename('fullpath')));   % .../<proj>
-    runDir      = fullfile(projectRoot, 'Results', sprintf('%dCams', specs.Cams));
+    runDir      = runResultsDir(preset, specs.Cams);
     if ~isfolder(runDir), mkdir(runDir); end
 
     matFilename = sprintf('%dCams_Run_%s.mat', specs.Cams, dateTimeStr);
@@ -125,6 +152,8 @@ currentDateTime = datetime('now');
 
     newLogEntry.Spacing = specs.spacing;
     newLogEntry.NumTargetPoints = specs.NumPoints;
+    newLogEntry.Preset   = preset;
+    newLogEntry.Hardware = hardware;
 
     if isfile(masterLogFile)
         load(masterLogFile, 'runLog');
@@ -136,6 +165,9 @@ currentDateTime = datetime('now');
                 [runLog.(requiredFields{f})] = deal(NaN);
             end
         end
+        % Runs logged before presets existed were all the OptiTrack lab rig
+        if ~isfield(runLog, 'Preset'),   [runLog.Preset]   = deal('optitrack_lab'); end
+        if ~isfield(runLog, 'Hardware'), [runLog.Hardware] = deal('optitrack');     end
         
         runLog(end+1) = newLogEntry; 
     else
@@ -144,4 +176,36 @@ currentDateTime = datetime('now');
 
     save(masterLogFile, 'runLog');
     fprintf('Run logged to: %s (Total runs: %d)\n', masterLogFile, length(runLog));
+
+    %% Warm-start seed archive
+    if ~isfield(specs, 'ArchiveRun') || specs.ArchiveRun
+        try
+            condKey = conditionKey(specs.Cams, costFunctionType, specs.TargetType, ...
+                                   specs.TargetMode, specs.spacing);
+            if isfield(saveData, 'FinalTopK')
+                C = saveData.FinalTopK.Chromosomes;  J = saveData.FinalTopK.Costs;
+            else
+                C = out.bestsol.Chromosome;  J = out.bestsol.Cost;
+            end
+            src = repmat({'finalpop'}, size(C, 1), 1);
+            src{1} = 'best';
+            % make sure row 1 really is the run best
+            C(1, :) = out.bestsol.Chromosome;  J(1) = out.bestsol.Cost;
+            n = updateSeedArchive(preset, condKey, C, J, src, matFilename, warmStartUsed);
+            fprintf('Seed archive %s/%s: +%d solutions\n', preset, condKey, n);
+        catch ME
+            warning('saveResults:archive', 'Seed archive not updated: %s', ME.message);
+        end
+    end
+end
+
+function [preset, hardware] = presetOf(specs)
+    preset = 'optitrack_lab';
+    if isfield(specs, 'RunConfig') && isfield(specs.RunConfig, 'Preset')
+        preset = specs.RunConfig.Preset;
+    end
+    hardware = 'optitrack';
+    if isfield(specs, 'HardwareProfile')
+        hardware = specs.HardwareProfile;
+    end
 end

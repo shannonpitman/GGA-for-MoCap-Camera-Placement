@@ -46,28 +46,25 @@ spacing = 1;
 costFunctionType = 3;
 
 % WARM-START
-% To warm-start the GA from a previously found chromosome, set
-% warmStartUsed = true and assign warmStartBestSol to a saved
-% chromosome (1 x 6*numCams row vector — same convention as
-% saveData.BestSolution.Chromosome). The chromosome MUST come from
-% a run with the same cost functions; older chromosomes were optimised
-% against a different cost surface and will mislead the GA.
-warmStartUsed    = false;
-warmStartBestSol = [];      % e.g. load(...).saveData.BestSolution.Chromosome
+% warmStartUsed = true injects seeds from the condition's seed archive
+% (Results/SeedArchive/<preset>/<condition>.mat; every saved run adds to it).
+% How many and how they are chosen: cfg.WarmSeedMode / WarmSeedCount /
+% WarmSeedFraction / WarmSeedMinDist (see runConfig, selectWarmSeeds).
+% Archives from older cost-function code must not be reused.
+warmStartUsed = false;
 
 %% Set-up
 [specs, problem, params] = buildRunSpecs(cfg, numCams, costFunctionType, ...
     targetType, targetMode, spacing);
 
 if warmStartUsed
-    if isempty(warmStartBestSol) || numel(warmStartBestSol) ~= problem.nVar
-        error('runCameraOptimiser:BadWarmStart', ...
-            'warmStartUsed=true requires warmStartBestSol of length %d.', problem.nVar);
+    condKey = conditionKey(numCams, costFunctionType, targetType, targetMode, spacing);
+    [seeds, seedInfo] = warmSeedsForRun(cfg, condKey, problem, params);
+    if ~isempty(seeds)
+        specs.warmStart = true;
+        specs.warmChromosomes = seeds;
+        specs.WarmSeedInfo = seedInfo;
     end
-    perturbed = Mutate(warmStartBestSol, 1, 0.5);                 % perturb all genes
-    perturbed = min(max(perturbed, problem.VarMin), problem.VarMax);
-    specs.warmStart = true;
-    specs.warmChromosomes = [warmStartBestSol; perturbed];
 end
 
 %% Run GA

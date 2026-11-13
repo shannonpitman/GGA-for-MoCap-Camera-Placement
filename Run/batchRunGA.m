@@ -5,7 +5,7 @@ function batchRunGA(varargin)
 % Target type (1=UAV, 2=UGV)
 % Grid discretisation mode (1=Uniform, 2=Normal)
 % Grid spacing
-% Warm-start (false first, then true seeded from best cold run)
+% Warm-start (false first, then true, seeded from the condition's seed archive)
 
 % Make sure every code subfolder is on the MATLAB path.
 addProjectPaths();
@@ -225,13 +225,17 @@ for runIdx = startIdx:totalRuns
         [specs, problem, params] = buildRunSpecs(cfg, numCams, costFunctionType, ...
             s.TargetType, s.GridMode, s.Spacing);
 
-        % Warm-start chromosomes: best seed plus one heavily mutated copy
-        if warmStartUsed && ~isempty(s.WarmSeedChromosome)
-            seedChrom = s.WarmSeedChromosome;
-            perturbed = Mutate(seedChrom, 1, 0.5);
-            perturbed = min(max(perturbed, problem.VarMin), problem.VarMax);
-            specs.warmStart = true;
-            specs.warmChromosomes = [seedChrom; perturbed];
+        % Warm-start chromosomes from the condition's seed archive, which
+        % every completed run (cold and warm, this batch and earlier ones)
+        % has added to. See WarmStart/selectWarmSeeds and runConfig.
+        if warmStartUsed
+            [seeds, seedInfo] = warmSeedsForRun(cfg, s.ConditionKey, problem, params);
+            if ~isempty(seeds)
+                specs.warmStart = true;
+                specs.warmChromosomes = seeds;
+                specs.WarmSeedInfo = seedInfo;
+                schedule(runIdx).WarmSeedChromosome = seeds;
+            end
         end
         
         %% Run GA 
@@ -247,7 +251,7 @@ for runIdx = startIdx:totalRuns
         end
         
         % Use existing saveResults to maintain log compatibility
-        saveResults(out, specs, params, elapsedTime, ...
+        runFile = saveResults(out, specs, params, elapsedTime, ...
             costFunctionType, warmStartUsed, coverageStats);
         
         %% Record in batch schedule 
@@ -257,21 +261,10 @@ for runIdx = startIdx:totalRuns
         schedule(runIdx).BestChromosome = out.bestsol.Chromosome;
         schedule(runIdx).CoverageStats = coverageStats;
         
-        latestMat = dir(sprintf('%dCams_Run_*.mat', numCams));
-        if ~isempty(latestMat)
-            [~, newest] = max([latestMat.datenum]);
-            schedule(runIdx).RunFilename = latestMat(newest).name;
-        end
+        schedule(runIdx).RunFilename = runFile;
         
         fprintf('DONE: Cost=%.6f | Time=%.1fs (%.1f min)\n\n', ...
             out.bestsol.Cost, elapsedTime, elapsedTime/60);
-        
-        %% Propagate best chromosome to warm-start runs
-        % If this is a cold-start run, find any warm-start runs that
-        % share the same condition and update their seed chromosome
-        if ~warmStartUsed
-            schedule = propagateWarmSeed(schedule, runIdx);
-        end
         
     catch ME
         schedule(runIdx).Status = 'failed';
@@ -339,7 +332,8 @@ function schedule = buildSchedule(cfg)
         end
     end
     
-    % Phase 2: Warm-start runs (one per condition, seeded from best cold)
+    % Phase 2: Warm-start runs (NumRepeats per condition, seeded at run time
+    % from the seed archive, which by then holds this batch's cold runs)
     if ~cfg.SkipWarmStart
         uniqueConditions = unique({schedule.ConditionKey});
         for c = 1:length(uniqueConditions)
@@ -360,43 +354,6 @@ function schedule = buildSchedule(cfg)
                 schedule(idx).RepeatIdx   = rep;
                 schedule(idx).WarmSeedChromosome = []; % filled at runtime
                 schedule(idx).ConditionKey = condKey;
-            end
-        end
-    end
-end
-
-
-function schedule = propagateWarmSeed(schedule, completedIdx)
-% After a cold-start run completes, find warm-start runs with the same
-% condition key. If the completed run's cost is better than any previously
-% stored seed, update the seed chromosome.
-
-    condKey = schedule(completedIdx).ConditionKey;
-    newCost = schedule(completedIdx).BestCost;
-    newChrom = schedule(completedIdx).BestChromosome;
-    
-    for i = 1:length(schedule)
-        if schedule(i).WarmStart && ...
-           strcmp(schedule(i).ConditionKey, condKey) && ...
-           strcmp(schedule(i).Status, 'pending')
-            
-            % Only update if this chromosome is better than current seed
-            if isempty(schedule(i).WarmSeedChromosome)
-                schedule(i).WarmSeedChromosome = newChrom;
-            else
-                % Check if we already have a cost stored; compare
-                % For simplicity, always take the latest completed cold run's best
-                % (the last cold run to finish will have seen whether warm-seeding
-                %  from the best of N repeats matters)
-                coldDone = find(~[schedule.WarmStart] & ...
-                    strcmp({schedule.ConditionKey}, condKey) & ...
-                    strcmp({schedule.Status}, 'done'));
-                if ~isempty(coldDone)
-                    coldCosts = [schedule(coldDone).BestCost];
-                    [~, bestColdIdx] = min(coldCosts);
-                    schedule(i).WarmSeedChromosome = ...
-                        schedule(coldDone(bestColdIdx)).BestChromosome;
-                end
             end
         end
     end

@@ -9,6 +9,9 @@ function cfg = runConfig(preset, varargin)
 %     'optitrack_lab'   Lab OptiTrack rig: 8 x 8 x 4 m capture volume,
 %                       cameras on walls, ceiling or tripods.
 %     'lowcost_tripod'  Low-cost cameras on tripods only.
+%     'openmv_lab'      OpenMV RT1062 cameras (single lens, 8 m IR range) in
+%                       the same lab volume and mounts; UAV uniform grid,
+%                       6-10 cameras.
 %
 %   Any field below can be overridden with a name-value pair. Unknown names
 %   are an error, so a typo cannot silently fall back to a default.
@@ -70,6 +73,20 @@ function cfg = runConfig(preset, varargin)
     cfg.MutationSigmaRot = deg2rad(3.3);     % rotation-vector step s.d. [rad]
     cfg.TournamentSize  = 3;
 
+    % Warm start (see WarmStart/selectWarmSeeds). Warm runs inject seeds from
+    % Results/SeedArchive/<preset>/<condition>.mat, which every saved run
+    % (cold and warm) adds to.
+    %   WarmSeedMode      'top_n' (best distinct archived solutions) or
+    %                     'best_mutant' (best + mutated copies, the old scheme)
+    %   WarmSeedCount     seeds injected; [] = WarmSeedFraction * population
+    %   WarmSeedMinDist   diversity threshold for 'top_n' [m], 0 = off
+    %   ArchiveFraction   share of each run's final population archived
+    cfg.WarmSeedMode     = 'top_n';
+    cfg.WarmSeedCount    = 21;
+    cfg.WarmSeedFraction = 0.05;
+    cfg.WarmSeedMinDist  = 0.25;
+    cfg.ArchiveFraction  = 0.10;
+
     %% Preset-specific values
     switch lower(preset)
         case 'optitrack_lab'
@@ -79,9 +96,15 @@ function cfg = runConfig(preset, varargin)
             cfg.Hardware = 'lowcost';
             cfg.Mount.Model = 'tripod';
 
+        case 'openmv_lab'
+            cfg.Hardware    = 'openmv_rt1062';
+            cfg.CameraRange = 6:10;
+            cfg.TargetTypes = 1;          % UAV
+            cfg.GridModes   = 1;          % uniform
+
         otherwise
             error('runConfig:UnknownPreset', ...
-                'Unknown preset "%s". Use ''optitrack_lab'' or ''lowcost_tripod''.', preset);
+                'Unknown preset "%s". Use ''optitrack_lab'', ''openmv_lab'' or ''lowcost_tripod''.', preset);
     end
 
     %% Name-value overrides

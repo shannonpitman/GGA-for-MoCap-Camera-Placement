@@ -14,6 +14,9 @@ function [filteredLog, filterDesc] = loadGARuns(varargin)
 %     'TargetType'   - 1 (UAV) or 2 (UGV)
 %     'GridMode'     - 1 (Uniform) or 2 (Normal)
 %     'Spacing'      - Grid spacing in metres (tolerance 0.001)
+%     'Preset'       - runConfig preset (default 'optitrack_lab'; 'all'
+%                      keeps every preset). Runs logged before presets
+%                      existed count as 'optitrack_lab'.
 %     'MatchParams'  - true to keep only runs whose GAParams match the
 %                      first passing run (default: false)
 
@@ -29,6 +32,7 @@ function [filteredLog, filterDesc] = loadGARuns(varargin)
     addParameter(p, 'TargetType',   [],  @isnumeric);
     addParameter(p, 'GridMode',     [],  @isnumeric);
     addParameter(p, 'Spacing',      [],  @isnumeric);
+    addParameter(p, 'Preset',       'optitrack_lab', @ischar);
     addParameter(p, 'MatchParams',  false, @islogical);
     parse(p, varargin{:});
 
@@ -56,9 +60,20 @@ function [filteredLog, filterDesc] = loadGARuns(varargin)
         end
     end
 
+    if ~isfield(runLog, 'Preset')
+        [runLog.Preset] = deal('optitrack_lab');
+    end
+
     %% Build filter mask
     keep = true(N, 1);
     descParts = {};
+
+    if ~strcmpi(opts.Preset, 'all')
+        keep = keep & strcmpi({runLog.Preset}, opts.Preset).';
+        if ~strcmpi(opts.Preset, 'optitrack_lab')
+            descParts{end+1} = opts.Preset;
+        end
+    end
 
     if ~isempty(opts.NumCameras)
         keep = keep & ([runLog.NumCameras]' == opts.NumCameras);
