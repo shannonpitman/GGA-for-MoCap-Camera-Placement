@@ -70,7 +70,8 @@ function testLayoutDistanceIgnoresSlotOrder(tc)
 end
 
 function testArchiveDeduplicates(tc)
-    preset = sprintf('test_%s', char(java.util.UUID.randomUUID));
+    [~, id] = fileparts(tempname);              % unique name; no Java (matlab -batch on Linux has none)
+    preset = ['test_' id];
     key = conditionKey(3, 3, 1, 1, 1.0);
     cleanup = onCleanup(@() rmdir(fileparts(seedArchiveFile(preset, key)), 's')); %#ok<NASGU>
     C = vertcat(tc.TestData.pool(1:3).Chromosome);  J = [tc.TestData.pool(1:3).Cost].';
