@@ -1,0 +1,37 @@
+Warm-start A/B study  /home/msg/GGA-for-MoCap-Camera-Placement/Results/Tuning/ABWarmStart/20261113_194711/abWarmStart.mat
+Methods: best_mutant, top_n | seed counts: [10 21] | min seed distance 0.25 m
+
+=== 7 cameras  (7C_CF3_TT1_GM1_sp1.00)  archive: 230 solutions, best 0.12067 ===
+    <strong>Cams</strong>          <strong>Arm</strong>           <strong>N</strong>      <strong>Median</strong>        <strong>IQR</strong>         <strong>Mean</strong>         <strong>SD</strong>          <strong>Min</strong>       <strong>BeatBestSeed</strong>    <strong>LayoutSpread_m</strong>    <strong>GenTo1pct</strong>
+    <strong>____</strong>    <strong>________________</strong>    <strong>__</strong>    <strong>________</strong>    <strong>_________</strong>    <strong>________</strong>    <strong>_________</strong>    <strong>________</strong>    <strong>____________</strong>    <strong>______________</strong>    <strong>_________</strong>
+
+     7      "best_mutant_10"    15    0.094488     0.012117    0.095699    0.0079232    0.082219         1             0.17548           90    
+     7      "best_mutant_21"    15    0.098605    0.0098582    0.098013    0.0065475    0.087874         1             0.22693           93    
+     7      "top_n_10"          15    0.086267    0.0036645    0.086765    0.0049477    0.074338         1              0.2179           92    
+     7      "top_n_21"          15    0.094789    0.0092754    0.090573     0.014868    0.042816         1              2.2836           89    
+
+
+Friedman (15 complete repeats, 4 arms): p = 0.0002632
+Wilcoxon top_n_10 vs best_mutant_10 (n=15): median diff -0.00643, top_n_10 better in 14/15, p = 0.00116
+Wilcoxon top_n_21 vs best_mutant_21 (n=15): median diff -0.00464, top_n_21 better in 11/15, p = 0.0946
+Wilcoxon best_mutant_21 vs best_mutant_10 (n=15): median diff +0.00124, best_mutant_21 better in 6/15, p = 0.3591
+Wilcoxon top_n_21 vs top_n_10 (n=15): median diff +0.00570, top_n_21 better in 5/15, p = 0.0946
+Brown-Forsythe (equal spread of cost across arms): p = 0.3309
+
+=== 6 cameras  (6C_CF3_TT1_GM1_sp1.00)  archive: 200 solutions, best 0.09820 ===
+    <strong>Cams</strong>          <strong>Arm</strong>           <strong>N</strong>      <strong>Median</strong>        <strong>IQR</strong>         <strong>Mean</strong>         <strong>SD</strong>          <strong>Min</strong>       <strong>BeatBestSeed</strong>    <strong>LayoutSpread_m</strong>    <strong>GenTo1pct</strong>
+    <strong>____</strong>    <strong>________________</strong>    <strong>__</strong>    <strong>________</strong>    <strong>_________</strong>    <strong>________</strong>    <strong>_________</strong>    <strong>________</strong>    <strong>____________</strong>    <strong>______________</strong>    <strong>_________</strong>
+
+     6      "best_mutant_10"    15    0.093613     0.010141    0.092085    0.0061431    0.078922      0.66667          0.19963           68    
+     6      "best_mutant_21"    15     0.08955    0.0044321    0.088561      0.00454    0.077571            1          0.20761           92    
+     6      "top_n_10"          15    0.082438    0.0075866    0.081029    0.0073855    0.068057            1          0.16321           80    
+     6      "top_n_21"          15     0.08578    0.0059587    0.085835    0.0054071    0.077158      0.93333          0.21163           89    
+
+
+Friedman (15 complete repeats, 4 arms): p = 0.0004837
+Wilcoxon top_n_10 vs best_mutant_10 (n=15): median diff -0.00984, top_n_10 better in 14/15, p = 0.0001831
+Wilcoxon top_n_21 vs best_mutant_21 (n=15): median diff -0.00334, top_n_21 better in 10/15, p = 0.2524
+Wilcoxon best_mutant_21 vs best_mutant_10 (n=15): median diff -0.00415, best_mutant_21 better in 11/15, p = 0.1354
+Wilcoxon top_n_21 vs top_n_10 (n=15): median diff +0.00382, top_n_21 better in 4/15, p = 0.04791
+Brown-Forsythe (equal spread of cost across arms): p = 0.3377
+
