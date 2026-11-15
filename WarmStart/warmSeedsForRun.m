@@ -1,4 +1,4 @@
-function [seeds, info] = warmSeedsForRun(cfg, condKey, problem, params)
+function [seeds, info] = warmSeedsForRun(cfg, condKey, problem, params, pool)
 %WARMSEEDSFORRUN  Warm-start rows for one run, from the condition's archive.
 %
 %   [seeds, info] = warmSeedsForRun(cfg, condKey, problem, params)
@@ -7,8 +7,11 @@ function [seeds, info] = warmSeedsForRun(cfg, condKey, problem, params)
 %   round(cfg.WarmSeedFraction * population size). Method and diversity
 %   threshold come from cfg.WarmSeedMode / cfg.WarmSeedMinDist.
 %   Empty seeds (and a warning) if the archive has nothing for condKey yet.
+%   pool (optional) overrides the archive, e.g. a snapshot frozen by batchRunGA.
     nSeed = numSeeds(cfg, params.nPop);
-    pool = loadSeedArchive(cfg.Preset, condKey);
+    if nargin < 5
+        pool = loadSeedArchive(cfg.Preset, condKey);
+    end
     if isempty(pool)
         warning('warmSeedsForRun:EmptyArchive', ...
             'No archived solutions for %s / %s: this warm run starts cold.', cfg.Preset, condKey);

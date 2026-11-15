@@ -40,6 +40,25 @@ currentDateTime = datetime('now');
     end
     saveData.NumSeedsInjected = size(specs.warmChromosomes, 1) * logical(warmStartUsed);
 
+    % Best rig at the snapshot generation (default 100) and the cost split of
+    % it and of the final rig, so longer runs can be compared with shorter
+    % ones and the gain attributed to resolution vs occlusion.
+    snapGen = [];
+    if isfield(specs, 'RunConfig') && isfield(specs.RunConfig, 'SnapshotGeneration')
+        snapGen = specs.RunConfig.SnapshotGeneration;
+    end
+    try
+        saveData.Breakdown.Final = costBreakdown(out.bestsol.Chromosome, specs);
+        if ~isempty(snapGen) && isfield(out, 'bestChromosomes') && snapGen < size(out.bestChromosomes, 1)
+            saveData.Snapshot.Generation = snapGen;
+            saveData.Snapshot.Chromosome = out.bestChromosomes(snapGen, :);
+            saveData.Snapshot.Cost       = out.bestcost(snapGen);
+            saveData.Breakdown.Snapshot  = costBreakdown(saveData.Snapshot.Chromosome, specs);
+        end
+    catch ME
+        warning('saveResults:breakdown', 'Cost breakdown not saved: %s', ME.message);
+    end
+
     % ... and the best part of where it ended (later warm starts draw on it).
     archiveFrac = 0.10;
     if isfield(specs, 'RunConfig') && isfield(specs.RunConfig, 'ArchiveFraction')

@@ -37,6 +37,9 @@ addParameter(p, 'UGV_MaxHeight', base.UGV_MaxHeight, @isnumeric);
 addParameter(p, 'UGV_ZSpacing',  base.UGV_ZSpacing,  @(x) isnumeric(x) && isscalar(x) && x > 0);
 addParameter(p, 'NumRepeats',    base.NumRepeats,    @isnumeric);
 addParameter(p, 'SkipWarmStart', base.SkipWarmStart, @islogical);
+% WarmOnly: schedule only the warm runs (seeded from the existing archive),
+% e.g. to re-do warm runs with a new seeding scheme without repeating colds.
+addParameter(p, 'WarmOnly', false, @islogical);
 
 % GA parameters. PopulationSize [] => numCams * params-per-camera * PopulationScale.
 addParameter(p, 'MaxGenerations', base.MaxGenerations, @isnumeric);
@@ -188,6 +191,7 @@ batchTic = tic;
 % CF3 run is reached this session, from every completed CF1/CF2 run so far.
 % This also covers resume: on resume the CF1/CF2 runs are already 'done'.
 normRebuilt = false;
+frozenPools = containers.Map();   % ConditionKey -> archive snapshot (FreezeWarmPool)
 haveCF12 = any(ismember([schedule.CostFunc], [1 2]));
 
 for runIdx = startIdx:totalRuns
@@ -229,7 +233,15 @@ for runIdx = startIdx:totalRuns
         % every completed run (cold and warm, this batch and earlier ones)
         % has added to. See WarmStart/selectWarmSeeds and runConfig.
         if warmStartUsed
-            [seeds, seedInfo] = warmSeedsForRun(cfg, s.ConditionKey, problem, params);
+            if cfg.FreezeWarmPool
+                if ~isKey(frozenPools, s.ConditionKey)
+                    frozenPools(s.ConditionKey) = loadSeedArchive(cfg.Preset, s.ConditionKey);
+                end
+                [seeds, seedInfo] = warmSeedsForRun(cfg, s.ConditionKey, problem, params, ...
+                    frozenPools(s.ConditionKey));
+            else
+                [seeds, seedInfo] = warmSeedsForRun(cfg, s.ConditionKey, problem, params);
+            end
             if ~isempty(seeds)
                 specs.warmStart = true;
                 specs.warmChromosomes = seeds;
@@ -300,7 +312,18 @@ end
 %% Scheduler
 
 function schedule = buildSchedule(cfg)
-% Full factorial batch
+% Full factorial batch. WarmOnly keeps only the warm runs.
+    schedule = buildFullSchedule(cfg);
+    if isfield(cfg, 'WarmOnly') && cfg.WarmOnly
+        if cfg.SkipWarmStart
+            error('batchRunGA:WarmOnlyNoWarm', 'WarmOnly with SkipWarmStart leaves nothing to run.');
+        end
+        schedule = schedule([schedule.WarmStart]);
+        for i = 1:numel(schedule), schedule(i).RunIndex = i; end
+    end
+end
+
+function schedule = buildFullSchedule(cfg)
 
     schedule = struct([]);
     idx = 0;

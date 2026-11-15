@@ -98,8 +98,8 @@ and convergence plots, and **saves automatically** (see §5).
 Every saved run (cold or warm) adds its best solution and the top
 `ArchiveFraction` (10%) of its final population to
 `Results/SeedArchive/<preset>/<condition>.mat` (`WarmStart/updateSeedArchive`).
-A warm run injects `WarmSeedCount` seeds (default 21 = 5% of a 7-camera
-population; `[]` uses `WarmSeedFraction`) chosen by `WarmSeedMode`:
+A warm run injects `WarmSeedCount` seeds (default 10, the winner of the
+2026-11 A/B study; `[]` uses `WarmSeedFraction`) chosen by `WarmSeedMode`:
 
 - `'top_n'`: the best archived solutions, skipping any whose camera
   positions are within `WarmSeedMinDist` (0.25 m, mean after matching
@@ -108,7 +108,15 @@ population; `[]` uses `WarmSeedFraction`) chosen by `WarmSeedMode`:
 - `'best_mutant'`: the old scheme: best solution plus mutated copies.
 
 `backfillSeedArchive()` fills the lab archive from the re-run results (safe to
-repeat). `abWarmStart` compares the two modes at 10 and 21 seeds;
+repeat); `archiveABWarmStart(file)` adds an A/B study's final rigs. With
+`FreezeWarmPool` (default true) all warm runs of one condition in a batch seed
+from the same archive snapshot, so repeats are independent.
+`batchRunGA(..., 'WarmOnly', true)` re-does only the warm runs.
+
+Runs default to 150 generations (`MaxGenerations`) and save their
+generation-100 best (`SnapshotGeneration`) plus the resolution/occlusion
+split of both (`saveData.Snapshot`, `saveData.Breakdown`);
+`compareGenerations` reports 100 vs 150 and which term the gain comes from. `abWarmStart` compares the two modes at 10 and 21 seeds;
 `reportABWarmStart` reports it. Archives are only valid for the cost code
 that produced them: after a cost-function change, move `Results/SeedArchive`
 aside.
@@ -117,7 +125,8 @@ aside.
 
 `runConfig('openmv_lab')` models OpenMV RT1062 cameras (OV5640 at full
 2592 x 1944, f = 2327 px, 58.2 x 45.3 deg FOV, one lens, 8 m range) in the
-same lab volume and mounts, sweeping 6-10 cameras on the UAV uniform grid.
+same lab volume on tripods only (head height 0.75-1.75 m, outside the flight
+footprint), sweeping 6-10 cameras on the UAV uniform grid.
 Non-lab presets save runs to `Results/<preset>/<N>Cams/`, log a `Preset`
 field (filter with `loadGARuns('Preset', ...)`), and keep their own CF3
 normalisation table. Full sweep: `runFullRerun('Preset','openmv_lab')`.

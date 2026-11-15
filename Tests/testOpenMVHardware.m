@@ -73,6 +73,19 @@ function testPresetBuildsAndRuns(tc)
     verifyTrue(tc, isfinite(out.bestsol.Cost));
 end
 
+function testTripodMounting(tc)
+    cfg = runConfig('openmv_lab', 'MaxGenerations', 3, 'PopulationSize', 12);
+    verifyEqual(tc, cfg.Mount.Model, 'tripod');
+    verifyEqual(tc, cfg.Mount.TripodHeight, [0.75 1.75]);
+    [specs, problem, params] = buildRunSpecs(cfg, 6, 3, 1, 1, 1.0, 'UseNormTable', false);
+    [~, out] = evalc('RunGA(problem, params, specs)');
+    P = reshape(out.bestsol.Chromosome, 6, []).';
+    verifyGreaterThanOrEqual(tc, P(:, 3), 0.75 - 1e-9);
+    verifyLessThanOrEqual(tc, P(:, 3), 1.75 + 1e-9);
+    outside = abs(P(:, 1)) >= 4 - 1e-9 | abs(P(:, 2)) >= 4 - 1e-9;   % not in the 8x8 footprint
+    verifyTrue(tc, all(outside));
+end
+
 function testOptiTrackStillAlternates(tc)
     s = setupHardwareSpecs(4, 'optitrack');
     verifyFalse(tc, s.SingleLens);

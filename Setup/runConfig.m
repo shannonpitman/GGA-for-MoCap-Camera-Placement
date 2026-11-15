@@ -10,8 +10,9 @@ function cfg = runConfig(preset, varargin)
 %                       cameras on walls, ceiling or tripods.
 %     'lowcost_tripod'  Low-cost cameras on tripods only.
 %     'openmv_lab'      OpenMV RT1062 cameras (single lens, 8 m IR range) in
-%                       the same lab volume and mounts; UAV uniform grid,
-%                       6-10 cameras.
+%                       the same lab volume, on tripods only (head height
+%                       0.75-1.75 m, outside the flight footprint); UAV
+%                       uniform grid, 6-10 cameras.
 %
 %   Any field below can be overridden with a name-value pair. Unknown names
 %   are an error, so a typo cannot silently fall back to a default.
@@ -60,7 +61,12 @@ function cfg = runConfig(preset, varargin)
     cfg.Weights = [0.5 0.5];                 % [resolution, occlusion]
 
     % GA
-    cfg.MaxGenerations  = 100;
+    % 150 since 2026-11: the warm-start A/B study (Results/Tuning/ABWarmStart)
+    % showed runs still improving at generation 100. Every run also records
+    % its generation-SnapshotGeneration best, so 100 vs 150 is measured from
+    % the same run (the GA does not depend on MaxGenerations).
+    cfg.MaxGenerations  = 150;
+    cfg.SnapshotGeneration = 100;
     cfg.PopulationSize  = [];                % [] = numCams * genesPerCam * 10
     cfg.PopulationScale = 10;
     cfg.CrossoverFraction = 1;
@@ -82,10 +88,15 @@ function cfg = runConfig(preset, varargin)
     %   WarmSeedMinDist   diversity threshold for 'top_n' [m], 0 = off
     %   ArchiveFraction   share of each run's final population archived
     cfg.WarmSeedMode     = 'top_n';
-    cfg.WarmSeedCount    = 21;
+    cfg.WarmSeedCount    = 10;        % A/B study 2026-11: top_n x 10 best
     cfg.WarmSeedFraction = 0.05;
     cfg.WarmSeedMinDist  = 0.25;
     cfg.ArchiveFraction  = 0.10;
+    %   FreezeWarmPool    true: a batch's warm runs of one condition all seed
+    %                     from the archive as it stood at that condition's
+    %                     first warm run (independent repeats). false: each
+    %                     warm run also sees the batch's earlier warm runs.
+    cfg.FreezeWarmPool   = true;
 
     %% Preset-specific values
     switch lower(preset)
@@ -98,6 +109,8 @@ function cfg = runConfig(preset, varargin)
 
         case 'openmv_lab'
             cfg.Hardware    = 'openmv_rt1062';
+            cfg.Mount.Model = 'tripod';            % how the OpenMV rig is mounted
+            cfg.Mount.TripodHeight = [0.75 1.75];  % measured on the user's tripods [m]
             cfg.CameraRange = 6:10;
             cfg.TargetTypes = 1;          % UAV
             cfg.GridModes   = 1;          % uniform
