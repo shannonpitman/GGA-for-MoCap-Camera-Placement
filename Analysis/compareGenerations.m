@@ -12,6 +12,8 @@ function T = compareGenerations(varargin)
 %     - how the improvement splits between the weighted resolution term
 %       (Junc) and the weighted occlusion term (Jocc): median dJunc, dJocc
 %       and the share of the total drop due to each
+%     - median raw resolution uncertainty [mm] and occlusion angle [deg]
+%       at both generations (scale-free, comparable across tables)
 %     - for comparison, the median of the October warm runs (best + 1
 %       mutant, 100 generations) of the same condition, if any
 %   Writes Results/Analysis/compareGenerations_<preset>_<date>.txt and
@@ -32,7 +34,7 @@ function T = compareGenerations(varargin)
     L = L([L.Timestamp] >= o.Since);
 
     rows = struct('Key', {}, 'Warm', {}, 'J100', {}, 'J150', {}, 'Junc100', {}, 'Junc150', {}, ...
-                  'Jocc100', {}, 'Jocc150', {});
+                  'Jocc100', {}, 'Jocc150', {}, 'U100', {}, 'U150', {}, 'O100', {}, 'O150', {});
     for i = 1:numel(L)
         S = load(resolveRunPath(L(i).RunFilename, L(i).NumCameras), 'saveData');
         d = S.saveData;
@@ -41,7 +43,9 @@ function T = compareGenerations(varargin)
                 L(i).TargetType, L(i).GridMode, L(i).Spacing), 'Warm', L(i).WarmStart, ...
             'J100', d.Breakdown.Snapshot.J, 'J150', d.Breakdown.Final.J, ...
             'Junc100', d.Breakdown.Snapshot.Junc, 'Junc150', d.Breakdown.Final.Junc, ...
-            'Jocc100', d.Breakdown.Snapshot.Jocc, 'Jocc150', d.Breakdown.Final.Jocc); %#ok<AGROW>
+            'Jocc100', d.Breakdown.Snapshot.Jocc, 'Jocc150', d.Breakdown.Final.Jocc, ...
+            'U100', d.Breakdown.Snapshot.RawUnc, 'U150', d.Breakdown.Final.RawUnc, ...
+            'O100', d.Breakdown.Snapshot.RawOcc, 'O150', d.Breakdown.Final.RawOcc); %#ok<AGROW>
     end
     if isempty(rows)
         error('compareGenerations:NoRuns', 'No runs with a generation snapshot since %s.', string(o.Since));
@@ -74,9 +78,11 @@ function T = compareGenerations(varargin)
             end
             T = [T; table(string(keys{k}), w, numel(r), median(j100), median(j150), ...
                 100*median(-dJ ./ j100), pW, median(dU), median(dO), shareUnc, oct, ...
+                1000*median([r.U100]), 1000*median([r.U150]), median([r.O100]), median([r.O150]), ...
                 'VariableNames', {'Condition', 'Warm', 'N', 'MedianJ_100', 'MedianJ_150', ...
                 'MedianGainPct', 'p_Wilcoxon', 'Median_dJunc', 'Median_dJocc', ...
-                'ShareOfGain_Unc', 'Oct_Warm_Median_100'})]; %#ok<AGROW>
+                'ShareOfGain_Unc', 'Oct_Warm_Median_100', ...
+                'RawUnc_mm_100', 'RawUnc_mm_150', 'RawOcc_deg_100', 'RawOcc_deg_150'})]; %#ok<AGROW>
         end
     end
 

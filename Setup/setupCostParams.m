@@ -42,7 +42,20 @@ if useTable
         specs.PreComputed.uncertUtopia = nc.utopiaUnc;
         specs.PreComputed.occlUtopia   = nc.utopiaOcc;
         specs.PreComputed.normSource   = 'normTable';
-    catch
-        % No file / no matching instance -> keep defaults silently.
+    catch ME
+        % No file / no matching instance -> keep defaults. Harmless for
+        % CF1/CF2 runs (they ignore these), but a CF3 cost on the defaults is
+        % on a different scale from every tabled result, so say so (once per
+        % instance per session).
+        persistent warned
+        if isempty(warned), warned = containers.Map(); end
+        key = sprintf('%d_%d_%d_%.3f', specs.TargetType, specs.TargetMode, specs.Cams, specs.spacing);
+        if ~isKey(warned, key)
+            warning('setupCostParams:NoNormEntry', ...
+                ['No normTable entry for TT%d GM%d %dC sp%.2f (%s): CF3 uses the ' ...
+                 'default constants, not comparable with tabled results.'], ...
+                specs.TargetType, specs.TargetMode, specs.Cams, specs.spacing, ME.message);
+            warned(key) = true;
+        end
     end
 end

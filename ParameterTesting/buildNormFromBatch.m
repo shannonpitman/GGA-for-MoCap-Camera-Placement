@@ -151,6 +151,25 @@ function normTable = buildNormFromBatch(schedule, cfg, varargin)
             'No instance had both a completed CF1 and CF2 run; nothing written.');
     end
 
+    % Keep instances this batch did not cover (e.g. a batch of one camera
+    % count must not wipe the others' constants).
+    if isfile(o.OutFile)
+        prev = load(o.OutFile, 'normTable');
+        nKept = 0;
+        for i = 1:numel(prev.normTable)
+            r = prev.normTable(i);
+            covered = any([normTable.TargetType] == r.TargetType & [normTable.GridMode] == r.GridMode & ...
+                [normTable.NumCameras] == r.NumCameras & abs([normTable.Spacing] - r.Spacing) < 1e-9);
+            if ~covered
+                normTable = appendRow(normTable, r);
+                nKept = nKept + 1;
+            end
+        end
+        if o.Verbose && nKept > 0
+            fprintf('  kept %d instance(s) from the previous table that this batch did not cover\n', nKept);
+        end
+    end
+
     % Archive any prior table before overwriting.
     if o.Archive && isfile(o.OutFile)
         [d, n, e] = fileparts(o.OutFile);
