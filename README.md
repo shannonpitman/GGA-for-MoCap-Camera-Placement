@@ -125,15 +125,20 @@ aside.
 
 `runConfig('openmv_2m')` models OpenMV RT1062 cameras (OV5640 at full
 2592 x 1944, f = 2327 px, 58.2 x 45.3 deg FOV, one lens, 8 m range) on
-tripods only (head height 0.75-1.75 m, outside the 8 x 8 m flight
-footprint) for a capture volume 0-2 m tall, sweeping 6-12 cameras on the
-UAV uniform grid. `runConfig('openmv_4m')` is the first sweep (2026-11-16)
-in the full 4 m lab volume with 6-10 cameras; it was logged as `openmv_lab`,
-which `runConfig` and `loadGARuns` still accept as an alias.
+tripods only (head height 0.75-1.75 m) around the measured flight space:
+5 m (x, between the walls holding the installed OptiTrack cameras) by 6 m
+(y, along them), targets from 0.2 m to 2 m (6 x 7 x 3 = 126 points), with
+1.5 m of floor for tripods on every side. It sweeps 6-12 cameras on the UAV
+uniform grid. `runConfig('optitrack_tripod')` puts OptiTrack cameras (6-7)
+on the same tripods in the same space as the like-for-like reference; it is
+kept apart from the full-room lab runs. `runConfig('openmv_4m')` is the
+first OpenMV sweep (2026-11-16) in the full 8 x 8 x 4 m lab volume with
+6-10 cameras; it was logged as `openmv_lab`, which `runConfig` and
+`loadGARuns` still accept as an alias.
 Non-lab presets save runs to `Results/<preset>/<N>Cams/`, log a `Preset`
 field (filter with `loadGARuns('Preset', ...)`), and keep their own CF3
-normalisation table and seed archive. Full sweep:
-`runFullRerun('Preset','openmv_2m')`.
+normalisation table and seed archive. Full sweeps:
+`runFullRerun('Preset','openmv_2m')`, `runFullRerun('Preset','optitrack_tripod')`.
 
 ### Batch sweep — `batchRunGA`
 

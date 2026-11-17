@@ -10,13 +10,20 @@ function cfg = runConfig(preset, varargin)
 %                       cameras on walls, ceiling or tripods.
 %     'lowcost_tripod'  Low-cost cameras on tripods only.
 %     'openmv_2m'       OpenMV RT1062 cameras (single lens, 8 m IR range) on
-%                       tripods only (head height 0.75-1.75 m, outside the
-%                       8 x 8 m footprint), capture volume 0-2 m tall (the
-%                       height the marker board is swept to); UAV uniform
-%                       grid, 6-12 cameras (the cameras available).
-%     'openmv_4m'       As openmv_2m in the full 4 m lab volume, 6-10
-%                       cameras (first sweep, 2026-11-16). 'openmv_lab' is
-%                       its old name and still maps to it.
+%                       tripods only (head height 0.75-1.75 m) around the
+%                       measured flight space: 5 m (x, between the walls
+%                       holding the installed OptiTrack cameras) by 6 m (y,
+%                       along those walls), targets 0.2-2 m high (the
+%                       marker board's realistic sweep), 1.5 m tripod band
+%                       on every side (x +-4, y +-4.5); UAV uniform grid
+%                       6 x 7 x 3 = 126 points, 6-12 cameras.
+%     'optitrack_tripod' OptiTrack cameras in the same flight space on the
+%                       same tripods, 6-7 cameras: the like-for-like
+%                       reference for openmv_2m. Kept apart from the
+%                       full-room lab runs (Results/optitrack_tripod/).
+%     'openmv_4m'       OpenMV on tripods in the full 8 x 8 x 4 m lab volume,
+%                       6-10 cameras (first sweep, 2026-11-16). 'openmv_lab'
+%                       is its old name and still maps to it.
 %
 %   Any field below can be overridden with a name-value pair. Unknown names
 %   are an error, so a typo cannot silently fall back to a default.
@@ -45,6 +52,7 @@ function cfg = runConfig(preset, varargin)
 
     % Workspace
     cfg.Volume        = [-4 4; -4 4; 0 4];   % capture volume [m]
+    cfg.ZSpacing      = [];                  % UAV grid z spacing [m]; [] = x-y spacing
     cfg.UGV_MaxHeight = 0.5;                 % UGV slab height [m]
     cfg.UGV_ZSpacing  = 0.25;                % UGV slab z spacing [m]
 
@@ -111,23 +119,37 @@ function cfg = runConfig(preset, varargin)
             cfg.Hardware = 'lowcost';
             cfg.Mount.Model = 'tripod';
 
-        case {'openmv_2m', 'openmv_4m', 'openmv_lab'}
-            cfg.Hardware    = 'openmv_rt1062';
-            cfg.Mount.Model = 'tripod';            % how the OpenMV rig is mounted
+        case {'openmv_2m', 'optitrack_tripod'}
+            % Measured flight space (2026-11-17): 5 m x 6 m, board swept
+            % from 0.2 m to 2 m; 1.5 m of floor for tripods on every side
+            % before the walls/cabinets.
+            cfg.Volume         = [-2.5 2.5; -3 3; 0.2 2.0];
+            cfg.ZSpacing       = 0.9;               % layers at 0.2, 1.1, 2.0 m
+            cfg.CamLowerBounds = [-4 -4.5 0   -pi -pi -pi];
+            cfg.CamUpperBounds = [ 4  4.5 4.8  pi  pi  pi];
+            cfg.Mount.Model    = 'tripod';
             cfg.Mount.TripodHeight = [0.75 1.75];  % user's tripods; 2 m possible but unstable [m]
             cfg.TargetTypes = 1;          % UAV
             cfg.GridModes   = 1;          % uniform
             if strcmpi(preset, 'openmv_2m')
-                cfg.Volume      = [-4 4; -4 4; 0 2];   % board swept from the floor to 2 m
-                cfg.CameraRange = 6:12;
+                cfg.Hardware    = 'openmv_rt1062';
+                cfg.CameraRange = 6:12;   % cameras available
             else
-                cfg.Preset      = 'openmv_4m';         % results, archive and table under this name
-                cfg.CameraRange = 6:10;
+                cfg.CameraRange = [6 7];  % as the lab rig
             end
+
+        case {'openmv_4m', 'openmv_lab'}
+            cfg.Preset      = 'openmv_4m';         % results, archive and table under this name
+            cfg.Hardware    = 'openmv_rt1062';
+            cfg.Mount.Model = 'tripod';
+            cfg.Mount.TripodHeight = [0.75 1.75];
+            cfg.TargetTypes = 1;
+            cfg.GridModes   = 1;
+            cfg.CameraRange = 6:10;
 
         otherwise
             error('runConfig:UnknownPreset', ...
-                'Unknown preset "%s". Use ''optitrack_lab'', ''openmv_2m'', ''openmv_4m'' or ''lowcost_tripod''.', preset);
+                'Unknown preset "%s". Use ''optitrack_lab'', ''openmv_2m'', ''optitrack_tripod'', ''openmv_4m'' or ''lowcost_tripod''.', preset);
     end
 
     %% Name-value overrides

@@ -66,7 +66,7 @@ end
 function testPresetBuildsAndRuns(tc)
     cfg = runConfig('openmv_2m', 'MaxGenerations', 2, 'PopulationSize', 12);
     verifyEqual(tc, cfg.CameraRange, 6:12);
-    verifyEqual(tc, cfg.Volume(3, :), [0 2]);
+    verifyEqual(tc, cfg.Volume, [-2.5 2.5; -3 3; 0.2 2.0]);
     verifyEqual(tc, [cfg.TargetTypes cfg.GridModes], [1 1]);
     [specs, problem, params] = buildRunSpecs(cfg, 6, 3, 1, 1, 1.0, 'UseNormTable', false);
     verifyEqual(tc, specs.HardwareProfile, 'openmv_rt1062');
@@ -83,8 +83,9 @@ function testTripodMounting(tc)
     P = reshape(out.bestsol.Chromosome, 6, []).';
     verifyGreaterThanOrEqual(tc, P(:, 3), 0.75 - 1e-9);
     verifyLessThanOrEqual(tc, P(:, 3), 1.75 + 1e-9);
-    outside = abs(P(:, 1)) >= 4 - 1e-9 | abs(P(:, 2)) >= 4 - 1e-9;   % not in the 8x8 footprint
+    outside = abs(P(:, 1)) >= 2.5 - 1e-9 | abs(P(:, 2)) >= 3 - 1e-9;  % not in the 5 x 6 m flight space
     verifyTrue(tc, all(outside));
+    verifyTrue(tc, all(abs(P(:, 1)) <= 4 + 1e-9 & abs(P(:, 2)) <= 4.5 + 1e-9));  % within the 1.5 m band
 end
 
 function testFourMetrePreset(tc)
@@ -97,9 +98,24 @@ function testFourMetrePreset(tc)
     end
     verifyTrue(tc, endsWith(runResultsDir('openmv_4m', 7), fullfile('Results', 'openmv_4m', '7Cams')));
     verifyTrue(tc, endsWith(normTableFile('openmv_2m'), 'normTable_openmv_2m.mat'));
-    specs = buildRunSpecs(runConfig('openmv_2m'), 7, 3, 1, 1, 1.0, 'UseNormTable', false);
-    verifyEqual(tc, specs.NumPoints, 243);                 % 9 x 9 x 3
-    verifyEqual(tc, max(specs.Target(:, 3)), 2);
+end
+
+function testFlightSpaceGrid(tc)
+    % 5 x 6 m flight space, 0.2-2 m: 6 x 7 x 3 points, same for both hardware
+    for name = {'openmv_2m', 'optitrack_tripod'}
+        specs = buildRunSpecs(runConfig(name{1}), 7, 3, 1, 1, 1.0, 'UseNormTable', false);
+        verifyEqual(tc, specs.NumPoints, 126, name{1});
+        verifyEqual(tc, unique(specs.Target(:, 3)).', [0.2 1.1 2.0], 'AbsTol', 1e-9);
+        verifyEqual(tc, [min(specs.Target(:, 1:2)); max(specs.Target(:, 1:2))], [-2.5 -3; 2.5 3], 'AbsTol', 1e-9);
+    end
+    o = runConfig('optitrack_tripod');
+    verifyEqual(tc, o.Hardware, 'optitrack');
+    verifyEqual(tc, o.Mount.Model, 'tripod');
+    verifyEqual(tc, o.CameraRange, [6 7]);
+    verifyTrue(tc, endsWith(runResultsDir('optitrack_tripod', 7), fullfile('Results', 'optitrack_tripod', '7Cams')));
+    % lab preset untouched
+    lab = buildRunSpecs(runConfig('optitrack_lab'), 7, 3, 1, 1, 1.0, 'UseNormTable', false);
+    verifyEqual(tc, lab.NumPoints, 405);
 end
 
 function testOptiTrackStillAlternates(tc)

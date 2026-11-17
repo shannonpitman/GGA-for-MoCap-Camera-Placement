@@ -29,6 +29,8 @@ function [specs, problem, params] = buildRunSpecs(cfg, numCams, costFunctionType
         volume(3, :) = [0, cfg.UGV_MaxHeight];
         zSpacing = min(cfg.UGV_ZSpacing, cfg.UGV_MaxHeight);
         targetSpacing = [spacing, spacing, zSpacing];
+    elseif isfield(cfg, 'ZSpacing') && ~isempty(cfg.ZSpacing)
+        targetSpacing = [spacing, spacing, cfg.ZSpacing];
     else
         targetSpacing = spacing;
     end
