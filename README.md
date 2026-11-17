@@ -123,13 +123,17 @@ aside.
 
 #### Hardware presets
 
-`runConfig('openmv_lab')` models OpenMV RT1062 cameras (OV5640 at full
-2592 x 1944, f = 2327 px, 58.2 x 45.3 deg FOV, one lens, 8 m range) in the
-same lab volume on tripods only (head height 0.75-1.75 m, outside the flight
-footprint), sweeping 6-10 cameras on the UAV uniform grid.
+`runConfig('openmv_2m')` models OpenMV RT1062 cameras (OV5640 at full
+2592 x 1944, f = 2327 px, 58.2 x 45.3 deg FOV, one lens, 8 m range) on
+tripods only (head height 0.75-1.75 m, outside the 8 x 8 m flight
+footprint) for a capture volume 0-2 m tall, sweeping 6-12 cameras on the
+UAV uniform grid. `runConfig('openmv_4m')` is the first sweep (2026-11-16)
+in the full 4 m lab volume with 6-10 cameras; it was logged as `openmv_lab`,
+which `runConfig` and `loadGARuns` still accept as an alias.
 Non-lab presets save runs to `Results/<preset>/<N>Cams/`, log a `Preset`
 field (filter with `loadGARuns('Preset', ...)`), and keep their own CF3
-normalisation table. Full sweep: `runFullRerun('Preset','openmv_lab')`.
+normalisation table and seed archive. Full sweep:
+`runFullRerun('Preset','openmv_2m')`.
 
 ### Batch sweep — `batchRunGA`
 

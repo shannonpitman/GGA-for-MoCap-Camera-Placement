@@ -2,7 +2,7 @@ function summary = backfillSeedArchive(varargin)
 %BACKFILLSEEDARCHIVE  Fill the seed archive from runs already on disk.
 %
 %   summary = backfillSeedArchive()                       % lab preset, every run
-%   summary = backfillSeedArchive('Preset', 'openmv_lab')
+%   summary = backfillSeedArchive('Preset', 'openmv_2m')
 %   summary = backfillSeedArchive('Since', datetime(2026,10,5))
 %
 %   Adds each logged run's best chromosome (and its FinalTopK, for runs saved

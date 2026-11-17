@@ -2,7 +2,7 @@ function T = compareGenerations(varargin)
 %COMPAREGENERATIONS  Generation-100 vs final (150) cost, and where the gain is.
 %
 %   T = compareGenerations()                          % lab preset, CF3, runs since 2026-11-15
-%   T = compareGenerations('Preset', 'openmv_lab')
+%   T = compareGenerations('Preset', 'openmv_2m')
 %   T = compareGenerations('Since', datetime(2026,11,15), 'WarmStart', true)
 %
 %   Uses runs saved with a Snapshot (saveResults, SnapshotGeneration). For

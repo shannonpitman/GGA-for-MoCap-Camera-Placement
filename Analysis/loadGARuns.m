@@ -63,6 +63,9 @@ function [filteredLog, filterDesc] = loadGARuns(varargin)
     if ~isfield(runLog, 'Preset')
         [runLog.Preset] = deal('optitrack_lab');
     end
+    % The first OpenMV sweep (4 m volume) was logged as 'openmv_lab'
+    [runLog(strcmpi({runLog.Preset}, 'openmv_lab')).Preset] = deal('openmv_4m');
+    if strcmpi(opts.Preset, 'openmv_lab'), opts.Preset = 'openmv_4m'; end
 
     %% Build filter mask
     keep = true(N, 1);

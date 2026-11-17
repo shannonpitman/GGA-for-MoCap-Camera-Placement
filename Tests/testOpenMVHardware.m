@@ -64,8 +64,9 @@ function testFocalMatchesCalibration(tc)
 end
 
 function testPresetBuildsAndRuns(tc)
-    cfg = runConfig('openmv_lab', 'MaxGenerations', 2, 'PopulationSize', 12);
-    verifyEqual(tc, cfg.CameraRange, 6:10);
+    cfg = runConfig('openmv_2m', 'MaxGenerations', 2, 'PopulationSize', 12);
+    verifyEqual(tc, cfg.CameraRange, 6:12);
+    verifyEqual(tc, cfg.Volume(3, :), [0 2]);
     verifyEqual(tc, [cfg.TargetTypes cfg.GridModes], [1 1]);
     [specs, problem, params] = buildRunSpecs(cfg, 6, 3, 1, 1, 1.0, 'UseNormTable', false);
     verifyEqual(tc, specs.HardwareProfile, 'openmv_rt1062');
@@ -74,7 +75,7 @@ function testPresetBuildsAndRuns(tc)
 end
 
 function testTripodMounting(tc)
-    cfg = runConfig('openmv_lab', 'MaxGenerations', 3, 'PopulationSize', 12);
+    cfg = runConfig('openmv_2m', 'MaxGenerations', 3, 'PopulationSize', 12);
     verifyEqual(tc, cfg.Mount.Model, 'tripod');
     verifyEqual(tc, cfg.Mount.TripodHeight, [0.75 1.75]);
     [specs, problem, params] = buildRunSpecs(cfg, 6, 3, 1, 1, 1.0, 'UseNormTable', false);
@@ -84,6 +85,21 @@ function testTripodMounting(tc)
     verifyLessThanOrEqual(tc, P(:, 3), 1.75 + 1e-9);
     outside = abs(P(:, 1)) >= 4 - 1e-9 | abs(P(:, 2)) >= 4 - 1e-9;   % not in the 8x8 footprint
     verifyTrue(tc, all(outside));
+end
+
+function testFourMetrePreset(tc)
+    % first sweep: full 4 m volume, 6-10 cameras; old name maps to it
+    for name = {'openmv_4m', 'openmv_lab'}
+        cfg = runConfig(name{1});
+        verifyEqual(tc, cfg.Preset, 'openmv_4m');
+        verifyEqual(tc, cfg.Volume(3, :), [0 4]);
+        verifyEqual(tc, cfg.CameraRange, 6:10);
+    end
+    verifyTrue(tc, endsWith(runResultsDir('openmv_4m', 7), fullfile('Results', 'openmv_4m', '7Cams')));
+    verifyTrue(tc, endsWith(normTableFile('openmv_2m'), 'normTable_openmv_2m.mat'));
+    specs = buildRunSpecs(runConfig('openmv_2m'), 7, 3, 1, 1, 1.0, 'UseNormTable', false);
+    verifyEqual(tc, specs.NumPoints, 243);                 % 9 x 9 x 3
+    verifyEqual(tc, max(specs.Target(:, 3)), 2);
 end
 
 function testOptiTrackStillAlternates(tc)

@@ -9,10 +9,14 @@ function cfg = runConfig(preset, varargin)
 %     'optitrack_lab'   Lab OptiTrack rig: 8 x 8 x 4 m capture volume,
 %                       cameras on walls, ceiling or tripods.
 %     'lowcost_tripod'  Low-cost cameras on tripods only.
-%     'openmv_lab'      OpenMV RT1062 cameras (single lens, 8 m IR range) in
-%                       the same lab volume, on tripods only (head height
-%                       0.75-1.75 m, outside the flight footprint); UAV
-%                       uniform grid, 6-10 cameras.
+%     'openmv_2m'       OpenMV RT1062 cameras (single lens, 8 m IR range) on
+%                       tripods only (head height 0.75-1.75 m, outside the
+%                       8 x 8 m footprint), capture volume 0-2 m tall (the
+%                       height the marker board is swept to); UAV uniform
+%                       grid, 6-12 cameras (the cameras available).
+%     'openmv_4m'       As openmv_2m in the full 4 m lab volume, 6-10
+%                       cameras (first sweep, 2026-11-16). 'openmv_lab' is
+%                       its old name and still maps to it.
 %
 %   Any field below can be overridden with a name-value pair. Unknown names
 %   are an error, so a typo cannot silently fall back to a default.
@@ -107,17 +111,23 @@ function cfg = runConfig(preset, varargin)
             cfg.Hardware = 'lowcost';
             cfg.Mount.Model = 'tripod';
 
-        case 'openmv_lab'
+        case {'openmv_2m', 'openmv_4m', 'openmv_lab'}
             cfg.Hardware    = 'openmv_rt1062';
             cfg.Mount.Model = 'tripod';            % how the OpenMV rig is mounted
-            cfg.Mount.TripodHeight = [0.75 1.75];  % measured on the user's tripods [m]
-            cfg.CameraRange = 6:10;
+            cfg.Mount.TripodHeight = [0.75 1.75];  % user's tripods; 2 m possible but unstable [m]
             cfg.TargetTypes = 1;          % UAV
             cfg.GridModes   = 1;          % uniform
+            if strcmpi(preset, 'openmv_2m')
+                cfg.Volume      = [-4 4; -4 4; 0 2];   % board swept from the floor to 2 m
+                cfg.CameraRange = 6:12;
+            else
+                cfg.Preset      = 'openmv_4m';         % results, archive and table under this name
+                cfg.CameraRange = 6:10;
+            end
 
         otherwise
             error('runConfig:UnknownPreset', ...
-                'Unknown preset "%s". Use ''optitrack_lab'', ''openmv_lab'' or ''lowcost_tripod''.', preset);
+                'Unknown preset "%s". Use ''optitrack_lab'', ''openmv_2m'', ''openmv_4m'' or ''lowcost_tripod''.', preset);
     end
 
     %% Name-value overrides
