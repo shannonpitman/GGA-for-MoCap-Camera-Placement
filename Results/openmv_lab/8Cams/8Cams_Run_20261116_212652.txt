@@ -1,0 +1,68 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 16-Nov-2026 21:26:01
+Number of Cameras: 8
+Best Cost (Cost Function 3): 0.542306
+Cost Function Weights: 0.50 Resolution Uncertainty and 0.50 Dynamic Occlusion
+Computation Time: 7.12 min
+Mutation Rate: 0.30
+Tournament Size: 3
+Warm Starting Used: true
+Population Size: 480
+Number of Generations: 150
+Target Type: UAV (Full Volume)
+Grid Mode: Uniform Grid
+Number of Target Points: 405
+
+Camera Configurations:
+---------------------
+
+Camera 1:
+  Position (m):        [-2.790, -4.479, 1.750]
+  Rotation vector (rad): [-1.504, 0.182, -0.178]
+  XYZ Euler (deg):       [-86.6, 13.2, -0.2]
+
+Camera 2:
+  Position (m):        [3.027, 4.500, 1.750]
+  Rotation vector (rad): [1.482, -0.279, -0.139]
+  XYZ Euler (deg):       [86.2, -15.6, 4.6]
+
+Camera 3:
+  Position (m):        [-4.428, 2.747, 1.311]
+  Rotation vector (rad): [0.132, 1.449, -0.046]
+  XYZ Euler (deg):       [45.6, 80.5, -42.4]
+
+Camera 4:
+  Position (m):        [4.335, -1.997, 1.750]
+  Rotation vector (rad): [0.099, -1.589, -0.008]
+  XYZ Euler (deg):       [110.3, -86.5, 106.4]
+
+Camera 5:
+  Position (m):        [-4.363, -2.091, 1.750]
+  Rotation vector (rad): [0.135, 1.405, 0.020]
+  XYZ Euler (deg):       [27.4, 79.7, -21.6]
+
+Camera 6:
+  Position (m):        [-2.548, 4.418, 1.465]
+  Rotation vector (rad): [1.504, 0.273, 0.037]
+  XYZ Euler (deg):       [87.5, 11.6, -8.4]
+
+Camera 7:
+  Position (m):        [2.859, -4.374, 1.287]
+  Rotation vector (rad): [-1.447, -0.166, 0.207]
+  XYZ Euler (deg):       [-83.1, -13.7, 2.4]
+
+Camera 8:
+  Position (m):        [4.450, 2.914, 1.750]
+  Rotation vector (rad): [0.001, -1.487, 0.094]
+  XYZ Euler (deg):       [35.1, -84.1, 38.5]
+
+Camera Coverage Statistics:
+---------------------------
+Total target points: 405
+Points with 0 cameras: 25 (6.2%)
+Points with 1 camera:  125 (30.9%)
+Points with 2+ cameras: 255 (63.0%)
+Average coverage: 2.34 cameras per point
+Max coverage: 6 | Min: 0 | Median: 2.00

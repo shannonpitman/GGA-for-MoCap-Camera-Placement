@@ -1,0 +1,68 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 16-Nov-2026 13:40:48
+Number of Cameras: 8
+Best Cost (Cost Function 3): 0.701648
+Cost Function Weights: 0.50 Resolution Uncertainty and 0.50 Dynamic Occlusion
+Computation Time: 6.75 min
+Mutation Rate: 0.30
+Tournament Size: 3
+Warm Starting Used: false
+Population Size: 480
+Number of Generations: 150
+Target Type: UAV (Full Volume)
+Grid Mode: Uniform Grid
+Number of Target Points: 405
+
+Camera Configurations:
+---------------------
+
+Camera 1:
+  Position (m):        [-2.212, -4.500, 1.750]
+  Rotation vector (rad): [-1.486, 0.127, -0.111]
+  XYZ Euler (deg):       [-85.3, 8.8, 0.2]
+
+Camera 2:
+  Position (m):        [4.389, -2.612, 1.536]
+  Rotation vector (rad): [-0.075, -1.560, -0.038]
+  XYZ Euler (deg):       [-82.6, -85.8, -81.2]
+
+Camera 3:
+  Position (m):        [2.145, 4.500, 1.554]
+  Rotation vector (rad): [1.452, -0.008, -0.035]
+  XYZ Euler (deg):       [83.2, -1.5, -1.1]
+
+Camera 4:
+  Position (m):        [-4.110, 0.948, 1.310]
+  Rotation vector (rad): [-0.367, 1.350, 0.163]
+  XYZ Euler (deg):       [-63.8, 67.0, 56.1]
+
+Camera 5:
+  Position (m):        [4.332, 2.828, 1.153]
+  Rotation vector (rad): [0.287, -1.344, -0.089]
+  XYZ Euler (deg):       [38.2, -75.6, 24.0]
+
+Camera 6:
+  Position (m):        [2.372, -4.500, 1.750]
+  Rotation vector (rad): [-1.573, -0.051, 0.022]
+  XYZ Euler (deg):       [-90.2, -2.7, -1.1]
+
+Camera 7:
+  Position (m):        [-4.291, -1.828, 1.750]
+  Rotation vector (rad): [0.179, 1.415, -0.002]
+  XYZ Euler (deg):       [41.0, 79.0, -34.4]
+
+Camera 8:
+  Position (m):        [-2.956, 4.418, 1.731]
+  Rotation vector (rad): [1.523, 0.189, 0.186]
+  XYZ Euler (deg):       [87.7, 13.7, 0.2]
+
+Camera Coverage Statistics:
+---------------------------
+Total target points: 405
+Points with 0 cameras: 26 (6.4%)
+Points with 1 camera:  123 (30.4%)
+Points with 2+ cameras: 256 (63.2%)
+Average coverage: 2.30 cameras per point
+Max coverage: 5 | Min: 0 | Median: 2.00
