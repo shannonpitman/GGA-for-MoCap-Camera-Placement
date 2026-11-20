@@ -1,0 +1,68 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 18-Nov-2026 16:14:42
+Number of Cameras: 8
+Best Cost (Cost Function 2): 58.851845
+Cost Function Weights: 0.50 Resolution Uncertainty and 0.50 Dynamic Occlusion
+Computation Time: 4.52 min
+Mutation Rate: 0.30
+Tournament Size: 3
+Warm Starting Used: true
+Population Size: 480
+Number of Generations: 150
+Target Type: UAV (Full Volume)
+Grid Mode: Uniform Grid
+Number of Target Points: 126
+
+Camera Configurations:
+---------------------
+
+Camera 1:
+  Position (m):        [4.000, 0.883, 0.806]
+  Rotation vector (rad): [0.946, -1.199, 0.183]
+  XYZ Euler (deg):       [86.2, -45.1, 55.6]
+
+Camera 2:
+  Position (m):        [4.000, -4.500, 1.184]
+  Rotation vector (rad): [-1.317, -0.835, 0.253]
+  XYZ Euler (deg):       [-88.7, -41.5, -22.4]
+
+Camera 3:
+  Position (m):        [-1.747, -4.500, 1.736]
+  Rotation vector (rad): [-1.732, 0.384, 0.112]
+  XYZ Euler (deg):       [-101.7, 7.9, 18.6]
+
+Camera 4:
+  Position (m):        [-4.000, 0.666, 1.750]
+  Rotation vector (rad): [0.857, 1.566, -0.240]
+  XYZ Euler (deg):       [108.8, 50.2, -85.5]
+
+Camera 5:
+  Position (m):        [-2.723, 4.500, 0.750]
+  Rotation vector (rad): [1.417, 0.466, 0.355]
+  XYZ Euler (deg):       [84.1, 30.7, -2.6]
+
+Camera 6:
+  Position (m):        [4.000, 4.500, 1.347]
+  Rotation vector (rad): [1.400, -0.947, -0.368]
+  XYZ Euler (deg):       [99.1, -47.7, 26.8]
+
+Camera 7:
+  Position (m):        [-4.000, -4.490, 0.820]
+  Rotation vector (rad): [-0.824, 1.162, -0.056]
+  XYZ Euler (deg):       [-75.0, 55.7, 40.2]
+
+Camera 8:
+  Position (m):        [-4.000, 0.543, 1.750]
+  Rotation vector (rad): [-0.411, 1.859, 0.410]
+  XYZ Euler (deg):       [-123.1, 55.8, 123.1]
+
+Camera Coverage Statistics:
+---------------------------
+Total target points: 126
+Points with 0 cameras: 0 (0.0%)
+Points with 1 camera:  0 (0.0%)
+Points with 2+ cameras: 126 (100.0%)
+Average coverage: 4.68 cameras per point
+Max coverage: 7 | Min: 2 | Median: 5.00

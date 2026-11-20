@@ -1,0 +1,68 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 18-Nov-2026 20:12:26
+Number of Cameras: 8
+Best Cost (Cost Function 3): 0.209573
+Cost Function Weights: 0.50 Resolution Uncertainty and 0.50 Dynamic Occlusion
+Computation Time: 6.82 min
+Mutation Rate: 0.30
+Tournament Size: 3
+Warm Starting Used: false
+Population Size: 480
+Number of Generations: 150
+Target Type: UAV (Full Volume)
+Grid Mode: Uniform Grid
+Number of Target Points: 126
+
+Camera Configurations:
+---------------------
+
+Camera 1:
+  Position (m):        [4.000, 2.092, 1.694]
+  Rotation vector (rad): [-0.172, -1.881, 0.149]
+  XYZ Euler (deg):       [176.9, -71.9, -171.8]
+
+Camera 2:
+  Position (m):        [-3.464, 4.500, 1.750]
+  Rotation vector (rad): [1.665, 0.643, 0.326]
+  XYZ Euler (deg):       [103.9, 33.2, -15.9]
+
+Camera 3:
+  Position (m):        [2.041, -4.500, 0.750]
+  Rotation vector (rad): [-1.461, -0.289, -0.037]
+  XYZ Euler (deg):       [-85.3, -9.8, -11.7]
+
+Camera 4:
+  Position (m):        [-3.967, -3.087, 0.895]
+  Rotation vector (rad): [-0.329, 1.396, 0.234]
+  XYZ Euler (deg):       [-68.7, 67.2, 65.1]
+
+Camera 5:
+  Position (m):        [-4.000, -0.323, 1.741]
+  Rotation vector (rad): [-0.924, 1.592, 0.108]
+  XYZ Euler (deg):       [-115.9, 52.5, 85.3]
+
+Camera 6:
+  Position (m):        [2.105, 4.426, 0.851]
+  Rotation vector (rad): [1.433, -0.230, -0.288]
+  XYZ Euler (deg):       [82.3, -19.0, -3.5]
+
+Camera 7:
+  Position (m):        [4.000, -3.105, 1.473]
+  Rotation vector (rad): [-0.422, -1.711, -0.174]
+  XYZ Euler (deg):       [-118.3, -66.8, -109.3]
+
+Camera 8:
+  Position (m):        [-0.785, -4.500, 1.750]
+  Rotation vector (rad): [-1.767, -0.177, 0.013]
+  XYZ Euler (deg):       [-101.8, -6.1, -6.5]
+
+Camera Coverage Statistics:
+---------------------------
+Total target points: 126
+Points with 0 cameras: 0 (0.0%)
+Points with 1 camera:  0 (0.0%)
+Points with 2+ cameras: 126 (100.0%)
+Average coverage: 4.73 cameras per point
+Max coverage: 8 | Min: 2 | Median: 5.00

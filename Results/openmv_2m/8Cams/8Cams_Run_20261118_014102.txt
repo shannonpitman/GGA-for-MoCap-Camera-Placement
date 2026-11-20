@@ -1,0 +1,68 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 18-Nov-2026 01:41:40
+Number of Cameras: 8
+Best Cost (Cost Function 2): 61.188564
+Cost Function Weights: 0.50 Resolution Uncertainty and 0.50 Dynamic Occlusion
+Computation Time: 4.50 min
+Mutation Rate: 0.30
+Tournament Size: 3
+Warm Starting Used: false
+Population Size: 480
+Number of Generations: 150
+Target Type: UAV (Full Volume)
+Grid Mode: Uniform Grid
+Number of Target Points: 126
+
+Camera Configurations:
+---------------------
+
+Camera 1:
+  Position (m):        [4.000, 1.112, 0.906]
+  Rotation vector (rad): [0.933, -1.321, 0.265]
+  XYZ Euler (deg):       [93.3, -44.9, 66.9]
+
+Camera 2:
+  Position (m):        [4.000, -4.500, 0.996]
+  Rotation vector (rad): [-1.277, -0.856, 0.255]
+  XYZ Euler (deg):       [-86.9, -43.0, -22.6]
+
+Camera 3:
+  Position (m):        [-1.479, -4.500, 1.750]
+  Rotation vector (rad): [-1.732, 0.309, -0.034]
+  XYZ Euler (deg):       [-101.0, 11.2, 11.0]
+
+Camera 4:
+  Position (m):        [-3.786, 0.960, 1.748]
+  Rotation vector (rad): [0.799, 1.572, -0.289]
+  XYZ Euler (deg):       [106.7, 50.5, -87.4]
+
+Camera 5:
+  Position (m):        [-2.700, 4.500, 0.750]
+  Rotation vector (rad): [1.417, 0.454, 0.359]
+  XYZ Euler (deg):       [83.8, 30.3, -1.9]
+
+Camera 6:
+  Position (m):        [4.000, 4.497, 1.106]
+  Rotation vector (rad): [1.276, -0.951, -0.283]
+  XYZ Euler (deg):       [91.1, -47.1, 27.1]
+
+Camera 7:
+  Position (m):        [-4.000, -4.380, 0.750]
+  Rotation vector (rad): [-0.956, 1.040, -0.154]
+  XYZ Euler (deg):       [-75.1, 51.8, 30.3]
+
+Camera 8:
+  Position (m):        [-3.938, 0.747, 1.750]
+  Rotation vector (rad): [-0.313, 1.884, 0.401]
+  XYZ Euler (deg):       [-126.7, 58.4, 129.8]
+
+Camera Coverage Statistics:
+---------------------------
+Total target points: 126
+Points with 0 cameras: 0 (0.0%)
+Points with 1 camera:  1 (0.8%)
+Points with 2+ cameras: 125 (99.2%)
+Average coverage: 4.87 cameras per point
+Max coverage: 7 | Min: 1 | Median: 5.00

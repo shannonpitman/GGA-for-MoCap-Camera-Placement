@@ -1,0 +1,78 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 18-Nov-2026 09:05:34
+Number of Cameras: 10
+Best Cost (Cost Function 1): 0.001880
+Cost Function Weights: 0.50 Resolution Uncertainty and 0.50 Dynamic Occlusion
+Computation Time: 10.16 min
+Mutation Rate: 0.30
+Tournament Size: 3
+Warm Starting Used: true
+Population Size: 600
+Number of Generations: 150
+Target Type: UAV (Full Volume)
+Grid Mode: Uniform Grid
+Number of Target Points: 126
+
+Camera Configurations:
+---------------------
+
+Camera 1:
+  Position (m):        [-1.626, 3.371, 1.140]
+  Rotation vector (rad): [1.725, 0.490, -0.091]
+  XYZ Euler (deg):       [103.0, 11.9, -22.2]
+
+Camera 2:
+  Position (m):        [4.000, -0.295, 1.750]
+  Rotation vector (rad): [-0.446, -1.796, -0.176]
+  XYZ Euler (deg):       [-128.2, -63.8, -118.5]
+
+Camera 3:
+  Position (m):        [3.295, -0.439, 1.340]
+  Rotation vector (rad): [0.885, -1.206, 0.214]
+  XYZ Euler (deg):       [83.5, -45.9, 56.7]
+
+Camera 4:
+  Position (m):        [-2.500, -1.795, 1.750]
+  Rotation vector (rad): [-1.749, 0.439, -0.328]
+  XYZ Euler (deg):       [-104.2, 26.5, 7.4]
+
+Camera 5:
+  Position (m):        [2.500, -3.813, 1.102]
+  Rotation vector (rad): [-1.540, -0.413, 0.230]
+  XYZ Euler (deg):       [-91.2, -23.5, -7.0]
+
+Camera 6:
+  Position (m):        [3.945, -3.818, 0.750]
+  Rotation vector (rad): [-0.772, -1.211, 0.035]
+  XYZ Euler (deg):       [-75.4, -57.9, -43.8]
+
+Camera 7:
+  Position (m):        [2.643, 2.149, 1.150]
+  Rotation vector (rad): [1.509, -0.624, -0.081]
+  XYZ Euler (deg):       [93.9, -25.4, 21.1]
+
+Camera 8:
+  Position (m):        [-3.795, 0.165, 0.877]
+  Rotation vector (rad): [0.803, 1.230, -0.213]
+  XYZ Euler (deg):       [80.8, 49.0, -57.4]
+
+Camera 9:
+  Position (m):        [2.798, 4.346, 1.750]
+  Rotation vector (rad): [1.635, -0.642, -0.290]
+  XYZ Euler (deg):       [102.0, -32.2, 16.5]
+
+Camera 10:
+  Position (m):        [-3.981, 2.926, 1.750]
+  Rotation vector (rad): [0.281, 1.888, -0.171]
+  XYZ Euler (deg):       [142.1, 65.4, -138.2]
+
+Camera Coverage Statistics:
+---------------------------
+Total target points: 126
+Points with 0 cameras: 0 (0.0%)
+Points with 1 camera:  0 (0.0%)
+Points with 2+ cameras: 126 (100.0%)
+Average coverage: 5.12 cameras per point
+Max coverage: 7 | Min: 3 | Median: 5.00
