@@ -21,6 +21,18 @@ function cfg = runConfig(preset, varargin)
 %                       same tripods, 6-7 cameras: the like-for-like
 %                       reference for openmv_2m. Kept apart from the
 %                       full-room lab runs (Results/optitrack_tripod/).
+%     'openmv_cab_2m'   OpenMV in the same flight space (0.2-2 m) with three
+%                       kinds of mounting (2026-11-20): floor tripods
+%                       (heads 0.5-2.0 m) in the band in front of the
+%                       cabinets on the two x sides; tripods on the floor or
+%                       a table (0.5-2.75 m, table ~0.75 m assumed) at the
+%                       two y ends; tripods on the 0.9 m cabinets (0.75 m
+%                       deep, 5.5 m long, centred on those walls), heads
+%                       1.4-2.9 m. 6-12 cameras.
+%     'openmv_cab_4m'   As openmv_cab_2m for targets 0.2-4 m (5 layers, 210
+%                       points).
+%     'openmv_floor_2m' Control for openmv_cab_2m: floor tripods only, heads
+%                       0.5-2.0 m, in the 1.5 m band on every side.
 %     'openmv_4m'       OpenMV on tripods in the full 8 x 8 x 4 m lab volume,
 %                       6-10 cameras (first sweep, 2026-11-16). 'openmv_lab'
 %                       is its old name and still maps to it.
@@ -138,6 +150,31 @@ function cfg = runConfig(preset, varargin)
                 cfg.CameraRange = [6 7];  % as the lab rig
             end
 
+        case {'openmv_cab_2m', 'openmv_cab_4m', 'openmv_floor_2m'}
+            cfg.Hardware       = 'openmv_rt1062';
+            cfg.CameraRange    = 6:12;
+            cfg.TargetTypes    = 1;
+            cfg.GridModes      = 1;
+            cfg.Volume         = [-2.5 2.5; -3 3; 0.2 2.0];
+            cfg.ZSpacing       = 0.9;               % 0.2, 1.1, 2.0 m
+            cfg.Mount.TripodHeight = [0.5 2.0];     % tripods remeasured 2026-11-20
+            if strcmpi(preset, 'openmv_floor_2m')
+                cfg.CamLowerBounds = [-4 -4.5 0   -pi -pi -pi];
+                cfg.CamUpperBounds = [ 4  4.5 4.8  pi  pi  pi];
+                cfg.Mount.Model    = 'tripod';
+            else
+                % room to the back of the cabinets (x) and the 1.5 m end bands (y)
+                cfg.CamLowerBounds = [-4.75 -4.5 0   -pi -pi -pi];
+                cfg.CamUpperBounds = [ 4.75  4.5 4.8  pi  pi  pi];
+                cfg.Mount.Model    = 'tripod_cabinets';
+                cfg.Mount.EndHeight = [0.5 2.75];   % floor tripod, or tripod on a ~0.75 m table
+                cfg.Mount.Cabinet  = struct('XDepth', [4 4.75], 'YSpan', [-2.75 2.75], 'Height', 0.9);
+                if strcmpi(preset, 'openmv_cab_4m')
+                    cfg.Volume(3, :) = [0.2 4.0];
+                    cfg.ZSpacing     = 0.95;        % 0.2, 1.15, 2.1, 3.05, 4.0 m
+                end
+            end
+
         case {'openmv_4m', 'openmv_lab'}
             cfg.Preset      = 'openmv_4m';         % results, archive and table under this name
             cfg.Hardware    = 'openmv_rt1062';
@@ -149,7 +186,7 @@ function cfg = runConfig(preset, varargin)
 
         otherwise
             error('runConfig:UnknownPreset', ...
-                'Unknown preset "%s". Use ''optitrack_lab'', ''openmv_2m'', ''optitrack_tripod'', ''openmv_4m'' or ''lowcost_tripod''.', preset);
+                'Unknown preset "%s". Use ''optitrack_lab'', ''openmv_2m'', ''optitrack_tripod'', ''openmv_cab_2m'', ''openmv_cab_4m'', ''openmv_floor_2m'', ''openmv_4m'' or ''lowcost_tripod''.', preset);
     end
 
     %% Name-value overrides

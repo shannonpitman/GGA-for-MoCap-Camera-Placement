@@ -118,6 +118,36 @@ function testFlightSpaceGrid(tc)
     verifyEqual(tc, lab.NumPoints, 405);
 end
 
+function testCabinetPresets(tc)
+    % cabinet + floor + table-end mounting, 2 m and 4 m volumes; floor-only control
+    c2 = runConfig('openmv_cab_2m');  c4 = runConfig('openmv_cab_4m');  f2 = runConfig('openmv_floor_2m');
+    verifyEqual(tc, [c2.CameraRange; c4.CameraRange; f2.CameraRange], repmat(6:12, 3, 1));
+    s2 = buildRunSpecs(c2, 7, 3, 1, 1, 1.0, 'UseNormTable', false);
+    s4 = buildRunSpecs(c4, 7, 3, 1, 1, 1.0, 'UseNormTable', false);
+    verifyEqual(tc, s2.NumPoints, 126);
+    verifyEqual(tc, s4.NumPoints, 210);
+    verifyEqual(tc, unique(s4.Target(:, 3)).', [0.2 1.15 2.1 3.05 4.0], 'AbsTol', 1e-9);
+    reg = mountRegions(c2);
+    verifyEqual(tc, numel(reg), 6);
+    cab = reg(startsWith({reg.Name}, 'Cabinet'));
+    verifyEqual(tc, [cab(2).Lo; cab(2).Hi], [4 -2.75 1.4; 4.75 2.75 2.9], 'AbsTol', 1e-9);
+    ends = reg(startsWith({reg.Name}, 'End'));
+    verifyEqual(tc, [ends(1).Lo(3) ends(1).Hi(3); ends(2).Lo(3) ends(2).Hi(3)], [0.5 2.75; 0.5 2.75], 'AbsTol', 1e-9);
+    fr = mountRegions(f2);
+    verifyEqual(tc, {fr.Type}, {'ring'});
+    verifyEqual(tc, [fr.Lo(3) fr.Hi(3)], [0.5 2.0]);
+    % a short GA keeps every camera on a mount and out of the flight space
+    cfg = runConfig('openmv_cab_4m', 'MaxGenerations', 3, 'PopulationSize', 12);
+    [specs, problem, params] = buildRunSpecs(cfg, 8, 3, 1, 1, 1.0, 'UseNormTable', false);
+    [~, out] = evalc('RunGA(problem, params, specs)');
+    P = reshape(out.bestsol.Chromosome, 6, []).';
+    for k = 1:size(P, 1)
+        inR = arrayfun(@(r) all(P(k, 1:3) >= r.Lo - 1e-9) && all(P(k, 1:3) <= r.Hi + 1e-9), specs.MountRegions);
+        verifyTrue(tc, any(inR), sprintf('camera %d not on a mount', k));
+    end
+    verifyTrue(tc, all(abs(P(:, 1)) >= 2.5 - 1e-9 | abs(P(:, 2)) >= 3 - 1e-9));
+end
+
 function testOptiTrackStillAlternates(tc)
     s = setupHardwareSpecs(4, 'optitrack');
     verifyFalse(tc, s.SingleLens);

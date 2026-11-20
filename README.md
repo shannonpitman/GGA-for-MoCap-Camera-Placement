@@ -135,6 +135,10 @@ kept apart from the full-room lab runs. `runConfig('openmv_4m')` is the
 first OpenMV sweep (2026-11-16) in the full 8 x 8 x 4 m lab volume with
 6-10 cameras; it was logged as `openmv_lab`, which `runConfig` and
 `loadGARuns` still accept as an alias.
+`openmv_cab_2m` / `openmv_cab_4m` add tripods on the 0.9 m cabinets and on
+tables at the y ends (targets 0.2-2 m / 0.2-4 m), with `openmv_floor_2m` as
+the floor-only control. `Results/README.md` lists every results folder, its
+mounting, volume and purpose.
 Non-lab presets save runs to `Results/<preset>/<N>Cams/`, log a `Preset`
 field (filter with `loadGARuns('Preset', ...)`), and keep their own CF3
 normalisation table and seed archive. Full sweeps:
