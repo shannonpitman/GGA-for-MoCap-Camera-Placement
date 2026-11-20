@@ -1,0 +1,15 @@
+Generation snapshot vs final, optitrack_lab, CF3, runs since 17-Nov-2026 12:30:48
+ShareOfGain_Unc: fraction of the total CF3 drop from the resolution term (rest = occlusion).
+
+           <strong>Condition</strong>           <strong>Warm</strong>     <strong>N</strong>     <strong>MedianJ_100</strong>    <strong>MedianJ_150</strong>    <strong>MedianGainPct</strong>    <strong>p_Wilcoxon</strong>    <strong>Median_dJunc</strong>    <strong>Median_dJocc</strong>    <strong>ShareOfGain_Unc</strong>    <strong>Oct_Warm_Median_100</strong>    <strong>RawUnc_mm_100</strong>    <strong>RawUnc_mm_150</strong>    <strong>RawOcc_deg_100</strong>    <strong>RawOcc_deg_150</strong>
+    <strong>_______________________</strong>    <strong>_____</strong>    <strong>__</strong>    <strong>___________</strong>    <strong>___________</strong>    <strong>_____________</strong>    <strong>__________</strong>    <strong>____________</strong>    <strong>____________</strong>    <strong>_______________</strong>    <strong>___________________</strong>    <strong>_____________</strong>    <strong>_____________</strong>    <strong>______________</strong>    <strong>______________</strong>
+
+    "6C_CF3_TT1_GM1_sp1.00"    true     10     0.052811       0.052186         0.51006         0.03125               0     -0.00054309         0.07525              0.11027             7.9745           7.9646            120.33            120.24    
+    "6C_CF3_TT1_GM2_sp1.00"    true     10     0.044995       0.040672          9.8515       0.0019531      2.7344e-05       -0.003698         0.07529             0.080498             7.8343           7.8324            106.62            105.83    
+    "6C_CF3_TT2_GM1_sp1.00"    true     10      0.26431        0.24241          7.8609       0.0019531      -0.0073188      -0.0094025         0.51433              0.27355             5.9926           5.9796            75.195            74.312    
+    "6C_CF3_TT2_GM2_sp1.00"    true     10      0.22878         0.2285               0            0.25               0               0         -1.1205              0.23437              5.648            5.648            102.92            102.92    
+    "7C_CF3_TT1_GM1_sp1.00"    true     10     0.080863       0.080863               0               1               0               0        -0.97437              0.13097             6.9846           6.9846            91.548            91.548    
+    "7C_CF3_TT1_GM2_sp1.00"    true     10      0.10049       0.090129          9.1186       0.0019531      0.00077837      -0.0078865         0.09593             0.061137              6.964           6.9457            80.289            79.789    
+    "7C_CF3_TT2_GM1_sp1.00"    true     10      0.18918        0.18918               0             0.5               0               0        0.016502              0.19158             5.3192           5.3192            58.747            58.747    
+    "7C_CF3_TT2_GM2_sp1.00"    true     10      0.23512         0.2335               0           0.125               0               0           1.684              0.30706             5.2719           5.2719            60.015            60.015    
+
