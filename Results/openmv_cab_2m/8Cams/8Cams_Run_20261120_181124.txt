@@ -1,0 +1,68 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 20-Nov-2026 18:11:53
+Number of Cameras: 8
+Best Cost (Cost Function 2): 49.757758
+Cost Function Weights: 0.50 Resolution Uncertainty and 0.50 Dynamic Occlusion
+Computation Time: 4.50 min
+Mutation Rate: 0.30
+Tournament Size: 3
+Warm Starting Used: false
+Population Size: 480
+Number of Generations: 150
+Target Type: UAV (Full Volume)
+Grid Mode: Uniform Grid
+Number of Target Points: 126
+
+Camera Configurations:
+---------------------
+
+Camera 1:
+  Position (m):        [4.721, 1.950, 2.900]
+  Rotation vector (rad): [-0.678, -2.020, 0.433]
+  XYZ Euler (deg):       [176.3, -59.6, -145.0]
+
+Camera 2:
+  Position (m):        [-4.713, -1.866, 2.678]
+  Rotation vector (rad): [-0.228, 2.018, -0.156]
+  XYZ Euler (deg):       [178.7, 63.8, 168.0]
+
+Camera 3:
+  Position (m):        [2.522, 4.353, 2.038]
+  Rotation vector (rad): [1.862, -0.482, -0.296]
+  XYZ Euler (deg):       [111.7, -25.4, 11.6]
+
+Camera 4:
+  Position (m):        [-2.883, -4.442, 0.500]
+  Rotation vector (rad): [-1.259, 0.633, 0.067]
+  XYZ Euler (deg):       [-79.8, 24.0, 24.8]
+
+Camera 5:
+  Position (m):        [2.371, -4.500, 2.226]
+  Rotation vector (rad): [-1.870, -0.235, 0.406]
+  XYZ Euler (deg):       [-108.3, -22.9, 2.3]
+
+Camera 6:
+  Position (m):        [-2.831, 4.500, 1.642]
+  Rotation vector (rad): [1.539, 0.829, -0.022]
+  XYZ Euler (deg):       [101.4, 27.0, -34.4]
+
+Camera 7:
+  Position (m):        [-4.750, 1.176, 2.001]
+  Rotation vector (rad): [-0.620, 1.783, -0.116]
+  XYZ Euler (deg):       [-142.8, 67.1, 116.5]
+
+Camera 8:
+  Position (m):        [4.647, -2.134, 2.865]
+  Rotation vector (rad): [-0.257, -2.090, 0.087]
+  XYZ Euler (deg):       [-175.2, -59.3, -163.2]
+
+Camera Coverage Statistics:
+---------------------------
+Total target points: 126
+Points with 0 cameras: 0 (0.0%)
+Points with 1 camera:  0 (0.0%)
+Points with 2+ cameras: 126 (100.0%)
+Average coverage: 5.02 cameras per point
+Max coverage: 8 | Min: 2 | Median: 5.00

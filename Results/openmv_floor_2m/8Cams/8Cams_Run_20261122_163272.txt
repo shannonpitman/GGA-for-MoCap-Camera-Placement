@@ -1,0 +1,68 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 22-Nov-2026 16:32:45
+Number of Cameras: 8
+Best Cost (Cost Function 1): 0.002095
+Cost Function Weights: 0.50 Resolution Uncertainty and 0.50 Dynamic Occlusion
+Computation Time: 6.25 min
+Mutation Rate: 0.30
+Tournament Size: 3
+Warm Starting Used: false
+Population Size: 480
+Number of Generations: 150
+Target Type: UAV (Full Volume)
+Grid Mode: Uniform Grid
+Number of Target Points: 126
+
+Camera Configurations:
+---------------------
+
+Camera 1:
+  Position (m):        [1.528, -3.096, 2.000]
+  Rotation vector (rad): [-1.876, -0.314, 0.224]
+  XYZ Euler (deg):       [-109.6, -17.9, -6.3]
+
+Camera 2:
+  Position (m):        [3.948, -2.751, 1.780]
+  Rotation vector (rad): [-0.154, -1.897, -0.042]
+  XYZ Euler (deg):       [-162.1, -70.0, -158.1]
+
+Camera 3:
+  Position (m):        [-3.247, -4.229, 1.631]
+  Rotation vector (rad): [-1.267, 1.395, 0.400]
+  XYZ Euler (deg):       [-109.5, 29.7, 74.3]
+
+Camera 4:
+  Position (m):        [-3.006, 3.161, 0.766]
+  Rotation vector (rad): [1.320, 0.713, -0.005]
+  XYZ Euler (deg):       [85.4, 28.1, -26.4]
+
+Camera 5:
+  Position (m):        [2.737, 4.187, 1.646]
+  Rotation vector (rad): [1.605, -0.809, 0.016]
+  XYZ Euler (deg):       [104.4, -25.4, 33.7]
+
+Camera 6:
+  Position (m):        [-2.101, 3.191, 0.500]
+  Rotation vector (rad): [0.214, 1.254, -0.312]
+  XYZ Euler (deg):       [47.5, 63.7, -51.3]
+
+Camera 7:
+  Position (m):        [2.254, 3.386, 1.668]
+  Rotation vector (rad): [0.924, -1.490, -0.245]
+  XYZ Euler (deg):       [115.2, -65.7, 71.8]
+
+Camera 8:
+  Position (m):        [-3.614, -0.904, 0.500]
+  Rotation vector (rad): [0.481, 1.355, 0.231]
+  XYZ Euler (deg):       [55.3, 76.1, -28.5]
+
+Camera Coverage Statistics:
+---------------------------
+Total target points: 126
+Points with 0 cameras: 0 (0.0%)
+Points with 1 camera:  0 (0.0%)
+Points with 2+ cameras: 126 (100.0%)
+Average coverage: 4.09 cameras per point
+Max coverage: 6 | Min: 2 | Median: 4.00

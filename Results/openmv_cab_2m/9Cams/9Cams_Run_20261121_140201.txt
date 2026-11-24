@@ -1,0 +1,73 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 21-Nov-2026 14:02:30
+Number of Cameras: 9
+Best Cost (Cost Function 3): 0.682299
+Cost Function Weights: 0.50 Resolution Uncertainty and 0.50 Dynamic Occlusion
+Computation Time: 9.37 min
+Mutation Rate: 0.30
+Tournament Size: 3
+Warm Starting Used: false
+Population Size: 540
+Number of Generations: 150
+Target Type: UAV (Full Volume)
+Grid Mode: Uniform Grid
+Number of Target Points: 126
+
+Camera Configurations:
+---------------------
+
+Camera 1:
+  Position (m):        [4.477, -0.534, 2.764]
+  Rotation vector (rad): [0.611, -2.077, -0.036]
+  XYZ Euler (deg):       [159.5, -53.3, 136.9]
+
+Camera 2:
+  Position (m):        [-1.090, 4.336, 2.086]
+  Rotation vector (rad): [1.912, -0.089, -0.014]
+  XYZ Euler (deg):       [109.7, -3.1, 3.2]
+
+Camera 3:
+  Position (m):        [-4.210, -2.670, 2.850]
+  Rotation vector (rad): [-0.329, 2.089, 0.101]
+  XYZ Euler (deg):       [-158.4, 56.3, 150.4]
+
+Camera 4:
+  Position (m):        [4.281, 2.713, 2.108]
+  Rotation vector (rad): [0.342, -1.978, -0.053]
+  XYZ Euler (deg):       [164.4, -64.0, 150.6]
+
+Camera 5:
+  Position (m):        [1.822, 4.500, 2.269]
+  Rotation vector (rad): [1.917, 0.052, -0.170]
+  XYZ Euler (deg):       [109.8, -5.3, -6.9]
+
+Camera 6:
+  Position (m):        [-2.673, -4.271, 1.475]
+  Rotation vector (rad): [-1.523, 0.774, 0.119]
+  XYZ Euler (deg):       [-98.4, 22.2, 34.7]
+
+Camera 7:
+  Position (m):        [2.770, -4.500, 1.626]
+  Rotation vector (rad): [-1.555, -0.753, 0.076]
+  XYZ Euler (deg):       [-100.2, -28.4, -27.8]
+
+Camera 8:
+  Position (m):        [-0.506, -4.202, 2.123]
+  Rotation vector (rad): [-1.915, 0.006, -0.069]
+  XYZ Euler (deg):       [-109.7, 2.9, -1.7]
+
+Camera 9:
+  Position (m):        [-4.039, 2.750, 2.639]
+  Rotation vector (rad): [0.273, 2.080, -0.088]
+  XYZ Euler (deg):       [160.8, 57.9, -154.3]
+
+Camera Coverage Statistics:
+---------------------------
+Total target points: 126
+Points with 0 cameras: 0 (0.0%)
+Points with 1 camera:  0 (0.0%)
+Points with 2+ cameras: 126 (100.0%)
+Average coverage: 5.46 cameras per point
+Max coverage: 8 | Min: 2 | Median: 5.00

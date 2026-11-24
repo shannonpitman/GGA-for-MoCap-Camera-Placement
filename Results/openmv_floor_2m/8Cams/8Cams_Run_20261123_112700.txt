@@ -1,0 +1,68 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 23-Nov-2026 11:27:56
+Number of Cameras: 8
+Best Cost (Cost Function 3): 0.214225
+Cost Function Weights: 0.50 Resolution Uncertainty and 0.50 Dynamic Occlusion
+Computation Time: 6.70 min
+Mutation Rate: 0.30
+Tournament Size: 3
+Warm Starting Used: false
+Population Size: 480
+Number of Generations: 150
+Target Type: UAV (Full Volume)
+Grid Mode: Uniform Grid
+Number of Target Points: 126
+
+Camera Configurations:
+---------------------
+
+Camera 1:
+  Position (m):        [3.972, -2.854, 1.904]
+  Rotation vector (rad): [-0.246, -1.902, -0.149]
+  XYZ Euler (deg):       [-146.6, -66.1, -143.1]
+
+Camera 2:
+  Position (m):        [4.000, -0.788, 0.523]
+  Rotation vector (rad): [-0.600, -1.197, -0.191]
+  XYZ Euler (deg):       [-66.4, -54.6, -50.2]
+
+Camera 3:
+  Position (m):        [2.121, 4.394, 0.500]
+  Rotation vector (rad): [1.372, -0.315, -0.161]
+  XYZ Euler (deg):       [80.0, -18.2, 4.2]
+
+Camera 4:
+  Position (m):        [1.150, -4.431, 1.817]
+  Rotation vector (rad): [-1.813, 0.012, -0.060]
+  XYZ Euler (deg):       [-103.9, 2.7, -1.4]
+
+Camera 5:
+  Position (m):        [-3.124, 4.500, 0.566]
+  Rotation vector (rad): [1.266, 0.761, 0.094]
+  XYZ Euler (deg):       [83.5, 34.1, -24.0]
+
+Camera 6:
+  Position (m):        [-4.000, 1.465, 2.000]
+  Rotation vector (rad): [0.045, 1.977, 0.024]
+  XYZ Euler (deg):       [179.5, 66.7, -177.1]
+
+Camera 7:
+  Position (m):        [-4.000, -1.977, 2.000]
+  Rotation vector (rad): [-0.016, 1.860, 0.025]
+  XYZ Euler (deg):       [-174.9, 73.3, 175.2]
+
+Camera 8:
+  Position (m):        [-0.979, -4.500, 1.984]
+  Rotation vector (rad): [-1.841, -0.184, -0.082]
+  XYZ Euler (deg):       [-106.0, -2.3, -9.7]
+
+Camera Coverage Statistics:
+---------------------------
+Total target points: 126
+Points with 0 cameras: 0 (0.0%)
+Points with 1 camera:  0 (0.0%)
+Points with 2+ cameras: 126 (100.0%)
+Average coverage: 4.71 cameras per point
+Max coverage: 7 | Min: 2 | Median: 5.00

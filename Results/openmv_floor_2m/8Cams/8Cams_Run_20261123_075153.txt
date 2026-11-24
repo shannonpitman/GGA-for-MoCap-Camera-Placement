@@ -1,0 +1,68 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 23-Nov-2026 07:51:41
+Number of Cameras: 8
+Best Cost (Cost Function 2): 58.312464
+Cost Function Weights: 0.50 Resolution Uncertainty and 0.50 Dynamic Occlusion
+Computation Time: 4.53 min
+Mutation Rate: 0.30
+Tournament Size: 3
+Warm Starting Used: true
+Population Size: 480
+Number of Generations: 150
+Target Type: UAV (Full Volume)
+Grid Mode: Uniform Grid
+Number of Target Points: 126
+
+Camera Configurations:
+---------------------
+
+Camera 1:
+  Position (m):        [-1.110, 4.500, 2.000]
+  Rotation vector (rad): [1.868, 0.092, 0.031]
+  XYZ Euler (deg):       [107.2, 3.9, -2.7]
+
+Camera 2:
+  Position (m):        [4.000, 4.500, 1.175]
+  Rotation vector (rad): [1.329, -0.796, -0.282]
+  XYZ Euler (deg):       [87.9, -41.1, 19.3]
+
+Camera 3:
+  Position (m):        [-4.000, 4.500, 0.840]
+  Rotation vector (rad): [1.202, 0.959, 0.271]
+  XYZ Euler (deg):       [86.6, 48.3, -26.3]
+
+Camera 4:
+  Position (m):        [4.000, -1.096, 1.436]
+  Rotation vector (rad): [-1.211, -1.155, -0.070]
+  XYZ Euler (deg):       [-97.8, -40.7, -51.4]
+
+Camera 5:
+  Position (m):        [-4.000, -4.500, 1.117]
+  Rotation vector (rad): [-1.329, 0.933, -0.352]
+  XYZ Euler (deg):       [-93.6, 48.1, 24.7]
+
+Camera 6:
+  Position (m):        [3.979, -4.437, 0.500]
+  Rotation vector (rad): [-1.009, -1.013, 0.159]
+  XYZ Euler (deg):       [-77.2, -49.9, -29.7]
+
+Camera 7:
+  Position (m):        [-4.000, 0.546, 0.500]
+  Rotation vector (rad): [0.741, 1.172, -0.057]
+  XYZ Euler (deg):       [71.7, 54.3, -44.6]
+
+Camera 8:
+  Position (m):        [-1.233, -4.498, 2.000]
+  Rotation vector (rad): [-1.856, 0.217, -0.081]
+  XYZ Euler (deg):       [-107.3, 9.6, 6.3]
+
+Camera Coverage Statistics:
+---------------------------
+Total target points: 126
+Points with 0 cameras: 0 (0.0%)
+Points with 1 camera:  0 (0.0%)
+Points with 2+ cameras: 126 (100.0%)
+Average coverage: 5.23 cameras per point
+Max coverage: 7 | Min: 2 | Median: 5.00
