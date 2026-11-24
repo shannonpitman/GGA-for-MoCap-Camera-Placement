@@ -8,5 +8,8 @@ function f = normTableFile(preset)
         f = fullfile(root, 'Results', 'normTable.mat');
     else
         f = fullfile(root, 'Results', sprintf('normTable_%s.mat', preset));
+        % superseded OpenMV sweeps that allowed any tilt (2026-11-24)
+        old = fullfile(root, 'Results', 'Unconstrained', sprintf('normTable_%s.mat', preset));
+        if ~isfile(f) && isfile(old), f = old; end
     end
 end

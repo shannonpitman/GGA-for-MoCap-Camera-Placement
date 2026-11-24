@@ -4,5 +4,8 @@ function f = seedArchiveFile(preset, condKey)
 %   comparable within the same preset, cost function, target and grid.
     if isempty(preset), preset = 'optitrack_lab'; end
     root = addProjectPaths();
-    f = fullfile(root, 'Results', 'SeedArchive', preset, [condKey '.mat']);
+    d = fullfile(root, 'Results', 'SeedArchive', preset);
+    old = fullfile(root, 'Results', 'Unconstrained', 'SeedArchive', preset);
+    if ~isfolder(d) && isfolder(old), d = old; end   % superseded any-tilt OpenMV sweeps
+    f = fullfile(d, [condKey '.mat']);
 end
