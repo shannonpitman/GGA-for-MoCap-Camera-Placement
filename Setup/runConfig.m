@@ -33,6 +33,12 @@ function cfg = runConfig(preset, varargin)
 %                       points).
 %     'openmv_floor_2m' Control for openmv_cab_2m: floor tripods only, heads
 %                       0.5-2.0 m, in the 1.5 m band on every side.
+%     'openmv_cab_2m_fp', 'openmv_cab_4m_fp', 'openmv_floor_2m_fp'
+%                       The same three with the tripod footprint: legs
+%                       0.3 m from the centre kept clear of walls, cabinet
+%                       edges and cabinet fronts (Mount.TripodFootRadius),
+%                       and every pair of tripods at least 0.6 m apart
+%                       (Mount.MinTripodSpacing).
 %     'openmv_4m'       OpenMV on tripods in the full 8 x 8 x 4 m lab volume,
 %                       6-10 cameras (first sweep, 2026-11-16). 'openmv_lab'
 %                       is its old name and still maps to it.
@@ -78,8 +84,13 @@ function cfg = runConfig(preset, varargin)
     %   Model 'walls_ceiling_tripod' | 'walls_ceiling' | 'tripod' | 'box'
     %   TripodHeight [zMin zMax] tripod head height range [m]
     %   Regions: custom region struct array; overrides Model when non-empty
+    %   TripodFootRadius: tripod leg radius [m]; tripod centres keep this far
+    %     from walls, cabinet edges and cabinet fronts (0 = point tripods)
+    %   MinTripodSpacing: minimum horizontal distance between any two
+    %     cameras [m] (0 = off); enforced by separateTripods
     cfg.Mount = struct('Model', 'walls_ceiling_tripod', ...
-                       'TripodHeight', [0.3 2.5], 'Regions', []);
+                       'TripodHeight', [0.3 2.5], 'Regions', [], ...
+                       'TripodFootRadius', 0, 'MinTripodSpacing', 0);
 
     % Cost function
     cfg.Weights = [0.5 0.5];                 % [resolution, occlusion]
@@ -150,7 +161,17 @@ function cfg = runConfig(preset, varargin)
                 cfg.CameraRange = [6 7];  % as the lab rig
             end
 
-        case {'openmv_cab_2m', 'openmv_cab_4m', 'openmv_floor_2m'}
+        case {'openmv_cab_2m', 'openmv_cab_4m', 'openmv_floor_2m', ...
+              'openmv_cab_2m_fp', 'openmv_cab_4m_fp', 'openmv_floor_2m_fp'}
+            % *_fp: same, with the tripod footprint (legs 0.3 m from the
+            % centre, kept clear of walls and cabinet edges; tripods at
+            % least 0.6 m apart). Added 2026-11-24 after the cab_2m rigs
+            % put tripods 0.22 m apart and on the cabinets' back edge.
+            base = regexprep(lower(preset), '_fp$', '');
+            if ~strcmp(base, lower(preset))
+                cfg.Mount.TripodFootRadius = 0.3;
+                cfg.Mount.MinTripodSpacing = 0.6;
+            end
             cfg.Hardware       = 'openmv_rt1062';
             cfg.CameraRange    = 6:12;
             cfg.TargetTypes    = 1;
@@ -158,7 +179,7 @@ function cfg = runConfig(preset, varargin)
             cfg.Volume         = [-2.5 2.5; -3 3; 0.2 2.0];
             cfg.ZSpacing       = 0.9;               % 0.2, 1.1, 2.0 m
             cfg.Mount.TripodHeight = [0.5 2.0];     % tripods remeasured 2026-11-20
-            if strcmpi(preset, 'openmv_floor_2m')
+            if strcmp(base, 'openmv_floor_2m')
                 cfg.CamLowerBounds = [-4 -4.5 0   -pi -pi -pi];
                 cfg.CamUpperBounds = [ 4  4.5 4.8  pi  pi  pi];
                 cfg.Mount.Model    = 'tripod';
@@ -169,7 +190,7 @@ function cfg = runConfig(preset, varargin)
                 cfg.Mount.Model    = 'tripod_cabinets';
                 cfg.Mount.EndHeight = [0.5 2.75];   % floor tripod, or tripod on a ~0.75 m table
                 cfg.Mount.Cabinet  = struct('XDepth', [4 4.75], 'YSpan', [-2.75 2.75], 'Height', 0.9);
-                if strcmpi(preset, 'openmv_cab_4m')
+                if strcmp(base, 'openmv_cab_4m')
                     cfg.Volume(3, :) = [0.2 4.0];
                     cfg.ZSpacing     = 0.95;        % 0.2, 1.15, 2.1, 3.05, 4.0 m
                 end
@@ -186,7 +207,7 @@ function cfg = runConfig(preset, varargin)
 
         otherwise
             error('runConfig:UnknownPreset', ...
-                'Unknown preset "%s". Use ''optitrack_lab'', ''openmv_2m'', ''optitrack_tripod'', ''openmv_cab_2m'', ''openmv_cab_4m'', ''openmv_floor_2m'', ''openmv_4m'' or ''lowcost_tripod''.', preset);
+                'Unknown preset "%s". Use ''optitrack_lab'', ''openmv_2m'', ''optitrack_tripod'', ''openmv_cab_2m'', ''openmv_cab_4m'', ''openmv_floor_2m'' (each also with _fp), ''openmv_4m'' or ''lowcost_tripod''.', preset);
     end
 
     %% Name-value overrides

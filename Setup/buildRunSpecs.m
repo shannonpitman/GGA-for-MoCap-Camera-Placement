@@ -56,6 +56,8 @@ function [specs, problem, params] = buildRunSpecs(cfg, numCams, costFunctionType
 
     specs.SectionCentres = generateSectionCentres(numCams, volume);
     specs.MountRegions   = mountRegions(cfg);
+    specs.MinTripodSpacing = 0;
+    if isfield(cfg.Mount, 'MinTripodSpacing'), specs.MinTripodSpacing = cfg.Mount.MinTripodSpacing; end
     specs.UseNormTable = p.Results.UseNormTable;
     specs = setupCostParams(specs);
 

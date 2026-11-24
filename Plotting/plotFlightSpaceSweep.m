@@ -3,6 +3,8 @@ function R = plotFlightSpaceSweep(varargin)
 %
 %   R = plotFlightSpaceSweep()                 % layouts: full-coverage rule
 %   R = plotFlightSpaceSweep('LayoutCF', 3)    % layouts: best CF3 run
+%   R = plotFlightSpaceSweep('Presets', {'openmv_cab_2m', 'openmv_floor_2m', 'openmv_2m'}, ...
+%                            'Tag', 'cabinets')
 %
 %   Uses the 'openmv_2m' (6-12 cameras) and 'optitrack_tripod' (6-7)
 %   sweeps: 5 x 6 m flight space, targets 0.2-2 m, tripods 0.75-1.75 m in
@@ -30,6 +32,10 @@ function R = plotFlightSpaceSweep(varargin)
 %                   resolution gains, so neither best-cost rig alone is the
 %                   best rig in raw terms.
 %                 1, 2, 3 (<sel> = 'CF<k>') the lowest-cost run of that CF
+%     'Presets'   runConfig presets to compare (default openmv_2m and
+%                 optitrack_tripod); the first is drawn with filled markers
+%     'Names'     display names, one per preset (default: preset names)
+%     'Tag'       figure file prefix (default 'flightspace')
 %     'OutDir'    default <root>/figures/flightspace
 %
 %   R is a table: Preset, NumCameras, CostFunction, RunFilename, BestCost,
@@ -39,13 +45,23 @@ function R = plotFlightSpaceSweep(varargin)
     p = inputParser;
     addParameter(p, 'LayoutCF', 0, @(x) any(x == [0 1 2 3]));
     addParameter(p, 'OutDir', fullfile(root, 'figures', 'flightspace'), @ischar);
+    addParameter(p, 'Presets', {'openmv_2m', 'optitrack_tripod'}, @iscellstr);
+    addParameter(p, 'Names', {}, @iscellstr);
+    addParameter(p, 'Tag', 'flightspace', @ischar);
     parse(p, varargin{:});
     o = p.Results;
     if ~isfolder(o.OutDir), mkdir(o.OutDir); end
     s = gaPlotStyle();
 
-    presets = {'openmv_2m', 'optitrack_tripod'};
-    names   = {'OpenMV RT1062', 'OptiTrack'};
+    presets = o.Presets;  nPre = numel(presets);
+    if ~isempty(o.Names)
+        names = o.Names;
+    elseif isequal(presets, {'openmv_2m', 'optitrack_tripod'})
+        names = {'OpenMV RT1062', 'OptiTrack'};
+    else
+        names = strrep(presets, '_', '\_');
+    end
+    cfgs = cellfun(@runConfig, presets, 'UniformOutput', false);
 
     %% Raw components of every run's best rig
     rows = {};
@@ -68,42 +84,46 @@ function R = plotFlightSpaceSweep(varargin)
     tl = tiledlayout(fig, 2, 1, 'TileSpacing', 'compact', 'Padding', 'compact');
     metrics = {'RawOcc_deg', 'RawUnc_mm'};
     ylabs   = {'Dynamic occlusion [deg]', 'Resolution uncertainty [mm]'};
-    cfs = [2 3];  off = [-0.12 0.12];
+    cfs = [2 3];  mk = {'o', 's', '^', 'd', 'v'};
+    off = linspace(-0.25, 0.25, 2*nPre);
+    allN = unique(R.NumCameras);
     for m = 1:2
         ax = nexttile(tl); hold(ax, 'on'); grid(ax, 'on'); h = gobjects(0); lab = {};
         for c = 1:2
             col = s.CostFuncColors(cfs(c), :);
-            for k = 1:2
+            for k = 1:nPre
                 T = R(strcmp(R.Preset, presets{k}) & R.CostFunction == cfs(c), :);
+                if isempty(T), continue; end
                 n = unique(T.NumCameras).';
                 med = arrayfun(@(x) median(T.(metrics{m})(T.NumCameras == x)), n);
                 lo  = arrayfun(@(x) prctile(T.(metrics{m})(T.NumCameras == x), 25), n);
                 hi  = arrayfun(@(x) prctile(T.(metrics{m})(T.NumCameras == x), 75), n);
-                x = n + off(c);
+                x = n + off((k - 1)*2 + c);
                 if k == 1
-                    h(end+1) = errorbar(ax, x, med, med - lo, hi - med, '-o', 'Color', col, ...
+                    h(end+1) = errorbar(ax, x, med, med - lo, hi - med, ['-' mk{k}], 'Color', col, ...
                         'MarkerFaceColor', col, 'LineWidth', s.LineWidth, 'MarkerSize', s.MarkerSize); %#ok<AGROW>
                 else
-                    h(end+1) = errorbar(ax, x, med, med - lo, hi - med, 's', 'Color', col, ...
+                    ls = mk{k};  if nPre > 2, ls = [':' mk{k}]; end
+                    h(end+1) = errorbar(ax, x, med, med - lo, hi - med, ls, 'Color', col, ...
                         'MarkerFaceColor', 'w', 'LineWidth', s.LineWidth, 'MarkerSize', s.MarkerSizeLg); %#ok<AGROW>
                 end
                 lab{end+1} = sprintf('%s, %s', names{k}, s.CostFuncShort{cfs(c)}); %#ok<AGROW>
             end
         end
-        ylabel(ax, ylabs{m}); xlim(ax, [5.5 12.5]); xticks(ax, 6:12);
+        ylabel(ax, ylabs{m}); xlim(ax, [min(allN) - 0.5, max(allN) + 0.5]); xticks(ax, allN.');
         ylim(ax, [0, ax.YLim(2)]);
         if m == 1, legend(ax, h, lab, 'Location', 'northeast', 'FontSize', s.FontSizeLegend); end
         if m == 2, xlabel(ax, 'Number of cameras'); end
     end
-    title(tl, 'Tripod rigs, 5 \times 6 \times 2 m flight space (median, IQR)', ...
+    title(tl, 'Tripod rigs, 5 \times 6 m flight space (median, IQR)', ...
         'FontSize', s.FontSizeTitle);
     applyThesisStyle(fig);
-    exportThesisFigure(fig, fullfile(o.OutDir, 'flightspace_sweep'));
+    exportThesisFigure(fig, fullfile(o.OutDir, [o.Tag '_sweep']));
 
     %% Best rig per camera count for the layout figures
     sets = {};
-    for k = 1:2
-        cfg = runConfig(presets{k});
+    for k = 1:nPre
+        cfg = cfgs{k};
         for nc = cfg.CameraRange
             if o.LayoutCF == 0
                 T = R(strcmp(R.Preset, presets{k}) & R.NumCameras == nc & ...
@@ -117,7 +137,8 @@ function R = plotFlightSpaceSweep(varargin)
             end
             sd = load(resolveRunPath(T.RunFilename{i}, nc), 'saveData').saveData;
             sets(end+1, :) = {sprintf('%d %s', nc, names{k}), runChromosome(sd), sd.Specifications, ...
-                T.RawUnc_mm(i), T.RawOcc_deg(i), T.TwoPlusPct(i), T.CostFunction(i)}; %#ok<AGROW>
+                T.RawUnc_mm(i), T.RawOcc_deg(i), T.TwoPlusPct(i), T.CostFunction(i), ...
+                k, find(allN == nc)}; %#ok<AGROW>
         end
     end
     if o.LayoutCF == 0
@@ -125,18 +146,36 @@ function R = plotFlightSpaceSweep(varargin)
     else
         sel = sprintf('CF%d', o.LayoutCF);  selTitle = sprintf('Best %s rigs', s.CostFuncShort{o.LayoutCF});
     end
-    nP = size(sets, 1);  nCol = 3;  nRow = ceil(nP / nCol);
-    vol = runConfig('openmv_2m');
-    fx = vol.Volume(1, :);  fy = vol.Volume(2, :);
-    bx = vol.CamLowerBounds(1) * [1 -1];  by = vol.CamLowerBounds(2) * [1 -1];
-    tz = vol.Mount.TripodHeight;
+    % Grid: one row per camera count, one column per preset
+    nP = size(sets, 1);  nCol = nPre;  nRow = numel(allN);
+    tile = @(j) (sets{j, 9} - 1)*nCol + sets{j, 8};
+    rowH = 2.3 + 0.5*(nCol >= 3);
+    xyLim = max(cell2mat(cellfun(@(c) c.CamUpperBounds(1:2), cfgs(:), 'UniformOutput', false)), [], 1);
+    tz = [inf -inf];
+    for k = 1:nPre
+        M = cfgs{k}.Mount;  hz = M.TripodHeight;
+        if isfield(M, 'EndHeight'), hz = [hz M.EndHeight]; end %#ok<AGROW>
+        if isfield(M, 'Cabinet'), hz = [hz M.Cabinet.Height + M.TripodHeight]; end %#ok<AGROW>
+        tz = [min(tz(1), min(hz)) max(tz(2), max(hz))];
+    end
 
     %% Figure 2: layouts
-    fig = figure('Color', 'w', 'Units', 'inches', 'Position', [1 1 s.FigWidthFull 2.3*nRow]);
+    fig = figure('Color', 'w', 'Units', 'inches', 'Position', [1 1 s.FigWidthFull rowH*nRow]);
     tl = tiledlayout(fig, nRow, nCol, 'TileSpacing', 'compact', 'Padding', 'compact');
     for j = 1:nP
-        ax = nexttile(tl); hold(ax, 'on');
+        ax = nexttile(tl, tile(j)); hold(ax, 'on');
+        cfg = cfgs{sets{j, 8}};
+        fx = cfg.Volume(1, :);  fy = cfg.Volume(2, :);
+        bx = [-1 1] * min(abs(cfg.CamLowerBounds(1)), 4);  by = [-1 1] * abs(cfg.CamLowerBounds(2));
         rectangle(ax, 'Position', [bx(1) by(1) diff(bx) diff(by)], 'FaceColor', [0.93 0.93 0.93], 'EdgeColor', [0.6 0.6 0.6]);
+        if isfield(cfg.Mount, 'Cabinet')
+            cb = cfg.Mount.Cabinet;
+            for sx = [-1 1]
+                xs = sort(sx * cb.XDepth);
+                rectangle(ax, 'Position', [xs(1) cb.YSpan(1) diff(xs) diff(cb.YSpan)], ...
+                    'FaceColor', [0.82 0.74 0.62], 'EdgeColor', [0.5 0.4 0.3]);
+            end
+        end
         rectangle(ax, 'Position', [fx(1) fy(1) diff(fx) diff(fy)], 'FaceColor', 'w', 'EdgeColor', 'k');
         P = reshape(sets{j, 2}, 6, []).';
         for c = 1:size(P, 1)
@@ -146,7 +185,7 @@ function R = plotFlightSpaceSweep(varargin)
         end
         scatter(ax, P(:, 1), P(:, 2), 36, P(:, 3), 'filled', 'MarkerEdgeColor', 'k');
         clim(ax, tz); colormap(ax, parula);
-        axis(ax, 'equal'); xlim(ax, bx + [-0.3 0.3]); ylim(ax, by + [-0.3 0.3]);
+        axis(ax, 'equal'); xlim(ax, xyLim(1) * [-1 1] + [-0.3 0.3]); ylim(ax, xyLim(2) * [-1 1] + [-0.3 0.3]);
         ax.XTick = -4:2:4; ax.YTick = -4:2:4; box(ax, 'on');
         title(ax, sprintf('%s', sets{j, 1}), 'FontSize', s.FontSizeAnnot);
         st = sprintf('%.1f mm, %.0f deg', sets{j, 4}, sets{j, 5});
@@ -156,10 +195,11 @@ function R = plotFlightSpaceSweep(varargin)
     end
     cb = colorbar(ax); cb.Layout.Tile = 'east'; cb.Label.String = 'Camera height [m]';
     xlabel(tl, 'x [m]'); ylabel(tl, 'y [m]');
-    title(tl, sprintf('%s, top view (grey: tripod band)', selTitle), ...
-        'FontSize', s.FontSizeTitle);
+    ttl = sprintf('%s (grey: floor band)', selTitle);
+    if any(cellfun(@(c) isfield(c.Mount, 'Cabinet'), cfgs)), ttl = sprintf('%s (brown: cabinets)', selTitle); end
+    title(tl, ttl, 'FontSize', s.FontSizeTitle);
     applyThesisStyle(fig);
-    exportThesisFigure(fig, fullfile(o.OutDir, ['flightspace_layouts_' sel]));
+    exportThesisFigure(fig, fullfile(o.OutDir, [o.Tag '_layouts_' sel]));
 
     %% Figure 3: per-point occlusion (mean over height layers)
     occ = cell(nP, 1);
@@ -170,10 +210,10 @@ function R = plotFlightSpaceSweep(varargin)
         [~, occ{j}] = dynamicOcclusion(sp, cams, cc);
     end
     cmax = prctile(vertcat(occ{:}), 98);
-    fig = figure('Color', 'w', 'Units', 'inches', 'Position', [1 1 s.FigWidthFull 2.3*nRow]);
+    fig = figure('Color', 'w', 'Units', 'inches', 'Position', [1 1 s.FigWidthFull rowH*nRow]);
     tl = tiledlayout(fig, nRow, nCol, 'TileSpacing', 'compact', 'Padding', 'compact');
     for j = 1:nP
-        ax = nexttile(tl);
+        ax = nexttile(tl, tile(j));
         Tg = sets{j, 3}.Target;  ux = unique(Tg(:, 1));  uy = unique(Tg(:, 2));
         M = nan(numel(uy), numel(ux));
         for a = 1:numel(ux)
@@ -192,5 +232,5 @@ function R = plotFlightSpaceSweep(varargin)
     title(tl, sprintf('Occlusion, %s (mean over heights)', lower(selTitle)), ...
         'FontSize', s.FontSizeTitle);
     applyThesisStyle(fig);
-    exportThesisFigure(fig, fullfile(o.OutDir, ['flightspace_occlusion_' sel]));
+    exportThesisFigure(fig, fullfile(o.OutDir, [o.Tag '_occlusion_' sel]));
 end

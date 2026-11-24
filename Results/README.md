@@ -23,6 +23,7 @@ All target grids are the UAV uniform grid at 1 m x-y spacing unless stated.
 | `openmv_cab_2m/` | `openmv_cab_2m` | OpenMV RT1062 | floor tripods 0.5-2.0 m in front of the cabinets (x sides); floor or table tripods 0.5-2.75 m at the y ends; tripods on the 0.9 m cabinets, heads 1.4-2.9 m | flight space, 0.2-2 m (126 points) | 6-12 | Effect of raised (cabinet/table) mounting. |
 | `openmv_floor_2m/` | `openmv_floor_2m` | OpenMV RT1062 | floor tripods 0.5-2.0 m, 1.5 m band on every side | flight space, 0.2-2 m (126 points) | 6-12 | Control for `openmv_cab_2m`: same tripod range, no cabinets or tables. |
 | `openmv_cab_4m/` | `openmv_cab_4m` | OpenMV RT1062 | as `openmv_cab_2m` | flight space, 0.2-4 m (5 layers, 210 points) | 6-12 | Supervisor's request: full 4 m height with cabinet mounting. |
+| `openmv_cab_2m_fp/`, `openmv_floor_2m_fp/`, `openmv_cab_4m_fp/` | `*_fp` | OpenMV RT1062 | as the preset without `_fp`, plus the tripod footprint: legs 0.3 m from the centre kept clear of walls, cabinet fronts and cabinet-top edges (cabinet tripods x 4.3-4.45 m, y -2.45 to 2.45 m); any two tripods at least 0.6 m apart | as without `_fp` | 6-12 | Buildable rigs. The cab_2m rigs put two tripods 0.22 m apart and tripods on the cabinets' back edge; repairing those rigs afterwards (`legaliseRig`) roughly doubles their occlusion, so these sweeps re-optimise with the constraints. |
 
 Cabinets (measured 2026-11-20): 0.9 m tall, 0.75 m deep, 5.5 m long, on the
 two OptiTrack walls behind the 1.5 m floor band (|x| 4-4.75 m), assumed

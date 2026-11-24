@@ -22,6 +22,11 @@ function regions = mountRegions(cfg)
 %                             (Mount.Cabinet); see below
 %     'box'                   no restriction beyond the search box (legacy)
 %   cfg.Mount.TripodHeight = [zMin zMax] sets the tripod head height range.
+%   cfg.Mount.TripodFootRadius = r (default 0) shrinks the 'tripod' and
+%   'tripod_cabinets' regions so a tripod centre stays r from the room
+%   walls, the cabinet fronts and the cabinet-top edges (its legs need the
+%   room). The flight-space edge is not inset: feet may stand just inside
+%   it, below the lowest target.
 %   'tripod_cabinets' also reads
 %     cfg.Mount.EndHeight  [zMin zMax] head height at the y ends (floor or table)
 %     cfg.Mount.Cabinet    struct: XDepth [xIn xOut] (|x| of the cabinet top,
@@ -47,8 +52,9 @@ function regions = mountRegions(cfg)
         plane('Ceiling', [lo(1) lo(2) hi(3)], hi)];
 
     tz = cfg.Mount.TripodHeight;
+    r = footRadius(cfg);
     tripod = struct('Name', 'Tripod ring', 'Type', 'ring', ...
-        'Lo', [lo(1) lo(2) tz(1)], 'Hi', [hi(1) hi(2) tz(2)], ...
+        'Lo', [lo(1)+r lo(2)+r tz(1)], 'Hi', [hi(1)-r hi(2)-r tz(2)], ...
         'InnerLo', footLo, 'InnerHi', footHi);
 
     switch lower(cfg.Mount.Model)
@@ -59,7 +65,7 @@ function regions = mountRegions(cfg)
         case 'tripod'
             regions = tripod;
         case 'tripod_cabinets'
-            regions = tripodCabinets(cfg, lo, hi, footLo, footHi);
+            regions = tripodCabinets(cfg, lo, hi, footLo, footHi, r);
         case 'box'
             regions = struct('Name', {}, 'Type', {}, 'Lo', {}, 'Hi', {}, ...
                              'InnerLo', {}, 'InnerHi', {});
@@ -68,18 +74,32 @@ function regions = mountRegions(cfg)
     end
 end
 
-function regions = tripodCabinets(cfg, lo, hi, footLo, footHi)
+function regions = tripodCabinets(cfg, lo, hi, footLo, footHi, r)
 % Floor band on the x sides (between the footprint and the cabinets), the
 % y-end bands (floor or table, wider height range) and the cabinet tops.
+% r: tripod foot radius, kept clear of the walls (y ends), the cabinet
+% fronts (floor band) and the cabinet-top edges.
     tz = cfg.Mount.TripodHeight;  ez = cfg.Mount.EndHeight;  c = cfg.Mount.Cabinet;
     bx = c.XDepth(1);                         % floor band ends where the cabinets start
+    cx = [c.XDepth(1) + r, c.XDepth(2) - r];  cy = [c.YSpan(1) + r, c.YSpan(2) - r];
+    if cx(1) > cx(2) || cy(1) > cy(2)
+        error('mountRegions:TripodTooWide', ...
+            'Tripod foot radius %.2f m does not fit on the %.2f m deep cabinets.', r, diff(c.XDepth));
+    end
     regions = [ ...
-        box('Floor band -x', [-bx      lo(2) tz(1)], [footLo(1) hi(2) tz(2)]), ...
-        box('Floor band +x', [footHi(1) lo(2) tz(1)], [bx       hi(2) tz(2)]), ...
-        box('End -y (floor/table)', [-bx lo(2)     ez(1)], [bx footLo(2) ez(2)]), ...
-        box('End +y (floor/table)', [-bx footHi(2) ez(1)], [bx hi(2)     ez(2)]), ...
-        box('Cabinet -x', [-c.XDepth(2) c.YSpan(1) c.Height + tz(1)], [-c.XDepth(1) c.YSpan(2) c.Height + tz(2)]), ...
-        box('Cabinet +x', [ c.XDepth(1) c.YSpan(1) c.Height + tz(1)], [ c.XDepth(2) c.YSpan(2) c.Height + tz(2)])];
+        box('Floor band -x', [-bx + r  lo(2) + r tz(1)], [footLo(1) hi(2) - r tz(2)]), ...
+        box('Floor band +x', [footHi(1) lo(2) + r tz(1)], [bx - r   hi(2) - r tz(2)]), ...
+        box('End -y (floor/table)', [-bx lo(2) + r ez(1)], [bx footLo(2) ez(2)]), ...
+        box('End +y (floor/table)', [-bx footHi(2) ez(1)], [bx hi(2) - r ez(2)]), ...
+        box('Cabinet -x', [-cx(2) cy(1) c.Height + tz(1)], [-cx(1) cy(2) c.Height + tz(2)]), ...
+        box('Cabinet +x', [ cx(1) cy(1) c.Height + tz(1)], [ cx(2) cy(2) c.Height + tz(2)])];
+end
+
+function r = footRadius(cfg)
+    r = 0;
+    if isfield(cfg.Mount, 'TripodFootRadius') && ~isempty(cfg.Mount.TripodFootRadius)
+        r = cfg.Mount.TripodFootRadius;
+    end
 end
 
 function r = box(name, a, b)
