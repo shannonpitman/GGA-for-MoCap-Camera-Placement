@@ -5,7 +5,8 @@ function fullPath = resolveRunPath(filename, numCams, runDir)
 %       1. As given (already absolute or relative-to-pwd that exists).
 %       2. <projectRoot>/Results/<N>Cams/<filename> for N in {6,7,8},
 %          where the cam count is parsed from the filename when possible.
-%       3. <projectRoot>/Results/<preset>/<N>Cams/<filename> (non-lab presets).
+%       3. <projectRoot>/Results/<preset>/<N>Cams/<filename> (non-lab presets),
+%          also under Results/Unconstrained/.
 %       4. <projectRoot>/Results/Logs/<filename> (for log files).
 %       4. <projectRoot>/<filename> (legacy: file still at root).
 %
@@ -61,7 +62,10 @@ function fullPath = resolveRunPath(filename, numCams, runDir)
     end
 
     % Non-lab presets: Results/<preset>/<N>Cams/ (see runResultsDir)
-    presetDirs = dir(fullfile(projectRoot, 'Results'));
+    % Results/Unconstrained/<preset>/ holds the OpenMV sweeps that allowed
+    % any camera tilt (superseded by the *_fp presets, 2026-11-24).
+    presetDirs = [dir(fullfile(projectRoot, 'Results')); ...
+                  dir(fullfile(projectRoot, 'Results', 'Unconstrained'))];
     presetDirs = presetDirs([presetDirs.isdir] & ~startsWith({presetDirs.name}, '.'));
     for k = 1:numel(presetDirs)
         if ~isempty(numCams)

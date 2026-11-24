@@ -14,6 +14,11 @@ function out = RunGA(problem, params, specs)
     else
         minSpacing = 0;
     end
+    if isfield(specs, 'MinElevation')
+        minElev = specs.MinElevation;        % see limitElevation
+    else
+        minElev = -90;
+    end
 
     % Problem 
     CostFunction = problem.CostFunction;
@@ -48,11 +53,11 @@ function out = RunGA(problem, params, specs)
     for i = 1:nPop
         % Generate Guided Random Solution 
         chromosomes(i,:) = enforceMount(initialPopulation(VarMin, VarMax, SectionCentres, numCams, mountRegions), ...
-            mountRegions, minSpacing);
+            mountRegions, minSpacing, minElev);
     end
     if warmStartUsed
         for i = 1:size(warmStartChromosome,1)
-            chromosomes(i,:)= enforceMount(wrapChromRotvecs(warmStartChromosome(i,:)), mountRegions, minSpacing);
+            chromosomes(i,:)= enforceMount(wrapChromRotvecs(warmStartChromosome(i,:)), mountRegions, minSpacing, minElev);
         end
     end
     %Evaluate in Parallel
@@ -139,7 +144,7 @@ function out = RunGA(problem, params, specs)
             popc(l).Chromosome = wrapChromRotvecs(popc(l).Chromosome); % rotation vectors back into |r| <= pi
             popc(l).Chromosome = max(popc(l).Chromosome, VarMin); % if greater than VarMin -> unchanged
             popc(l).Chromosome = min(popc(l).Chromosome, VarMax);
-            popc(l).Chromosome = enforceMount(popc(l).Chromosome, mountRegions, minSpacing); % mountable, tripods apart
+            popc(l).Chromosome = enforceMount(popc(l).Chromosome, mountRegions, minSpacing, minElev); % mountable, tripods apart, tilt limit
             % Evaluation 
         end
 

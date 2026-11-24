@@ -38,7 +38,9 @@ function cfg = runConfig(preset, varargin)
 %                       0.3 m from the centre kept clear of walls, cabinet
 %                       edges and cabinet fronts (Mount.TripodFootRadius),
 %                       and every pair of tripods at least 0.6 m apart
-%                       (Mount.MinTripodSpacing).
+%                       (Mount.MinTripodSpacing), and every camera level
+%                       or tilted up, never down (Mount.MinElevation = 0;
+%                       the OpenMV ball-head mount).
 %     'openmv_4m'       OpenMV on tripods in the full 8 x 8 x 4 m lab volume,
 %                       6-10 cameras (first sweep, 2026-11-16). 'openmv_lab'
 %                       is its old name and still maps to it.
@@ -88,9 +90,13 @@ function cfg = runConfig(preset, varargin)
     %     from walls, cabinet edges and cabinet fronts (0 = point tripods)
     %   MinTripodSpacing: minimum horizontal distance between any two
     %     cameras [m] (0 = off); enforced by separateTripods
+    %   MinElevation: lowest allowed optical-axis elevation [deg] (-90 =
+    %     any tilt; 0 = level or up, the OpenMV ball-head mount); enforced
+    %     by limitElevation
     cfg.Mount = struct('Model', 'walls_ceiling_tripod', ...
                        'TripodHeight', [0.3 2.5], 'Regions', [], ...
-                       'TripodFootRadius', 0, 'MinTripodSpacing', 0);
+                       'TripodFootRadius', 0, 'MinTripodSpacing', 0, ...
+                       'MinElevation', -90);
 
     % Cost function
     cfg.Weights = [0.5 0.5];                 % [resolution, occlusion]
@@ -167,10 +173,14 @@ function cfg = runConfig(preset, varargin)
             % centre, kept clear of walls and cabinet edges; tripods at
             % least 0.6 m apart). Added 2026-11-24 after the cab_2m rigs
             % put tripods 0.22 m apart and on the cabinets' back edge.
+            % They also keep every camera level or tilted up: the OpenMV
+            % screws into the ball head through its back, so the 90-degree
+            % slot stops it at level and it cannot look down.
             base = regexprep(lower(preset), '_fp$', '');
             if ~strcmp(base, lower(preset))
                 cfg.Mount.TripodFootRadius = 0.3;
                 cfg.Mount.MinTripodSpacing = 0.6;
+                cfg.Mount.MinElevation     = 0;
             end
             cfg.Hardware       = 'openmv_rt1062';
             cfg.CameraRange    = 6:12;

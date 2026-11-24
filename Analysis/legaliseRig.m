@@ -7,7 +7,9 @@ function [chrom, info] = legaliseRig(chrom0, specs, preset)
 %   openmv_cab_2m): each camera is projected onto the mount regions of
 %   preset (e.g. 'openmv_cab_2m_fp': legs clear of walls and cabinet edges)
 %   and tripods closer than Mount.MinTripodSpacing are pushed apart
-%   (enforceMount / separateTripods). Orientations are kept as they are.
+%   (enforceMount / separateTripods). Cameras pointing below
+%   Mount.MinElevation are tilted up to it (limitElevation); other
+%   orientations are kept as they are.
 %   specs is the run's saveData.Specifications, used to re-cost the rig on
 %   the same target grid.
 %
@@ -21,7 +23,7 @@ function [chrom, info] = legaliseRig(chrom0, specs, preset)
 
     cfg = runConfig(preset);
     regions = mountRegions(cfg);
-    chrom = enforceMount(chrom0, regions, cfg.Mount.MinTripodSpacing);
+    chrom = enforceMount(chrom0, regions, cfg.Mount.MinTripodSpacing, cfg.Mount.MinElevation);
     P0 = reshape(chrom0, 6, []).';  P1 = reshape(chrom, 6, []).';
     nViol = nnz(pdist(P1(:, 1:2)) < cfg.Mount.MinTripodSpacing - 1e-6);
     info.Moved = vecnorm(P1(:, 1:3) - P0(:, 1:3), 2, 2);

@@ -1,6 +1,7 @@
 function tests = testTripodFootprint
 % Tripod footprint (*_fp presets): tripod legs stay clear of walls and
-% cabinet edges, and no two tripods stand closer than MinTripodSpacing.
+% cabinet edges, no two tripods stand closer than MinTripodSpacing, and no
+% camera looks below MinElevation (OpenMV ball head: level or up).
     tests = functiontests(localfunctions);
 end
 
@@ -12,7 +13,7 @@ function testDefaultsUnchanged(tc)
     % every existing preset keeps point tripods and no spacing rule
     for p = {'optitrack_lab', 'openmv_2m', 'optitrack_tripod', 'openmv_cab_2m', 'openmv_cab_4m', 'openmv_floor_2m'}
         c = runConfig(p{1});
-        verifyEqual(tc, [c.Mount.TripodFootRadius c.Mount.MinTripodSpacing], [0 0], p{1});
+        verifyEqual(tc, [c.Mount.TripodFootRadius c.Mount.MinTripodSpacing c.Mount.MinElevation], [0 0 -90], p{1});
     end
     reg = mountRegions(runConfig('openmv_cab_2m'));
     cab = reg(strcmp({reg.Name}, 'Cabinet +x'));
@@ -22,7 +23,8 @@ end
 function testFootprintPresets(tc)
     c = runConfig('openmv_cab_2m_fp');
     verifyEqual(tc, c.Preset, 'openmv_cab_2m_fp');               % own results folder
-    verifyEqual(tc, [c.Mount.TripodFootRadius c.Mount.MinTripodSpacing], [0.3 0.6]);
+    verifyEqual(tc, [c.Mount.TripodFootRadius c.Mount.MinTripodSpacing c.Mount.MinElevation], [0.3 0.6 0]);
+    verifyEqual(tc, buildRunSpecs(c, 6, 3, 1, 1, 1.0, 'UseNormTable', false).MinElevation, 0);
     verifyEqual(tc, c.Volume, runConfig('openmv_cab_2m').Volume);
     verifyEqual(tc, runConfig('openmv_cab_4m_fp').Volume(3, :), [0.2 4.0]);
     verifyEqual(tc, runConfig('openmv_floor_2m_fp').Mount.Model, 'tripod');
@@ -81,6 +83,41 @@ function testGAKeepsFootprint(tc)
     P = reshape(out.bestsol.Chromosome, 6, []).';
     verifyGreaterThanOrEqual(tc, min(pdist(P(:, 1:2))), 0.6 - 1e-6);
     verifyTrue(tc, all(arrayfun(@(k) onMount(P(k, 1:3), specs.MountRegions), 1:size(P, 1))));
+    verifyGreaterThanOrEqual(tc, min(elevations(out.bestsol.Chromosome)), -1e-6);
+    for k = 1:numel(out.pop)                    % whole final population, not only the best
+        verifyGreaterThanOrEqual(tc, min(elevations(out.pop(k).Chromosome)), -1e-6);
+    end
+end
+
+function testElevationLimit(tc)
+    % random orientations: low cameras end exactly level with the same
+    % azimuth and horizon roll; legal cameras are untouched
+    rng(5);
+    n = 200;
+    chrom = zeros(1, 6*n);
+    for k = 1:n
+        v = randn(1, 3);  chrom(6*k-2:6*k) = v / norm(v) * pi * rand;
+    end
+    chrom(4:6) = [pi 0 0];                      % straight down
+    [out, nCh] = limitElevation(chrom, 0);
+    e0 = elevations(chrom);  e1 = elevations(out);
+    verifyEqual(tc, nCh, nnz(e0 < 0));
+    verifyGreaterThanOrEqual(tc, min(e1), -1e-9);
+    low = e0 < 0;
+    verifyEqual(tc, e1(low), zeros(nnz(low), 1), 'AbsTol', 1e-9);
+    verifyEqual(tc, out(repelem(~low, 6)'), chrom(repelem(~low, 6)'));
+    for k = find(low(:)).'
+        if k == 1, continue; end                % straight down has no azimuth
+        R0 = genesToRotm(chrom(6*k-2:6*k));  R1 = genesToRotm(out(6*k-2:6*k));
+        a0 = atan2(R0(2,3), R0(1,3));  a1 = atan2(R1(2,3), R1(1,3));
+        verifyEqual(tc, wrapToPi(a1 - a0), 0, 'AbsTol', 1e-9);
+        % pure pitch: camera axes keep their components along the
+        % horizontal pitch axis, so the roll relative to the horizon is kept
+        a = [-sin(a0); cos(a0); 0];
+        verifyEqual(tc, a.' * R1, a.' * R0, 'AbsTol', 1e-9);
+    end
+    verifyEqual(tc, limitElevation(chrom, -90), chrom);
+    verifyEqual(tc, out(1:3), chrom(1:3));      % positions untouched
 end
 
 function testLegaliseRig(tc)
@@ -95,6 +132,14 @@ function testLegaliseRig(tc)
     verifyLessThanOrEqual(tc, max(abs(P(1:3, 1))), 4.45 + 1e-9);   % off the back edge
     verifyLessThanOrEqual(tc, max(abs(P(4:6, 2))), 4.2 + 1e-9);    % off the end walls
     verifyEqual(tc, size(info.RawOcc_deg), [1 2]);
+end
+
+function e = elevations(chrom)
+    P = reshape(chrom, 6, []).';
+    e = zeros(size(P, 1), 1);
+    for k = 1:size(P, 1)
+        R = genesToRotm(P(k, 4:6));  e(k) = asind(max(-1, min(1, R(3, 3))));
+    end
 end
 
 function tf = onMount(p, reg)
