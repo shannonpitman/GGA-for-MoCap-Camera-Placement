@@ -58,9 +58,9 @@ switch targetMode
         u_y = linspace(0, 1, Ny + 2);  u_y = u_y(2:end-1);
         u_z = linspace(0, 1, Nz + 2);  u_z = u_z(2:end-1);
 
-        x_norm = norminv(u_x);
-        y_norm = norminv(u_y);
-        z_norm = norminv(u_z);
+        x_norm = -sqrt(2) * erfcinv(2 * u_x);   % norminv, base MATLAB
+        y_norm = -sqrt(2) * erfcinv(2 * u_y);   % norminv, base MATLAB
+        z_norm = -sqrt(2) * erfcinv(2 * u_z);   % norminv, base MATLAB
 
         % Rescale to volume bounds
         rescale = @(vals, lo, hi) lo + (vals - min(vals)) ./ ...

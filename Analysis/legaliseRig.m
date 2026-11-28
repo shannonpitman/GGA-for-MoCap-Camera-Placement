@@ -25,7 +25,7 @@ function [chrom, info] = legaliseRig(chrom0, specs, preset)
     regions = mountRegions(cfg);
     chrom = enforceMount(chrom0, regions, cfg.Mount.MinTripodSpacing, cfg.Mount.MinElevation);
     P0 = reshape(chrom0, 6, []).';  P1 = reshape(chrom, 6, []).';
-    nViol = nnz(pdist(P1(:, 1:2)) < cfg.Mount.MinTripodSpacing - 1e-6);
+    nViol = nnz(pairDistances(P1(:, 1:2)) < cfg.Mount.MinTripodSpacing - 1e-6);
     info.Moved = vecnorm(P1(:, 1:3) - P0(:, 1:3), 2, 2);
     info.MaxMove = max(info.Moved);
     info.Violations = nViol;

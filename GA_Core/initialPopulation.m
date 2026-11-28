@@ -21,15 +21,15 @@ function Chromosome = initialPopulation(VarMin, VarMax,  SectionCentres, numCams
         
         switch chosenFace
             case 1 % +X
-                camPos = [VarMax(1), unifrnd(VarMin(2), VarMax(2)), unifrnd(VarMin(3), VarMax(3))];
+                camPos = [VarMax(1), (VarMin(2) + (VarMax(2) - VarMin(2))*rand), (VarMin(3) + (VarMax(3) - VarMin(3))*rand)];
             case 2 % -X
-                camPos = [VarMin(1), unifrnd(VarMin(2), VarMax(2)), unifrnd(VarMin(3), VarMax(3))];
+                camPos = [VarMin(1), (VarMin(2) + (VarMax(2) - VarMin(2))*rand), (VarMin(3) + (VarMax(3) - VarMin(3))*rand)];
             case 3 % +Y
-                camPos = [unifrnd(VarMin(1), VarMax(1)),VarMax(2), unifrnd(VarMin(3), VarMax(3))];
+                camPos = [(VarMin(1) + (VarMax(1) - VarMin(1))*rand),VarMax(2), (VarMin(3) + (VarMax(3) - VarMin(3))*rand)];
             case 4 % -Y
-                camPos = [unifrnd(VarMin(1), VarMax(1)), VarMin(2), unifrnd(VarMin(3), VarMax(3))];
+                camPos = [(VarMin(1) + (VarMax(1) - VarMin(1))*rand), VarMin(2), (VarMin(3) + (VarMax(3) - VarMin(3))*rand)];
             case 5 % +Z
-                camPos = [unifrnd(VarMin(1), VarMax(1)), unifrnd(VarMin(2), VarMax(2)), VarMax(3)];
+                camPos = [(VarMin(1) + (VarMax(1) - VarMin(1))*rand), (VarMin(2) + (VarMax(2) - VarMin(2))*rand), VarMax(3)];
         end
         camPositions(c,:) = camPos;
     end

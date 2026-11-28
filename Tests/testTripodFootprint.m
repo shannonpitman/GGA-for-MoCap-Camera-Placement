@@ -69,7 +69,7 @@ function testSeparateRandomRigs(tc)
             [out, nViol] = separateTripods(enforceMount(chrom, reg), reg, 0.6);
             P = reshape(out, 6, []).';
             verifyEqual(tc, nViol, 0, sprintf('%s trial %d', p{1}, t));
-            verifyGreaterThanOrEqual(tc, min(pdist(P(:, 1:2))), 0.6 - 1e-6);
+            verifyGreaterThanOrEqual(tc, min(pairDistances(P(:, 1:2))), 0.6 - 1e-6);
             verifyTrue(tc, all(arrayfun(@(k) onMount(P(k, 1:3), reg), 1:12)));
         end
     end
@@ -81,7 +81,7 @@ function testGAKeepsFootprint(tc)
     verifyEqual(tc, specs.MinTripodSpacing, 0.6);
     [~, out] = evalc('RunGA(problem, params, specs)');
     P = reshape(out.bestsol.Chromosome, 6, []).';
-    verifyGreaterThanOrEqual(tc, min(pdist(P(:, 1:2))), 0.6 - 1e-6);
+    verifyGreaterThanOrEqual(tc, min(pairDistances(P(:, 1:2))), 0.6 - 1e-6);
     verifyTrue(tc, all(arrayfun(@(k) onMount(P(k, 1:3), specs.MountRegions), 1:size(P, 1))));
     verifyGreaterThanOrEqual(tc, min(elevations(out.bestsol.Chromosome)), -1e-6);
     for k = 1:numel(out.pop)                    % whole final population, not only the best

@@ -46,8 +46,7 @@ function [chrom, nViol] = separateTripods(chrom, regions, minSpacing, maxIter)
         end
     end
     if nViol > 0                                    % count after the last move
-        D = squareform(pdist(P(:, 1:2)));
-        nViol = nnz(triu(D < minSpacing - tol, 1));
+        nViol = nnz(pairDistances(P(:, 1:2)) < minSpacing - tol);
     end
     chrom = reshape(P.', 1, []);
 end
