@@ -1,0 +1,58 @@
+Genetic Algorithm Camera Placement Results
+==========================================
+
+Timestamp: 26-Nov-2026 09:47:49
+Number of Cameras: 6
+Best Cost (Cost Function 3): 0.099842
+Cost Function Weights: 0.50 Resolution Uncertainty and 0.50 Dynamic Occlusion
+Computation Time: 3.91 min
+Mutation Rate: 0.30
+Tournament Size: 3
+Warm Starting Used: true
+Population Size: 360
+Number of Generations: 150
+Target Type: UAV (Full Volume)
+Grid Mode: Uniform Grid
+Number of Target Points: 126
+
+Camera Configurations:
+---------------------
+
+Camera 1:
+  Position (m):        [-4.450, -1.277, 1.463]
+  Rotation vector (rad): [-0.418, 1.525, -0.354]
+  XYZ Euler (deg):       [-90.0, 87.6, 61.7]
+
+Camera 2:
+  Position (m):        [2.523, 3.012, 0.609]
+  Rotation vector (rad): [1.339, -0.409, -0.280]
+  XYZ Euler (deg):       [78.7, -26.2, 2.3]
+
+Camera 3:
+  Position (m):        [3.276, -4.200, 0.513]
+  Rotation vector (rad): [-1.247, -0.720, 0.150]
+  XYZ Euler (deg):       [-80.7, -34.8, -19.4]
+
+Camera 4:
+  Position (m):        [4.436, 1.278, 1.400]
+  Rotation vector (rad): [-0.305, -1.541, -0.029]
+  XYZ Euler (deg):       [-90.0, -77.7, -79.8]
+
+Camera 5:
+  Position (m):        [-1.973, -3.530, 1.213]
+  Rotation vector (rad): [-1.559, 0.228, -0.234]
+  XYZ Euler (deg):       [-90.0, 16.8, -0.2]
+
+Camera 6:
+  Position (m):        [-3.126, 4.124, 0.523]
+  Rotation vector (rad): [1.249, 0.705, 0.152]
+  XYZ Euler (deg):       [80.4, 34.3, -18.7]
+
+Camera Coverage Statistics:
+---------------------------
+Total target points: 126
+Points with 0 cameras: 0 (0.0%)
+Points with 1 camera:  0 (0.0%)
+Points with 2+ cameras: 126 (100.0%)
+Average coverage: 3.84 cameras per point
+Max coverage: 6 | Min: 2 | Median: 4.00
