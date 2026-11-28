@@ -146,10 +146,13 @@ function R = plotFlightSpaceSweep(varargin)
     else
         sel = sprintf('CF%d', o.LayoutCF);  selTitle = sprintf('Best %s rigs', s.CostFuncShort{o.LayoutCF});
     end
-    % Grid: one row per camera count, one column per preset
-    nP = size(sets, 1);  nCol = nPre;  nRow = numel(allN);
-    tile = @(j) (sets{j, 9} - 1)*nCol + sets{j, 8};
-    rowH = 2.3 + 0.5*(nCol >= 3);
+    % Grid: presets side by side; with one or two presets several camera
+    % counts share a row (up to 4 columns) so the tiles stay readable
+    nP = size(sets, 1);
+    perRow = max(1, floor(4 / nPre));            % camera counts per row
+    nCol = perRow * nPre;  nRow = ceil(numel(allN) / perRow);
+    tile = @(j) (ceil(sets{j, 9} / perRow) - 1)*nCol + mod(sets{j, 9} - 1, perRow)*nPre + sets{j, 8};
+    rowH = (s.FigWidthFull - 0.9) / nCol * 1.15 + 0.75;   % equal-aspect tile + title lines
     xyLim = max(cell2mat(cellfun(@(c) c.CamUpperBounds(1:2), cfgs(:), 'UniformOutput', false)), [], 1);
     tz = [inf -inf];
     for k = 1:nPre
@@ -188,9 +191,9 @@ function R = plotFlightSpaceSweep(varargin)
         axis(ax, 'equal'); xlim(ax, xyLim(1) * [-1 1] + [-0.3 0.3]); ylim(ax, xyLim(2) * [-1 1] + [-0.3 0.3]);
         ax.XTick = -4:2:4; ax.YTick = -4:2:4; box(ax, 'on');
         title(ax, sprintf('%s', sets{j, 1}), 'FontSize', s.FontSizeAnnot);
-        st = sprintf('%.1f mm, %.0f deg', sets{j, 4}, sets{j, 5});
-        if sets{j, 6} < 100, st = sprintf('%s, %.0f%% 2+', st, sets{j, 6}); end
-        if o.LayoutCF == 0, st = sprintf('%s (CF%d)', st, sets{j, 7}); end
+        st = {sprintf('%.1f mm, %.0f deg', sets{j, 4}, sets{j, 5})};
+        if sets{j, 6} < 100, st{1} = sprintf('%s, %.0f%% 2+', st{1}, sets{j, 6}); end
+        if o.LayoutCF == 0, st{end+1} = sprintf('CF%d', sets{j, 7}); end
         subtitle(ax, st, 'FontSize', s.FontSizeAnnot - 1);
     end
     cb = colorbar(ax); cb.Layout.Tile = 'east'; cb.Label.String = 'Camera height [m]';
